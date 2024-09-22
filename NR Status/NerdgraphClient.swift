@@ -9,65 +9,76 @@ import Foundation
 import SwiftGraphQLClient
 import GraphQL
 
-struct User {
-    var email: String
-}
-
-struct Actor {
-    var user: User
-}
-
 struct NerdgraphClient {
-    private var client: SwiftGraphQLClient.Client
+    private let url: URL
+    private let apiKey: String
     
-    init(host: String, apiKey: String) {
-        let url = URL(string: "https://api.newrelic.com/grpahql")!
-        var request = URLRequest(url: url)
+    private var defaultRequest: URLRequest {
+        get {
+            var request = URLRequest(url: url)
 
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(apiKey, forHTTPHeaderField: "api-key")
-        request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue(apiKey, forHTTPHeaderField: "api-key")
+            request.httpMethod = "POST"
 
-        let config = ClientConfiguration()
-        self.client = SwiftGraphQLClient.Client(
-            // Default request used to send HTTP requests.
-            request: URLRequest(url: url),
-//            exchanges: [
-//                DedupExchange(),
-//                CacheExchange(),
-//                FetchExchange()
-//            ],
-            config: config
-        )
-    }
-    
-    func query() {
-        print("query?")
-        let args = ExecutionArgs(
-            query: """
-            query ApiTest {
-                actor { user { email } }
-            }
-            """,
-            variables: [:]
-        )
-        
-        print("running query")
-        client.query(args)
-            .sink { completion in
-                print("query completed....")
-                print(completion)
-            } receiveValue: { result in
-                print("received value...")
-                print(result)
-            }
-        
-    }
-    
-    func structuredQuery() {
-        let query = Selection.
-        let query = Selection.Query<[Human]> {
-            try $0.friends(selection: human.list)
+            return request
         }
     }
+    
+    init(host: String, apiKey: String) {
+        if let url = URL(string:"https://\(host)/graphql") {
+            self.url = url
+            self.apiKey = apiKey
+        } else {
+            self.url = URL(string:"https://api.newrelic.com/graphql")!
+            self.apiKey = "NRAK-"
+        }
+    }
+    
+    
+    func rawQuery(_ query: String, variables: [String:Any] = [:], callback: @escaping ([String:Any]) -> ()) {
+        var request = defaultRequest
+
+        let json: [String:Any] = ["query": query, "variables": variables ]
+        guard let data = try? JSONSerialization.data(withJSONObject: json) else { return }
+
+        request.httpBody = data
+
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            guard let data = data, error == nil else {
+                    print(error?.localizedDescription ?? "No data")
+                    return
+                }
+            let responseJSON = try? JSONSerialization.jsonObject(with: data, options: [])
+            
+            if let responseJSON = responseJSON as? [String: Any] {
+                print(responseJSON)
+                callback(responseJSON)
+            }
+        }
+        task.resume()
+    }
+
+    func query(_ query: String, variables: [String:Any] = [:], callback: @escaping (Root) -> ()) {
+        var request = defaultRequest
+
+        let json: [String:Any] = ["query": query, "variables": variables ]
+        guard let data = try? JSONSerialization.data(withJSONObject: json) else { return }
+
+        request.httpBody = data
+
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            guard let data = data, error == nil else {
+                print(error?.localizedDescription ?? "No data")
+                return
+            }
+            
+            if let responseObject = try? JSONDecoder().decode(Root.self, from: data) {
+                print(responseObject)
+                callback(responseObject)
+            }
+        }
+        task.resume()
+    }
+    
 }

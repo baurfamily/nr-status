@@ -31,55 +31,12 @@ struct ContentView: View {
     }
     
     func testRequest() {
-        let client = NerdgraphClient(host: host, apiKey: apiKey)
-        client.query()
-//        { result in
-//            switch result {
-//            case .success(let data):
-//                print(data)
-//                email = data.actor.user.email
-//            case .failure(let error):
-//                print(error)
-//            }
-//        }
-    }
-    
-    func testRequestOld() {
-        guard let url = URL(string:"https://\(host)/graphql") else { return }
-        var request = URLRequest(url: url)
+        let query = "query { actor { accounts { id name } user { email } } }"
         
-        let json = ["query": "query { actor { user { email } } }"
-                    ]
-        guard let data = try? JSONEncoder().encode(json) else { return }
-
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(apiKey, forHTTPHeaderField: "api-key")
-        request.httpMethod = "POST"
-        request.httpBody = data
-        
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            guard let data = data, error == nil else {
-                    print(error?.localizedDescription ?? "No data")
-                    return
-                }
-            
-            let responseJSON = try? JSONSerialization.jsonObject(with: data, options: [])
-            
-            if let responseJSON = responseJSON as? [String: Any] {
-                print(responseJSON)
-                setEmail(with: responseJSON)
-            }
+        NerdgraphClient(host: host, apiKey: apiKey).query(query) { result in
+            email = result.data?.actor?.user?.email ?? ""
         }
-        task.resume()
-        
-    }
-    
-    func setEmail(with responseJSON: [String: Any]) {
-        guard let data : [String: Any] = responseJSON["data"] as? [ String: Any ] else { return }
-        guard let actor : [String: Any] = data["actor"] as? [ String: Any ] else { return }
-        guard let user : [String: Any] = actor["user"] as? [ String: Any] else { return }
-        guard let useremail : String = user["email"] as? String else { return }
-        email = useremail
+
     }
 }
 

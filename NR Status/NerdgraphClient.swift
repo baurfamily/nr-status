@@ -36,10 +36,13 @@ struct NerdgraphClient {
     }
     
     
-    func rawQuery(_ query: String, variables: [String:Any] = [:], callback: @escaping ([String:Any]) -> ()) {
+    func rawQuery(_ query: String, variables: [String:Any] = [:], debug: Bool = false, callback: @escaping ([String:Any]) -> ()) {
         var request = defaultRequest
 
         let json: [String:Any] = ["query": query, "variables": variables ]
+        if debug {
+            print("request: \(request)")
+        }
         guard let data = try? JSONSerialization.data(withJSONObject: json) else { return }
 
         request.httpBody = data
@@ -52,17 +55,23 @@ struct NerdgraphClient {
             let responseJSON = try? JSONSerialization.jsonObject(with: data, options: [])
             
             if let responseJSON = responseJSON as? [String: Any] {
-                print(responseJSON)
+                if debug {
+                    print("responseJSON: \(responseJSON)")
+                }
                 callback(responseJSON)
             }
         }
         task.resume()
     }
 
-    func query(_ query: String, variables: [String:Any] = [:], callback: @escaping (Root) -> ()) {
+    func query(_ query: String, variables: [String:Any] = [:], debug: Bool = false, callback: @escaping (Root) -> ()) {
         var request = defaultRequest
 
         let json: [String:Any] = ["query": query, "variables": variables ]
+        if debug {
+            print("request query: \(query)")
+            print("request vars: \(variables)")
+        }
         guard let data = try? JSONSerialization.data(withJSONObject: json) else { return }
 
         request.httpBody = data
@@ -73,8 +82,14 @@ struct NerdgraphClient {
                 return
             }
             
+            if debug {
+                print("response data: \(String(decoding: data, as: Unicode.UTF8.self))")
+            }
+
             if let responseObject = try? JSONDecoder().decode(Root.self, from: data) {
-                print(responseObject)
+                if debug {
+                    print("responseObject: \(responseObject)")
+                }
                 callback(responseObject)
             }
         }

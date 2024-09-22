@@ -36,16 +36,16 @@ struct ContentView: View {
                 self.email = email
             }
         }
+        
+        Queries.entities(domain: .APM) { entities in
+            print("--------")
+            print("entities")
+            print(entities?.count)
+            print(entities?.first?.name)
+            print(entities)
+            print("--------")
+        }
     }
-    
-//    func testRequest() {
-//        let query = "query { actor { accounts { id name } user { email } } }"
-//        
-//        NerdgraphClient(host: host, apiKey: apiKey).query(query) { result in
-//            email = result.data?.actor?.user?.email ?? ""
-//        }
-//
-//    }
 }
 
 #Preview {

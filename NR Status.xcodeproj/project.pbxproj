@@ -6,6 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		3F5714A32CA061E300685FEA /* GraphQL in Frameworks */ = {isa = PBXBuildFile; productRef = 3F5714A22CA061E300685FEA /* GraphQL */; };
+		3F5714A52CA061E300685FEA /* GraphQLAST in Frameworks */ = {isa = PBXBuildFile; productRef = 3F5714A42CA061E300685FEA /* GraphQLAST */; };
+		3F5714A72CA061E300685FEA /* GraphQLWebSocket in Frameworks */ = {isa = PBXBuildFile; productRef = 3F5714A62CA061E300685FEA /* GraphQLWebSocket */; };
+		3F5714A92CA061E300685FEA /* SwiftGraphQL in Frameworks */ = {isa = PBXBuildFile; productRef = 3F5714A82CA061E300685FEA /* SwiftGraphQL */; };
+		3F5714AB2CA061E300685FEA /* SwiftGraphQLClient in Frameworks */ = {isa = PBXBuildFile; productRef = 3F5714AA2CA061E300685FEA /* SwiftGraphQLClient */; };
+		3F5714B32CA08C6A00685FEA /* Apollo in Frameworks */ = {isa = PBXBuildFile; productRef = 3F5714B22CA08C6A00685FEA /* Apollo */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		3F5714852C9EA7BD00685FEA /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +61,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3F5714A92CA061E300685FEA /* SwiftGraphQL in Frameworks */,
+				3F5714B32CA08C6A00685FEA /* Apollo in Frameworks */,
+				3F5714AB2CA061E300685FEA /* SwiftGraphQLClient in Frameworks */,
+				3F5714A32CA061E300685FEA /* GraphQL in Frameworks */,
+				3F5714A72CA061E300685FEA /* GraphQLWebSocket in Frameworks */,
+				3F5714A52CA061E300685FEA /* GraphQLAST in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +127,12 @@
 			);
 			name = "NR Status";
 			packageProductDependencies = (
+				3F5714A22CA061E300685FEA /* GraphQL */,
+				3F5714A42CA061E300685FEA /* GraphQLAST */,
+				3F5714A62CA061E300685FEA /* GraphQLWebSocket */,
+				3F5714A82CA061E300685FEA /* SwiftGraphQL */,
+				3F5714AA2CA061E300685FEA /* SwiftGraphQLClient */,
+				3F5714B22CA08C6A00685FEA /* Apollo */,
 			);
 			productName = "NR Status";
 			productReference = 3F5714732C9EA7BC00685FEA /* NR Status.app */;
@@ -195,6 +216,10 @@
 			);
 			mainGroup = 3F57146A2C9EA7BC00685FEA;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				3F5714A12CA061E300685FEA /* XCRemoteSwiftPackageReference "swift-graphql" */,
+				3F5714B12CA08C6A00685FEA /* XCRemoteSwiftPackageReference "apollo-ios" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3F5714742C9EA7BC00685FEA /* Products */;
 			projectDirPath = "";
@@ -549,6 +574,58 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		3F5714A12CA061E300685FEA /* XCRemoteSwiftPackageReference "swift-graphql" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/maticzav/swift-graphql/";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.1.3;
+			};
+		};
+		3F5714B12CA08C6A00685FEA /* XCRemoteSwiftPackageReference "apollo-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apollographql/apollo-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.15.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3F5714A22CA061E300685FEA /* GraphQL */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3F5714A12CA061E300685FEA /* XCRemoteSwiftPackageReference "swift-graphql" */;
+			productName = GraphQL;
+		};
+		3F5714A42CA061E300685FEA /* GraphQLAST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3F5714A12CA061E300685FEA /* XCRemoteSwiftPackageReference "swift-graphql" */;
+			productName = GraphQLAST;
+		};
+		3F5714A62CA061E300685FEA /* GraphQLWebSocket */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3F5714A12CA061E300685FEA /* XCRemoteSwiftPackageReference "swift-graphql" */;
+			productName = GraphQLWebSocket;
+		};
+		3F5714A82CA061E300685FEA /* SwiftGraphQL */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3F5714A12CA061E300685FEA /* XCRemoteSwiftPackageReference "swift-graphql" */;
+			productName = SwiftGraphQL;
+		};
+		3F5714AA2CA061E300685FEA /* SwiftGraphQLClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3F5714A12CA061E300685FEA /* XCRemoteSwiftPackageReference "swift-graphql" */;
+			productName = SwiftGraphQLClient;
+		};
+		3F5714B22CA08C6A00685FEA /* Apollo */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3F5714B12CA08C6A00685FEA /* XCRemoteSwiftPackageReference "apollo-ios" */;
+			productName = Apollo;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 3F57146B2C9EA7BC00685FEA /* Project object */;
 }

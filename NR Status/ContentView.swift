@@ -31,6 +31,20 @@ struct ContentView: View {
     }
     
     func testRequest() {
+        let client = NerdgraphClient(host: host, apiKey: apiKey)
+        client.query()
+//        { result in
+//            switch result {
+//            case .success(let data):
+//                print(data)
+//                email = data.actor.user.email
+//            case .failure(let error):
+//                print(error)
+//            }
+//        }
+    }
+    
+    func testRequestOld() {
         guard let url = URL(string:"https://\(host)/graphql") else { return }
         var request = URLRequest(url: url)
         
@@ -54,11 +68,7 @@ struct ContentView: View {
             if let responseJSON = responseJSON as? [String: Any] {
                 print(responseJSON)
                 setEmail(with: responseJSON)
-//                var thing: String = responseJSON["actor"]?["user"]?["email"] as? String ?? "No email"
-//                    email = "ugh"
             }
-            
-            
         }
         task.resume()
         
@@ -70,11 +80,6 @@ struct ContentView: View {
         guard let user : [String: Any] = actor["user"] as? [ String: Any] else { return }
         guard let useremail : String = user["email"] as? String else { return }
         email = useremail
-        
-        let emailKeyPath = \JSONSerialization.data.actor.user.email
-        let em = responseJSON[emailKeyPath] as? String
-        print("key: \(em ?? "nothing")")
-
     }
 }
 

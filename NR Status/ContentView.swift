@@ -31,13 +31,21 @@ struct ContentView: View {
     }
     
     func testRequest() {
-        let query = "query { actor { accounts { id name } user { email } } }"
-        
-        NerdgraphClient(host: host, apiKey: apiKey).query(query) { result in
-            email = result.data?.actor?.user?.email ?? ""
+        Queries.user() { user in
+            if let email = user?.email {
+                self.email = email
+            }
         }
-
     }
+    
+//    func testRequest() {
+//        let query = "query { actor { accounts { id name } user { email } } }"
+//        
+//        NerdgraphClient(host: host, apiKey: apiKey).query(query) { result in
+//            email = result.data?.actor?.user?.email ?? ""
+//        }
+//
+//    }
 }
 
 #Preview {

@@ -13,5 +13,18 @@ struct NR_StatusApp: App {
         WindowGroup {
             ContentView()
         }
+        .commands {
+            CommandMenu("Custom Menu") {
+                Button(action: {
+                    print("Menu Button selected")
+                }, label: {
+                    Text("Menu Button")
+                })
+            }
+        }
+        
+        Settings {
+            PreferencesView()
+        }
     }
 }

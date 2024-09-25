@@ -12,7 +12,15 @@ struct ApplicationView: View {
     
     var body: some View {
         List(applications, id: \.guid) { app in
-            Text(app.name ?? "Unknown")
+            HStack {
+                if let alertSeverity = app.alertSeverity {
+                    Text("\(alertSeverity)")
+                } else {
+                    Text("NO ALERT DATA")
+                }
+                Text(app.name ?? "Unknown")
+                Text(app.domain?.rawValue ?? "n/a")
+            }
         }
         .padding()
         .task {

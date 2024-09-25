@@ -52,8 +52,15 @@ struct PreferencesView: View {
         Queries.accounts(debug: true) { accounts in
             if let accounts = accounts {
                 let names = accounts.map() { "\($0.name ?? "no name found") (\(String($0.id ?? 0)))" }
+                let ids = accounts.map() { $0.id }
+                
                 self.accountNames = names.joined(separator: ", ")
-                self.accountsCheck = true
+                
+                let remoteSet = Set(ids)
+                let configSet = Set(accountIds.components(separatedBy: ",").map() {Int($0)} )
+                let intersection = remoteSet.intersection(configSet)
+                
+                self.accountsCheck = !intersection.isEmpty
             } else {
                 self.accountsCheck = false
             }
@@ -97,8 +104,8 @@ struct TestPanelView: View {
                 .fontWeight(.bold)
             
             
-            Text(name ?? "")
-            Text(description ?? "")
+            Text(name)
+            Text(description)
         }
     }
 }

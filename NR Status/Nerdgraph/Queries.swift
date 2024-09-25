@@ -45,7 +45,7 @@ struct Queries {
                 $cursor: String = null,
                 $includeCount: Boolean = false,
                 $includeResults: Boolean = true,
-                $includeSummaryMetrics: Boolean = false,
+                $includeSummaryMetrics: Boolean = true,
                 $includeTags: Boolean = false,
                 $limit: Int = 500,
                 $nrql: String,
@@ -154,7 +154,8 @@ struct Queries {
                  guid
                }
                guid
-             
+            }
+        
         """
         
         let variables : [String:Any]  = [

@@ -34,6 +34,16 @@ struct EntitySearch : Codable {
     }
     var count: Int?
     var results: Results?
+    var types: [EntityTypeGrouping]?
+}
+
+struct EntityTypeGrouping : Codable {
+    enum CodingKeys: CodingKey {
+        case count, domain, type
+    }
+    var count: Int?
+    var domain: Entity.Domain?
+    var type: Entity.EntityType?
 }
 
 struct Results : Codable {
@@ -57,23 +67,4 @@ struct User : Codable {
         case email
     }
     var email: String?
-}
-
-struct Entity : Codable {
-    enum CodingKeys: String, CodingKey {
-        case guid, accountId, name //, type = "entityType", domain
-    }
-    
-    enum Domain : String, Codable {
-        case APM, BROWSER, EXT, INFRA, MOBILE, SYNTH
-    }
-    enum EntityType : String, Codable {
-        case APPLICATION, MONITOR, DASHBOARD, HOST, WORKLOAD
-    }
-    
-    var guid: String?
-//    var domain: Domain?
-//    var type: EntityType?
-    var accountId: Int?
-    var name: String?
 }

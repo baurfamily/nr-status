@@ -1,0 +1,1893 @@
+{
+  "data": {
+    "actor": {
+      "__typename": "Actor",
+      "entitySearch": {
+        "__typename": "EntitySearch",
+        "count": 54,
+        "results": {
+          "__typename": "EntitySearchResult",
+          "entities": [
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDc5NDU1MzEyMzMwMDcwODg5MTM",
+              "name": "ap-northeast-1",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSLAMBDAREGION"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDQxODM5Nzg5Mzk2NzM3NTAxMTY",
+              "name": "ap-northeast-2",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSLAMBDAREGION"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfC01MzY4ODA4MzQzNDUyNzg4Mzk",
+              "name": "ap-northeast-3",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSLAMBDAREGION"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDQ2NjUzNjAwMzM1ODIzODQ1NDE",
+              "name": "ap-south-1",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSLAMBDAREGION"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDczODUwOTMzNDYyMDUyNzM4Mjc",
+              "name": "ap-southeast-1",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSLAMBDAREGION"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDM3Mjk5MzQwMzA1NjM5NTY2MTE",
+              "name": "ap-southeast-2",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSLAMBDAREGION"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDExMDgzOTkzNDU3NjEzNzM1MDg",
+              "name": "awseb-e-8-AWSEBLoa-1X6BHOIWG2J5T",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSELB"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDg3NTE5NTI2NDk5NTQyMzM",
+              "name": "awseb-e-8-AWSEBLoa-5VZ94WSAVUMC",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSELB"
+            },
+            {
+              "__typename": "WorkloadEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "NR1",
+              "guid": "MjY1ODgxfE5SMXxXT1JLTE9BRHw1NTIyNA",
+              "name": "BaurHome Software - All entities",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "WORKLOAD"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDIyOTA1NDY5MTExMTk2NTAxMTI",
+              "name": "ca-central-1",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSLAMBDAREGION"
+            },
+            {
+              "__typename": "KeyTransactionEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "EXT",
+              "guid": "MjY1ODgxfEVYVHxLRVlfVFJBTlNBQ1RJT058Njc1NzY3NzUwNjk0NTYwNDAxNw",
+              "name": "Controller/users/login",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "KEY_TRANSACTION"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDI0NjYxMjY2MTU0Nzk0MDkyOTU",
+              "name": "dev-tat-public-api",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSAPIGATEWAYAPI"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDI2NTY1NDU1NTk2MzgzOTA2NzE",
+              "name": "dev-tat-public-api/dev",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSAPIGATEWAYSTAGE"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDY1OTU3MzYyMzY4NDU5MTg5OTE",
+              "name": "elasticbeanstalk-us-east-1-043747059159",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSS3BUCKET"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDM4ODA3MjkzNjUwMzY0ODIzMTA",
+              "name": "elasticbeanstalk-us-west-2-043747059159",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSS3BUCKET"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDQ1MjUyOTQ5OTUyMjEwODUwMjg",
+              "name": "eni-0020ebf629fba8151",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSVPCNETWORKINTERFACE"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfC0xNjQ0MDU1MjU5NDkyMjgwMjU5",
+              "name": "eni-01d8d5670f5f6705e",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSVPCNETWORKINTERFACE"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfC01NDUyMjUzMDUyOTEyMTMxNjU3",
+              "name": "eni-032144b5bb38068bb",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSVPCNETWORKINTERFACE"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDI4OTIxNDA0ODU5MDA5NzU3OTA",
+              "name": "eni-051ee87dcd0630e4f",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSVPCNETWORKINTERFACE"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDg3OTQ1MTMzNzgyNTQxMjE4OTY",
+              "name": "eni-065f83acdcc3c07c8",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSVPCNETWORKINTERFACE"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDgwMTI5NTU1NTg2NjkzMTg4MzE",
+              "name": "eni-08573c229e9b9bc3d",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSVPCNETWORKINTERFACE"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfC0yMDAzMDYxOTc1NTg4NjM3NDI5",
+              "name": "eni-09314b9f5ff8330ae",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSVPCNETWORKINTERFACE"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfC04MTYxMTc0NTU2NTE0ODE0MzI5",
+              "name": "eni-09541db49e445b353",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSVPCNETWORKINTERFACE"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfC0yNjMxMTgwODg1MjgxMDM5MzQ4",
+              "name": "eni-0a2fb21682870db94",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSVPCNETWORKINTERFACE"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfC0zMzQ5MDMxMzYzNTgxOTUzMzQw",
+              "name": "eni-0f7359702e93a8e2d",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSVPCNETWORKINTERFACE"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDczOTgxMTExMzg1NTUzNzU0NDg",
+              "name": "eni-0fc9e50b553a50e38",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSVPCNETWORKINTERFACE"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDc3ODc5NDgxMjQ4NjEzNjc5OTE",
+              "name": "eu-central-1",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSLAMBDAREGION"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDU1MTczMzI0MTM2MzMyNDk4MTk",
+              "name": "eu-north-1",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSLAMBDAREGION"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDc3NzkyMDAzNTQwMjg5NDc1NjQ",
+              "name": "eu-west-1",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSLAMBDAREGION"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDQyOTQ1MDUyNzkzMjY1Njc5MzA",
+              "name": "eu-west-2",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSLAMBDAREGION"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDI4NjcxOTM2NzA1NDM2NTE1OTc",
+              "name": "eu-west-3",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSLAMBDAREGION"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfC04NTQ4NDkwNDQ2MzcwNTQ5NzE1",
+              "name": "i-099aaa33e475b2a87",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSELASTICBEANSTALKINSTANCE"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfC04MzMyMjg3MDgxNzM1Nzk2NTk",
+              "name": "i-0e07137ecc888b360",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSELASTICBEANSTALKINSTANCE"
+            },
+            {
+              "__typename": "KeyTransactionEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "EXT",
+              "guid": "MjY1ODgxfEVYVHxLRVlfVFJBTlNBQ1RJT058MTAzODcwNzQzMjExMzYxMzgxNg",
+              "name": "ItemsController#search",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "KEY_TRANSACTION"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDM1MzAwNzkxNDE3OTYwMDYwMTE",
+              "name": "sa-east-1",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSLAMBDAREGION"
+            },
+            {
+              "__typename": "KeyTransactionEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "EXT",
+              "guid": "MjY1ODgxfEVYVHxLRVlfVFJBTlNBQ1RJT058MTI5MjM3MTg2MTYyMDQ5Njg2Mjg",
+              "name": "Something",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "KEY_TRANSACTION"
+            },
+            {
+              "__typename": "ApmApplicationEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "APM",
+              "guid": "MjY1ODgxfEFQTXxBUFBMSUNBVElPTnwyOTk2Nzgy",
+              "name": "TaT (production)",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "APPLICATION"
+            },
+            {
+              "__typename": "SyntheticMonitorEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "SYNTH",
+              "guid": "MjY1ODgxfFNZTlRIfE1PTklUT1J8MTExMDYwODUtYmEyNS00Yjg3LTk2N2EtMTY2MDgzNTczMmVm",
+              "name": "TaT Admin",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "MONITOR"
+            },
+            {
+              "__typename": "ApmApplicationEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "APM",
+              "guid": "MjY1ODgxfEFQTXxBUFBMSUNBVElPTnw0ODEwMTY1NzY",
+              "name": "TaT API",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "APPLICATION"
+            },
+            {
+              "__typename": "SyntheticMonitorEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "SYNTH",
+              "guid": "MjY1ODgxfFNZTlRIfE1PTklUT1J8YzUzYTdiZmEtYjY3NS00MTZjLThmODMtMmNkZjQ4YmJiNGM2",
+              "name": "TaT End User",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "MONITOR"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDY4MTc2OTY2NzYxOTE0Mjk1MjI",
+              "name": "tat-admin-env-us-east-1",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSELASTICBEANSTALKENVIRONMENT"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDg1ODMyMzYyMDk3OTQ2MzgyOTU",
+              "name": "tat-api-env-us-east-1",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSELASTICBEANSTALKENVIRONMENT"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDQ0NzY3OTY2MjEyMjY4MTg4MDA",
+              "name": "tat-docker",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSS3BUCKET"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfC05MDUzODU5Mzc5NjY4MTc3MDA5",
+              "name": "tat-images",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSS3BUCKET"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDU3MTAzODA3MTUyNTY1OTc3ODg",
+              "name": "tat-prod",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSRDSDBINSTANCE"
+            },
+            {
+              "__typename": "InfrastructureAwsLambdaFunctionEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDU3NTQ3NzY4ODk0Nzk3NTg5MTA",
+              "name": "tat-public-api-dev-graphql",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSLAMBDAFUNCTION"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfC02NTY0MjYzNjY4OTEzMjg3Njc",
+              "name": "tat-public-api-dev-serverlessdeploymentbucket-1cdbx9nyb6pqk",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSS3BUCKET"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDQxMDM4ODM5NzkzMjc1OTQ1MjY",
+              "name": "tat-snapshots",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSS3BUCKET"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDU5NjQ1NTg2NjIxNTg3NzA2Nw",
+              "name": "TatApi-env-us-east-1",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSELASTICBEANSTALKENVIRONMENT"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDgxMjk3MDE0MzM5NTg0NDM4NjE",
+              "name": "us-east-1",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSLAMBDAREGION"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDM3NTA2MjkyMzA5NjAwNTQ2MDE",
+              "name": "us-east-2",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSLAMBDAREGION"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDEwOTAyNjQwOTM0OTI1MTk5MDQ",
+              "name": "us-west-1",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSLAMBDAREGION"
+            },
+            {
+              "__typename": "GenericInfrastructureEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "INFRA",
+              "guid": "MjY1ODgxfElORlJBfE5BfDgyOTk5MzE0NzI3MTQ5ODA2MDA",
+              "name": "us-west-2",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "AWSLAMBDAREGION"
+            },
+            {
+              "__typename": "BrowserApplicationEntityOutline",
+              "account": {
+                "__typename": "AccountOutline",
+                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "BROWSER",
+              "guid": "MjY1ODgxfEJST1dTRVJ8QVBQTElDQVRJT058Mjk5Njc4NQ",
+              "name": "TaT (production)",
+              "reporting": false,
+              "summaryMetrics": null,
+              "type": "APPLICATION"
+            }
+          ],
+          "nextCursor": null
+        },
+        "types": [
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 17,
+            "domain": "INFRA",
+            "type": "AWSLAMBDAREGION"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 11,
+            "domain": "INFRA",
+            "type": "AWSVPCNETWORKINTERFACE"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 6,
+            "domain": "INFRA",
+            "type": "AWSS3BUCKET"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 3,
+            "domain": "INFRA",
+            "type": "AWSELASTICBEANSTALKENVIRONMENT"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 3,
+            "domain": "EXT",
+            "type": "KEY_TRANSACTION"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 2,
+            "domain": "INFRA",
+            "type": "AWSELASTICBEANSTALKINSTANCE"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 2,
+            "domain": "INFRA",
+            "type": "AWSELB"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 2,
+            "domain": "APM",
+            "type": "APPLICATION"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 2,
+            "domain": "SYNTH",
+            "type": "MONITOR"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 1,
+            "domain": "INFRA",
+            "type": "AWSAPIGATEWAYAPI"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 1,
+            "domain": "INFRA",
+            "type": "AWSAPIGATEWAYSTAGE"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 1,
+            "domain": "INFRA",
+            "type": "AWSLAMBDAFUNCTION"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 1,
+            "domain": "INFRA",
+            "type": "AWSRDSDBINSTANCE"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 1,
+            "domain": "BROWSER",
+            "type": "APPLICATION"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 1,
+            "domain": "NR1",
+            "type": "WORKLOAD"
+          }
+        ]
+      }
+    }
+  },
+  "errors": [
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"BrowserApplicationEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        53,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        52,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        51,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        50,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        49,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        48,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        47,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        46,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"InfrastructureAwsLambdaFunctionEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        45,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        44,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        43,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        42,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        41,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        40,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"SyntheticMonitorEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        39,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"ApmApplicationEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        38,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"SyntheticMonitorEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        37,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"ApmApplicationEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        36,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"KeyTransactionEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        35,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        34,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"KeyTransactionEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        33,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        32,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        31,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        30,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        29,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        28,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        27,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        26,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        25,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        24,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        23,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        22,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        21,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        20,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        19,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        18,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        17,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        16,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        15,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        14,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        13,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        12,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        11,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"KeyTransactionEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        10,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        9,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"WorkloadEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        8,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        7,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        6,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        5,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        4,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        3,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        2,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        1,
+        "summaryMetrics"
+      ]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 95
+        }
+      ],
+      "message": "Cannot query field \"summaryMetrics\" on type \"GenericInfrastructureEntityOutline\".",
+      "path": [
+        "actor",
+        "entitySearch",
+        "results",
+        "entities",
+        0,
+        "summaryMetrics"
+      ]
+    }
+  ]
+}

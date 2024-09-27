@@ -19,7 +19,7 @@ struct ApplicationView: View {
                     Text("NO ALERT DATA")
                 }
                 Text(app.name ?? "Unknown")
-                Text(app.domain?.rawValue ?? "n/a")
+//                Text(app.domain?.rawValue ?? "n/a")
             }
         }
         .padding()

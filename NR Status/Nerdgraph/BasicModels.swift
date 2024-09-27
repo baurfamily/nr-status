@@ -30,7 +30,7 @@ struct Actor : Codable {
 
 struct EntitySearch : Codable {
     enum CodingKeys: CodingKey {
-        case count, results
+        case count, results, types
     }
     var count: Int?
     var results: Results?
@@ -38,12 +38,12 @@ struct EntitySearch : Codable {
 }
 
 struct EntityTypeGrouping : Codable {
-    enum CodingKeys: CodingKey {
-        case count, domain, type
+    enum CodingKeys: String, CodingKey {
+        case count, domain, entityType = "type"
     }
     var count: Int?
     var domain: Entity.Domain?
-    var type: Entity.EntityType?
+    var entityType: String?
 }
 
 struct Results : Codable {

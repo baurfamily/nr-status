@@ -1,0 +1,103 @@
+{
+  "data": {
+    "actor": {
+      "__typename": "Actor",
+      "entitySearch": {
+        "__typename": "EntitySearch",
+        "count": 54,
+        "types": [
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 17,
+            "domain": "INFRA",
+            "type": "AWSLAMBDAREGION"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 11,
+            "domain": "INFRA",
+            "type": "AWSVPCNETWORKINTERFACE"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 6,
+            "domain": "INFRA",
+            "type": "AWSS3BUCKET"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 3,
+            "domain": "INFRA",
+            "type": "AWSELASTICBEANSTALKENVIRONMENT"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 3,
+            "domain": "EXT",
+            "type": "KEY_TRANSACTION"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 2,
+            "domain": "INFRA",
+            "type": "AWSELASTICBEANSTALKINSTANCE"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 2,
+            "domain": "INFRA",
+            "type": "AWSELB"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 2,
+            "domain": "APM",
+            "type": "APPLICATION"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 2,
+            "domain": "SYNTH",
+            "type": "MONITOR"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 1,
+            "domain": "INFRA",
+            "type": "AWSAPIGATEWAYAPI"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 1,
+            "domain": "INFRA",
+            "type": "AWSAPIGATEWAYSTAGE"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 1,
+            "domain": "INFRA",
+            "type": "AWSLAMBDAFUNCTION"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 1,
+            "domain": "INFRA",
+            "type": "AWSRDSDBINSTANCE"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 1,
+            "domain": "BROWSER",
+            "type": "APPLICATION"
+          },
+          {
+            "__typename": "EntitySearchTypes",
+            "count": 1,
+            "domain": "NR1",
+            "type": "WORKLOAD"
+          }
+        ]
+      }
+    }
+  }
+}

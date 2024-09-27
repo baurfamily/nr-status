@@ -1,0 +1,42 @@
+{
+  "data": {
+    "actor": {
+      "entitySearch": {
+        "count": 54,
+        "results": {
+          "entities": [
+            {
+                            "account": {
+                                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "APM",
+              "guid": "MjY1ODgxfEFQTXxBUFBMSUNBVElPTnwyOTk2Nzgy",
+              "name": "TaT (production)",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "APPLICATION"
+            },
+            {
+                            "account": {
+                                "id": 265881,
+                "name": "BaurHome Software"
+              },
+              "accountId": 265881,
+              "alertSeverity": "NOT_CONFIGURED",
+              "domain": "APM",
+              "guid": "MjY1ODgxfEFQTXxBUFBMSUNBVElPTnw0ODEwMTY1NzY",
+              "name": "TaT API",
+              "reporting": true,
+              "summaryMetrics": null,
+              "type": "APPLICATION"
+            }
+          ],
+          "nextCursor": null
+        }
+      }
+    }
+  }
+}

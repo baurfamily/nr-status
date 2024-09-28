@@ -8,10 +8,25 @@
 import SwiftUI
 
 struct ContentView: View {
+    enum ViewSelection : String, CaseIterable {
+        case List, Grid
+    }
+    
+    @State var viewSelection: ViewSelection = .List
+    
     var body: some View {
         TabView {
             Tab("Applications", systemImage: "tray.and.arrow.down.fill") {
-                ApplicationView()
+                Picker("View Style", selection: $viewSelection) {
+                    ForEach(ViewSelection.allCases, id: \.self) {
+                        Text($0.rawValue)
+                    }
+                }.pickerStyle(.segmented)
+                
+                switch viewSelection {
+                case .List: ApplicationView()
+                case .Grid: ApplicationGridView()
+                }
             }
             .badge(2)
 

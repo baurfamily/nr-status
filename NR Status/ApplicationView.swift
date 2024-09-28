@@ -8,32 +8,24 @@
 import SwiftUI
 
 struct ApplicationView: View {
-    @State var applications: [Entity] = []
+    @State var applications: [Application] = Application.all()
     
     var body: some View {
         List(applications, id: \.guid) { app in
             HStack {
-                if let alertSeverity = app.alertSeverity {
-                    Text("\(alertSeverity)")
-                } else {
-                    Text("NO ALERT DATA")
-                }
-                Text(app.name ?? "Unknown")
-//                Text(app.domain?.rawValue ?? "n/a")
+                Text("\(app.alertSeverity)")
+                Text(app.name)
             }
         }
         .padding()
-        .task {
-            Queries.entities(domain: .APM) { applications in
-                if let apps = applications {
-                    self.applications = apps
-                }
-            }
-        }
     }
-        
 }
 
 #Preview {
-    ApplicationView()
+    ApplicationView(applications: [
+        Application.sample()
+    ])
+}
+#Preview {
+    ApplicationView(applications: Application.samples(count: 10))
 }

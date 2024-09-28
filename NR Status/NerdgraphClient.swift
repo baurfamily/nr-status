@@ -6,10 +6,15 @@
 //
 
 import Foundation
-import SwiftGraphQLClient
-import GraphQL
 
 struct NerdgraphClient {
+    static var host: String {
+        return UserDefaults.standard.string(forKey: "host") ?? "https://api.newrelic.com"
+    }
+    static var apiKey: String {
+        return UserDefaults.standard.string(forKey: "apiKey") ?? "NRAK-"
+    }
+    
     private let url: URL
     private let apiKey: String
     
@@ -23,6 +28,10 @@ struct NerdgraphClient {
 
             return request
         }
+    }
+    
+    init() {
+        self.init(host: Self.host, apiKey: Self.apiKey)
     }
     
     init(host: String, apiKey: String) {

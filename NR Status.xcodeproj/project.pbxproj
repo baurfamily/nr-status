@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		3F7896492CA7CE1100A03646 /* HexGrid in Frameworks */ = {isa = PBXBuildFile; productRef = 3F7896482CA7CE1100A03646 /* HexGrid */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		3F5714852C9EA7BD00685FEA /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3F7896492CA7CE1100A03646 /* HexGrid in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = "NR Status";
 			packageProductDependencies = (
+				3F7896482CA7CE1100A03646 /* HexGrid */,
 			);
 			productName = "NR Status";
 			productReference = 3F5714732C9EA7BC00685FEA /* NR Status.app */;
@@ -196,6 +202,7 @@
 			mainGroup = 3F57146A2C9EA7BC00685FEA;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				3F7896472CA7CE1100A03646 /* XCRemoteSwiftPackageReference "HexGrid" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3F5714742C9EA7BC00685FEA /* Products */;
@@ -551,6 +558,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		3F7896472CA7CE1100A03646 /* XCRemoteSwiftPackageReference "HexGrid" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ksemianov/HexGrid";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.1.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3F7896482CA7CE1100A03646 /* HexGrid */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3F7896472CA7CE1100A03646 /* XCRemoteSwiftPackageReference "HexGrid" */;
+			productName = HexGrid;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 3F57146B2C9EA7BC00685FEA /* Project object */;
 }

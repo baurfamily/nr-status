@@ -27,5 +27,5 @@ struct SyntheticsView: View {
 }
 
 #Preview {
-    ApplicationView()
+    SyntheticsView()
 }

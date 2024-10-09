@@ -5,10 +5,19 @@
 //  Created by Eric Baur on 9/26/24.
 //
 
+import Foundation
+
 struct Application {
-    @EnvironmentObject var queries: Queries
-    
+    // wrapped object
     let entity: Entity
+    let index: Int
+
+    // globals
+    static var accountIds: String {
+        return UserDefaults.standard.string(forKey: "accountIds") ?? ""
+    }
+    
+    // default properties
     var name: String {
         guard let name = entity.name else { return "Unknown" }
         return name
@@ -22,30 +31,44 @@ struct Application {
         return alertSeverity
     }
     
-    static func all() -> [Application] {
-        var apps: [Application] = []
-        Queries.entities(domain: .APM, debug: true) { applications in
+    // collection
+    static func all(_ callback: @escaping ([Application]) -> Void) {
+        entities(domain: .INFRA, debug: false) { applications in
             if let applications = applications {
-                apps = applications.map { Self(entity: $0) }
+                let apps = applications.enumerated().map { (index, entity ) in
+                    Self(entity: entity, index: index)
+                }
+                callback(apps)
+            } else {
+                callback([])
             }
         }
-        return apps
     }
     
-   
+    // nerdgraph query
     static func entities(domain: Entity.Domain, debug: Bool = false, _ callback: @escaping ([Entity]?) -> Void) {
         let query = """
              query NRStatus_EntitySearch(
-                $cursor: String = null,
-                $nral: String
+                $nrql: String,
+                $sortType: [EntitySearchSortCriteria] = null
              ){
                actor {
-                 entitySearch(query: $nrql, options: {limit: 500}) {
-                   results(cursor: $cursor) { 
+                 entitySearch(query: $nrql, sortBy: $sortType, options: {limit: 500}) {
+                   results { 
                      entities {
-                       ...EntityInfo
-                       ...EntityFragmentExtension
                        guid
+                       accountId
+                       domain
+                       type
+                       name
+                       reporting
+                       account {
+                         id
+                         name
+                       }
+                       ... on AlertableEntityOutline {
+                         alertSeverity
+                       }
                      }
                      nextCursor
                    }
@@ -53,32 +76,14 @@ struct Application {
                  }
                }
              }
-
-             fragment EntityInfo on EntityOutline {
-               guid
-               accountId
-               domain
-               type
-               name
-               reporting
-               account {
-                 id
-                 name
-               }
-               ... on AlertableEntityOutline {
-                 alertSeverity
-               }
-             }
-           }
-        
         """
         
         let variables : [String:Any]  = [
             "sortType": ["REPORTING","ALERT_SEVERITY","NAME"],
-            "nrql": "(alertable IS TRUE AND accountId IN ( \(accountIds) ) AND domain = '\(domain.rawValue)')"
+            "nrql": "(alertable IS TRUE AND accountId IN ( \(self.accountIds) ) AND domain = '\(domain.rawValue)')"
         ]
         
-        NerdgraphClient(host: host, apiKey: apiKey).query(query, variables: variables, debug: debug) { result in
+        NerdgraphClient().query(query, variables: variables, debug: debug) { result in
             callback(result.data?.actor?.entitySearch?.results?.entities)
         }
     }

@@ -9,6 +9,8 @@ import SwiftUI
 
 @main
 struct NR_StatusApp: App {
+    @Environment(\.openWindow) var openWindow
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -21,6 +23,17 @@ struct NR_StatusApp: App {
                     Text("Menu Button")
                 })
             }
+            CommandMenu("NRQL") {
+                Button(action: {
+                    openWindow(id: "NRQLEditor")
+                }, label: {
+                    Text("Open NRQL Editor")
+                })
+            }
+        }
+        
+        WindowGroup("NRQLEditor", id: "NRQLEditor") {
+            NRQLEditorView()
         }
         
         Settings {

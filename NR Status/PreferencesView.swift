@@ -49,7 +49,7 @@ struct PreferencesView: View {
                 self.emailCheck = false
             }
         }
-        Queries.accounts(debug: true) { accounts in
+        Queries.accounts() { accounts in
             if let accounts = accounts {
                 let names = accounts.map() { "\($0.name ?? "no name found") (\(String($0.id ?? 0)))" }
                 let ids = accounts.map() { $0.id }

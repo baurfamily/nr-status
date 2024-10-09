@@ -61,13 +61,17 @@ struct NerdgraphClient {
                     print(error?.localizedDescription ?? "No data")
                     return
                 }
-            let responseJSON = try? JSONSerialization.jsonObject(with: data, options: [])
-            
-            if let responseJSON = responseJSON as? [String: Any] {
-                if debug {
-                    print("responseJSON: \(responseJSON)")
+            do {
+                let responseJSON = try JSONSerialization.jsonObject(with: data, options: [])
+                
+                if let responseJSON = responseJSON as? [String: Any] {
+                    if debug {
+                        print("responseJSON: \(responseJSON)")
+                    }
+                    callback(responseJSON)
                 }
-                callback(responseJSON)
+            } catch {
+                print("Error decoding JSON data: \(error)")
             }
         }
         task.resume()
@@ -95,11 +99,15 @@ struct NerdgraphClient {
                 print("response data: \(String(decoding: data, as: Unicode.UTF8.self))")
             }
 
-            if let responseObject = try? JSONDecoder().decode(Root.self, from: data) {
+            do {
+                let responseObject = try JSONDecoder().decode(Root.self, from: data)
                 if debug {
                     print("responseObject: \(responseObject)")
                 }
                 callback(responseObject)
+            
+            } catch {
+                print("Failed to decode JSON: \(error)")
             }
         }
         task.resume()

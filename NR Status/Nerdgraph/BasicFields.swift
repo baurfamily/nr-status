@@ -5,6 +5,8 @@
 //  Created by Eric Baur on 9/22/24.
 //
 
+import Foundation
+
 struct Root : Codable {
     enum CodingKeys: CodingKey {
         case data
@@ -21,12 +23,38 @@ struct Data : Codable {
 
 struct Actor : Codable {
     enum CodingKeys: CodingKey {
-        case user, accounts, entitySearch
+        case user, accounts, entitySearch, nrql
     }
     var user: User?
     var accounts: [Account]?
     var entitySearch: EntitySearch?
+    var nrql: NrdbResultContainer?
 }
+
+struct NrdbResultContainer : Codable {
+    enum CodingKeys: CodingKey {
+        case results, nrql
+    }
+    var nrql: String?
+    var results: [NrqlFacetResults] = []
+}
+
+struct NrqlFacetResults: Codable, Identifiable {
+    enum CodingKeys: CodingKey {
+        case beginTimeSeconds, count, endTimeSeconds, facet
+    }
+
+    var id: Int { beginTimeSeconds ?? 0 }
+    
+    var beginTime: Date { Date(timeIntervalSince1970: Double(beginTimeSeconds ?? 0)) }
+    var endTime: Date { Date(timeIntervalSince1970: Double(endTimeSeconds ?? 0)) }
+    
+    var beginTimeSeconds: Int?
+    var count: Int
+    var endTimeSeconds: Int?
+    var facet: String?
+}
+
 
 struct EntitySearch : Codable {
     enum CodingKeys: CodingKey {

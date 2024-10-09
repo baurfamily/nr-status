@@ -2,12 +2,12 @@
   "data": {
     "actor": {
       "entitySearch": {
-        "count": 54,
+        "count": 2,
         "results": {
           "entities": [
             {
-                            "account": {
-                                "id": 265881,
+              "account": {
+                "id": 265881,
                 "name": "BaurHome Software"
               },
               "accountId": 265881,
@@ -16,12 +16,11 @@
               "guid": "MjY1ODgxfEFQTXxBUFBMSUNBVElPTnwyOTk2Nzgy",
               "name": "TaT (production)",
               "reporting": true,
-              "summaryMetrics": null,
               "type": "APPLICATION"
             },
             {
-                            "account": {
-                                "id": 265881,
+              "account": {
+                "id": 265881,
                 "name": "BaurHome Software"
               },
               "accountId": 265881,
@@ -30,7 +29,6 @@
               "guid": "MjY1ODgxfEFQTXxBUFBMSUNBVElPTnw0ODEwMTY1NzY",
               "name": "TaT API",
               "reporting": true,
-              "summaryMetrics": null,
               "type": "APPLICATION"
             }
           ],

@@ -19,8 +19,7 @@ extension Application : OffsetCoordinateProviding, Identifiable {
 }
 
 struct ApplicationGridView: View {
-    @State var applications: [Application] = Application.all()
-//    @Environment(\.verticalSizeClass) var verticalSizeClass: UserInterfaceSizeClass?
+    @State var applications: [Application] = []
 
     var body: some View {
         HexGrid(applications, spacing: 5) { application in
@@ -31,38 +30,12 @@ struct ApplicationGridView: View {
             case .WARNING:          Color.orange.opacity(1)
             }
             Text(application.name)
-            
         }
-//        GeometryReader { geometry in
-//            ScrollView {
-//                ForEach(1..<24) { item in
-////                    if self.verticalSizeClass == .regular {
-////                        HStack {
-////                            Spacer(minLength: geometry.size.width * 0.15)
-////                            Rectangle()
-////                                .foregroundColor(.green)
-////                                .frame(width: geometry.size.width * 0.70,
-////                                       height: geometry.size.height * 0.3)
-////                            Spacer(minLength: geometry.size.width * 0.15)
-////                        }
-////                    } else {
-//                        HStack {
-//                            Spacer(minLength: geometry.size.width * 0.05)
-//                            Rectangle()
-//                                .foregroundColor(.green)
-//                                .frame(width: geometry.size.width * 0.40,
-//                                       height: geometry.size.height)
-//                            Spacer(minLength: geometry.size.width * 0.05)
-//                            Rectangle()
-//                                .foregroundColor(.pink)
-//                                .frame(width: geometry.size.width * 0.40,
-//                                       height: geometry.size.height)
-//                            Spacer(minLength: geometry.size.width * 0.05)
-//                        }
-////                    }
-//                }
-//            }
-//        }
+        .task {
+            if applications.isEmpty {
+                Application.all() { applications = $0 }
+            }
+        }
     }
 }
 

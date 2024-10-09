@@ -11,7 +11,7 @@ extension Application {
             guid: "1234567890",
             name: "Sample Application",
             alertSeverity: .NOT_CONFIGURED
-        ))
+        ), index: 0)
     }
     
     static func samples(count: Int) -> [Application] {
@@ -24,7 +24,7 @@ extension Application {
                     guid: "\(index)",
                     name: "\(regions.randomElement()!) \(nouns.randomElement()!) \(adjectives.randomElement()!)",
                     alertSeverity: AlertSeverity.allCases.randomElement()
-                ))
+                ), index: index)
         }
     }
 }

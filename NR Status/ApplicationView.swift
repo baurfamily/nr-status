@@ -8,16 +8,20 @@
 import SwiftUI
 
 struct ApplicationView: View {
-    @State var applications: [Application] = Application.all()
+    @State var applications: [Application] = []
     
     var body: some View {
         List(applications, id: \.guid) { app in
             HStack {
-                Text("\(app.alertSeverity)")
+                Text(app.alertSeverity.rawValue)
                 Text(app.name)
             }
         }
-        .padding()
+        .task {
+            if applications.isEmpty {
+                Application.all() { applications = $0 }
+            }
+        }
     }
 }
 

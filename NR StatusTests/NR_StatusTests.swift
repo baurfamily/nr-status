@@ -22,7 +22,7 @@ struct NR_StatusTests {
     @Test func example() async throws {
         print("trying to run a query")
         var result : Root?
-        NerdgraphClient(host:"localhost", apiKey: "apiKey").query("query { actor { user { email } } }", debug: true) { result = $0 }
+        NerdgraphClient(host:"localhost", apiKey: "apiKey").query("query { actor { user { email } } }") { result = $0 }
         
         #expect(result != nil)
         #expect(result?.data?.actor?.user?.email == "baur@nerdgraph.com")

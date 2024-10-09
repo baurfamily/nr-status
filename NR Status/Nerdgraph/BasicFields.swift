@@ -5,67 +5,28 @@
 //  Created by Eric Baur on 9/22/24.
 //
 
-import Foundation
-
-struct Root : Codable {
-    enum CodingKeys: CodingKey {
-        case data
-    }
+struct Root : Decodable {
     var data: Data?
 }
 
-struct Data : Codable {
-    enum CodingKeys: CodingKey {
-        case actor
-    }
+struct Data : Decodable {
     var actor: Actor?
 }
 
-struct Actor : Codable {
-    enum CodingKeys: CodingKey {
-        case user, accounts, entitySearch, nrql
-    }
+struct Actor : Decodable {
     var user: User?
     var accounts: [Account]?
     var entitySearch: EntitySearch?
     var nrql: NrdbResultContainer?
 }
 
-struct NrdbResultContainer : Codable {
-    enum CodingKeys: CodingKey {
-        case results, nrql
-    }
-    var nrql: String?
-    var results: [NrqlFacetResults] = []
-}
-
-struct NrqlFacetResults: Codable, Identifiable {
-    enum CodingKeys: CodingKey {
-        case beginTimeSeconds, count, endTimeSeconds, facet
-    }
-
-    var id: Int { beginTimeSeconds ?? 0 }
-    
-    var beginTime: Date { Date(timeIntervalSince1970: Double(beginTimeSeconds ?? 0)) }
-    var endTime: Date { Date(timeIntervalSince1970: Double(endTimeSeconds ?? 0)) }
-    
-    var beginTimeSeconds: Int?
-    var count: Int
-    var endTimeSeconds: Int?
-    var facet: String?
-}
-
-
-struct EntitySearch : Codable {
-    enum CodingKeys: CodingKey {
-        case count, results, types
-    }
+struct EntitySearch : Decodable {
     var count: Int?
     var results: Results?
     var types: [EntityTypeGrouping]?
 }
 
-struct EntityTypeGrouping : Codable {
+struct EntityTypeGrouping : Decodable {
     enum CodingKeys: String, CodingKey {
         case count, domain, entityType = "type"
     }
@@ -74,25 +35,16 @@ struct EntityTypeGrouping : Codable {
     var entityType: String?
 }
 
-struct Results : Codable {
-    enum CodingKeys : CodingKey {
-        case nextCursor, entities
-    }
+struct Results : Decodable {
     var nextCursor: String?
     var entities: [Entity]?
 }
 
-struct Account : Codable {
-    enum CodingKeys: CodingKey {
-        case id, name
-    }
+struct Account : Decodable {
     var id: Int?
     var name: String?
 }
 
-struct User : Codable {
-    enum CodingKeys: CodingKey {
-        case email
-    }
+struct User : Decodable {
     var email: String?
 }

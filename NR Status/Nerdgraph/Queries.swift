@@ -34,22 +34,32 @@ struct Queries {
         }
     }
     
-    static func nrql(query nrql: String, debug: Bool = false, _ callback: @escaping ([NrqlFacetResults]) -> Void) {
+    static func nrql(query nrql: String, debug: Bool = false, _ callback: @escaping (NrdbResultContainer?) -> Void) {
         let query = """
-            query NRStatus_Nrql($nrql: Nrql!) {
-                actor {
-                    user { email name }
-                    nrql(accounts: [\(accountIds)], query: $nrql) {
-                        nrql
-                        results
+        query NRStatus_Nrql($nrql: Nrql!) {
+            actor {
+                user { email name }
+                nrql(accounts: [\(accountIds)], query: $nrql) {
+                    nrql
+                    results
+                    metadata {
+                        facets
+                        eventTypes
+                        timeWindow {
+                            begin
+                            end
+                            since
+                            until
+                        }
                     }
                 }
             }
+        }
         """
         let variables = ["nrql": nrql]
         
         NerdgraphClient(host: host, apiKey: apiKey).query(query, variables: variables, debug: debug) { result in
-            callback(result.data?.actor?.nrql?.results ?? [])
+            callback(result.data?.actor?.nrql)
         }
     }
     /*

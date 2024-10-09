@@ -15,21 +15,21 @@
 //              "type": "APPLICATION"
 
 
-struct Entity : Codable {
+struct Entity : Decodable {
     enum CodingKeys: String, CodingKey {
         case guid, accountId, name, domain, entityDomainAndType = "entityType", entityTypename = "type", alertSeverity, reporting
     }
     
-    enum Domain : String, Codable {
+    enum Domain : String, Decodable {
         case APM, BROWSER, EXT, INFRA, MOBILE, SYNTH, NR1
     }
     
     // turns out, this is only for searching, not returns
-    enum SearchBuilderEntityType : String, Codable {
+    enum SearchBuilderEntityType : String, Decodable {
         case APPLICATION, MONITOR, DASHBOARD, HOST, WORKLOAD
     }
 
-    enum EntityDomainAndType : String, Codable {
+    enum EntityDomainAndType : String, Decodable {
        case APM_APPLICATION_ENTITY,
         APM_DATABASE_INSTANCE_ENTITY,
         APM_EXTERNAL_SERVICE_ENTITY,

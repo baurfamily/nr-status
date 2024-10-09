@@ -10,34 +10,46 @@ import Charts
 
 struct NRQLEditorView: View {
     @State var query: String = """
-        FROM Transaction
-        SELECT count(*)
-        TIMESERIES 5 minutes
+    FROM Transaction
+    SELECT count(*)
+    TIMESERIES 1 hours
+    FACET name
+    SINCE 1 day ago
     """
-    @State var results: [NrqlFacetResults] = []
+    @State var results: NrdbResults?
+    @State var metadata: NrdbMetadata?
     
     var body: some View {
         Button(action: runQuery, label: { Text("Run Query") })
         TextEditor(text: $query)
         GroupBox("Results") {
-            TimeriesChart(data: results)
+            if let results = results as? NrdbFacetResults, let metadata = metadata {
+                TimeriesChart(data: results.data, metadata: metadata)
+            }
         }
     }
     
     func  runQuery() {
-        Queries.nrql(query: query, debug: true) { print($0); results = $0 }
+        Queries.nrql(query: query, debug: true) { result in
+            guard let result = result else { return }
+            
+            results = result.results
+            metadata = result.metadata
+        }
     }
 }
 
 struct TimeriesChart: View {
-    var data: [NrqlFacetResults]
+    var data: [NrdbFacetResults.Datum]
+    var metadata: NrdbMetadata
     
     var body: some View {
-        Chart(data) {
-            LineMark(
-                x: .value("Timestamp", ($0.beginTime)),
-                y: .value("Count", $0.count)
+        Chart(data) { datum in
+            AreaMark(
+                x: .value("Timestamp", datum.beginTime),
+                y: .value("Count", datum.count)
             )
+            .foregroundStyle(by: .value("City", datum.facet))
         }
     }
 }

@@ -30,7 +30,6 @@ struct NrdbResultContainer : Decodable {
         self.metadata = try container.decode(NrdbMetadata.self, forKey: .metadata)
         
         self.results = NrdbResults(data: try container.decode([NrdbResults.Datum].self, forKey: .results))
-        
     }
 }
 
@@ -52,30 +51,66 @@ struct NrdbResults: Decodable {
     var isTimeseries: Bool {
         return data.first?.isTimeseries ?? false
     }
+    var isFaceted: Bool {
+        return data.first?.facet != nil
+    }
     
     struct Datum : Decodable, Identifiable {
-        var id: Double { beginTimeSeconds ?? 0 }
+        enum CodingKeys : String, CodingKey {
+            case beginTimeSeconds, endTimeSeconds, count, facet
+        }
+        
+        var id: Double { beginTime?.timeIntervalSince1970 ?? 0 }
         
         var isTimeseries: Bool {
-            if beginTimeSeconds != nil && endTimeSeconds != nil {
+            if beginTime != nil && endTime != nil {
                 return true
             } else {
                 return false
             }
         }
         
-        var beginTime: Date? {
-            guard let beginTimeSeconds else { return nil }
-            return Date(timeIntervalSince1970: beginTimeSeconds)
-        }
-        var endTime: Date? {
-            guard let endTimeSeconds else { return nil }
-            return Date(timeIntervalSince1970: endTimeSeconds)
-        }
+        var beginTime: Date?
+        var endTime: Date?
         
-        var beginTimeSeconds: Double?
-        var count: Int
-        var endTimeSeconds: Double?
+        var count: Int?
         var facet: String?
+        var facets: [String]?
+        
+        var numberFields: [String: Double] = [:]
+        var stringFields: [String: String] = [:]
+        
+        var fieldNames: [String] = []
+        
+        init(from decoder : Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            
+            self.beginTime = try container.decodeIfPresent(Date.self, forKey: .beginTimeSeconds)
+            self.endTime = try container.decodeIfPresent(Date.self, forKey: .endTimeSeconds)
+            
+            if let facet = try container.decodeIfPresent(String.self, forKey: .facet) {
+                self.facet = facet
+            } else if let facets = try container.decodeIfPresent([String].self, forKey: .facet) {
+                self.facets = facets
+            }
+            
+            // take the remainder and stuff it into a dictionaries
+            for key in container.allKeys {
+                if ["beginTimeSeconds", "endTimeSecond", "facet"].contains(key.rawValue) {
+                    continue
+                }
+                
+                if let doubleValue = try? container.decode(Double.self, forKey: key) {
+                    self.numberFields[key.rawValue] = doubleValue
+                } else if let stringValue = try? container.decode(String.self, forKey: key) {
+                    self.stringFields[key.rawValue] = stringValue
+                } else {
+                    print("unable to decode key: \(key)")
+                    return
+                }
+                
+                fieldNames.append(key.rawValue)
+            }
+        }
     }
 }

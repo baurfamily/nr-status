@@ -13,18 +13,24 @@ struct NRQLEditorView: View {
     FROM Transaction
     SELECT count(*)
     TIMESERIES 1 hours
-    FACET name
     SINCE 1 day ago
     """
     @State var results: NrdbResults?
     @State var metadata: NrdbMetadata?
     
     var body: some View {
-        Button(action: runQuery, label: { Text("Run Query") })
+        HStack {
+            Button(action: runQuery, label: { Text("Run Query") })
+            Button(action: saveWidget, label: { Text("Make Widget") })
+        }
         TextEditor(text: $query)
         GroupBox("Results") {
-            if let results = results as? NrdbFacetResults, let metadata = metadata {
-                TimeriesChart(data: results.data, metadata: metadata)
+            if let results = results, let metadata = metadata {
+                if results.isTimeseries {
+                    TimeseriesChart(data: results.data, metadata: metadata)
+                } else {
+                    Text("facted, not timeseries data")
+                }
             }
         }
     }
@@ -37,19 +43,38 @@ struct NRQLEditorView: View {
             metadata = result.metadata
         }
     }
+    
+    func saveWidget() {
+        print("uh....")
+    }
 }
 
-struct TimeriesChart: View {
-    var data: [NrdbFacetResults.Datum]
+struct TimeseriesChart: View {
+    var data: [NrdbResults.Datum]
     var metadata: NrdbMetadata
     
+    @State var isStacked: Bool = false
+    
     var body: some View {
+        GroupBox {
+            HStack {
+                Toggle("Stacked", isOn: $isStacked).toggleStyle(.switch)
+            }
+        }
         Chart(data) { datum in
-            AreaMark(
-                x: .value("Timestamp", datum.beginTime),
-                y: .value("Count", datum.count)
-            )
-            .foregroundStyle(by: .value("City", datum.facet))
+            if isStacked {
+                AreaMark(
+                    x: .value("Timestamp", datum.beginTime!),
+                    y: .value("Count", datum.count)
+                )
+                .foregroundStyle(by: .value("Facet", (datum.facet ?? "Count")))
+            } else {
+                LineMark(
+                    x: .value("Timestamp", datum.beginTime!),
+                    y: .value("Count", datum.count)
+                )
+                .foregroundStyle(by: .value("Facet", (datum.facet ?? "Count")))
+            }
         }
     }
 }

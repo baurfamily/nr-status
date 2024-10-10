@@ -29,17 +29,14 @@ struct NrdbResultContainer : Decodable {
         self.nrql = try container.decode(String.self, forKey: .nrql)
         self.metadata = try container.decode(NrdbMetadata.self, forKey: .metadata)
         
-        if metadata.facets.isEmpty {
-            self.results = NrdbTimeseriesResults(data: try container.decode([NrdbTimeseriesResults.Datum].self, forKey: .results))
-        } else {
-            self.results = NrdbFacetResults(data: try container.decode([NrdbFacetResults.Datum].self, forKey: .results))
-        }
+        self.results = NrdbResults(data: try container.decode([NrdbResults.Datum].self, forKey: .results))
+        
     }
 }
 
 struct NrdbMetadata: Decodable {
     var timeWindow: TimeWindow
-    var facets: [String] = []
+    var facets: [String]?
 }
 
 struct TimeWindow: Decodable {
@@ -49,45 +46,36 @@ struct TimeWindow: Decodable {
     var until: String
 }
 
-protocol NrdbResults : Decodable {
-    // just using this for abstraction of the results structs
-}
-
-struct NrdbTimeseriesResults: NrdbResults, Decodable {
+struct NrdbResults: Decodable {
     var data: [Datum]
     
-    struct Datum : Decodable, Identifiable {
-        enum CodingKeys: CodingKey {
-            case beginTimeSeconds, count, endTimeSeconds
-        }
-        
-        var id: Int { beginTimeSeconds }
-        
-        var beginTime: Date { Date(timeIntervalSince1970: Double(beginTimeSeconds)) }
-        var endTime: Date { Date(timeIntervalSince1970: Double(endTimeSeconds)) }
-        
-        var beginTimeSeconds: Int
-        var count: Int
-        var endTimeSeconds: Int
+    var isTimeseries: Bool {
+        return data.first?.isTimeseries ?? false
     }
-}
-
-struct NrdbFacetResults: NrdbResults, Decodable {
-    var data: [Datum]
     
     struct Datum : Decodable, Identifiable {
-        enum CodingKeys: CodingKey {
-            case beginTimeSeconds, count, endTimeSeconds, facet
+        var id: Double { beginTimeSeconds ?? 0 }
+        
+        var isTimeseries: Bool {
+            if beginTimeSeconds != nil && endTimeSeconds != nil {
+                return true
+            } else {
+                return false
+            }
         }
         
-        var id: Int { beginTimeSeconds }
+        var beginTime: Date? {
+            guard let beginTimeSeconds else { return nil }
+            return Date(timeIntervalSince1970: beginTimeSeconds)
+        }
+        var endTime: Date? {
+            guard let endTimeSeconds else { return nil }
+            return Date(timeIntervalSince1970: endTimeSeconds)
+        }
         
-        var beginTime: Date { Date(timeIntervalSince1970: Double(beginTimeSeconds)) }
-        var endTime: Date { Date(timeIntervalSince1970: Double(endTimeSeconds)) }
-        
-        var beginTimeSeconds: Int
+        var beginTimeSeconds: Double?
         var count: Int
-        var endTimeSeconds: Int
-        var facet: String
+        var endTimeSeconds: Double?
+        var facet: String?
     }
 }

@@ -6,10 +6,10 @@
 //
 
 struct Root : Decodable {
-    var data: Data?
+    var data: NRData?
 }
 
-struct Data : Decodable {
+struct NRData : Decodable {
     var actor: Actor?
 }
 

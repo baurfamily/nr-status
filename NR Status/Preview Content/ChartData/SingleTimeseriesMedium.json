@@ -1,0 +1,169 @@
+{
+    "data": {
+        "actor": {
+            "nrql": {
+                "currentResults": null,
+                "metadata": {
+                    "eventTypes": [
+                        "Transaction"
+                    ],
+                    "facets": null,
+                    "messages": null,
+                    "timeWindow": {
+                        "begin": 1728017097275,
+                        "compareWith": null,
+                        "end": 1728621897275,
+                        "since": "1 WEEKS AGO",
+                        "until": "NOW"
+                    }
+                },
+                "nrql": "SELECT count(*) FROM Transaction SINCE 1 week ago TIMESERIES",
+                "previousResults": null,
+                "results": [
+                    {
+                        "beginTimeSeconds": 1728017097,
+                        "endTimeSeconds": 1728038697,
+                        "count": 696
+                    },
+                    {
+                        "beginTimeSeconds": 1728038697,
+                        "endTimeSeconds": 1728060297,
+                        "count": 534
+                    },
+                    {
+                        "beginTimeSeconds": 1728060297,
+                        "endTimeSeconds": 1728081897,
+                        "count": 279
+                    },
+                    {
+                        "beginTimeSeconds": 1728081897,
+                        "endTimeSeconds": 1728103497,
+                        "count": 233
+                    },
+                    {
+                        "beginTimeSeconds": 1728103497,
+                        "endTimeSeconds": 1728125097,
+                        "count": 317
+                    },
+                    {
+                        "beginTimeSeconds": 1728125097,
+                        "endTimeSeconds": 1728146697,
+                        "count": 219
+                    },
+                    {
+                        "beginTimeSeconds": 1728146697,
+                        "endTimeSeconds": 1728168297,
+                        "count": 1246
+                    },
+                    {
+                        "beginTimeSeconds": 1728168297,
+                        "endTimeSeconds": 1728189897,
+                        "count": 168
+                    },
+                    {
+                        "beginTimeSeconds": 1728189897,
+                        "endTimeSeconds": 1728211497,
+                        "count": 268
+                    },
+                    {
+                        "beginTimeSeconds": 1728211497,
+                        "endTimeSeconds": 1728233097,
+                        "count": 194
+                    },
+                    {
+                        "beginTimeSeconds": 1728233097,
+                        "endTimeSeconds": 1728254697,
+                        "count": 678
+                    },
+                    {
+                        "beginTimeSeconds": 1728254697,
+                        "endTimeSeconds": 1728276297,
+                        "count": 204
+                    },
+                    {
+                        "beginTimeSeconds": 1728276297,
+                        "endTimeSeconds": 1728297897,
+                        "count": 304
+                    },
+                    {
+                        "beginTimeSeconds": 1728297897,
+                        "endTimeSeconds": 1728319497,
+                        "count": 800
+                    },
+                    {
+                        "beginTimeSeconds": 1728319497,
+                        "endTimeSeconds": 1728341097,
+                        "count": 260
+                    },
+                    {
+                        "beginTimeSeconds": 1728341097,
+                        "endTimeSeconds": 1728362697,
+                        "count": 214
+                    },
+                    {
+                        "beginTimeSeconds": 1728362697,
+                        "endTimeSeconds": 1728384297,
+                        "count": 142
+                    },
+                    {
+                        "beginTimeSeconds": 1728384297,
+                        "endTimeSeconds": 1728405897,
+                        "count": 468
+                    },
+                    {
+                        "beginTimeSeconds": 1728405897,
+                        "endTimeSeconds": 1728427497,
+                        "count": 222
+                    },
+                    {
+                        "beginTimeSeconds": 1728427497,
+                        "endTimeSeconds": 1728449097,
+                        "count": 286
+                    },
+                    {
+                        "beginTimeSeconds": 1728449097,
+                        "endTimeSeconds": 1728470697,
+                        "count": 355
+                    },
+                    {
+                        "beginTimeSeconds": 1728470697,
+                        "endTimeSeconds": 1728492297,
+                        "count": 139
+                    },
+                    {
+                        "beginTimeSeconds": 1728492297,
+                        "endTimeSeconds": 1728513897,
+                        "count": 265
+                    },
+                    {
+                        "beginTimeSeconds": 1728513897,
+                        "endTimeSeconds": 1728535497,
+                        "count": 372
+                    },
+                    {
+                        "beginTimeSeconds": 1728535497,
+                        "endTimeSeconds": 1728557097,
+                        "count": 327
+                    },
+                    {
+                        "beginTimeSeconds": 1728557097,
+                        "endTimeSeconds": 1728578697,
+                        "count": 288
+                    },
+                    {
+                        "beginTimeSeconds": 1728578697,
+                        "endTimeSeconds": 1728600297,
+                        "count": 369
+                    },
+                    {
+                        "beginTimeSeconds": 1728600297,
+                        "endTimeSeconds": 1728621897,
+                        "count": 471
+                    }
+                ],
+                "totalResult": null
+            }
+        }
+    }
+}
+

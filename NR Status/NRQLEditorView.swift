@@ -10,10 +10,12 @@ import Charts
 
 struct NRQLEditorView: View {
     @State var query: String = """
+    SELECT
+        count(*),
+        uniqueCount(name)
     FROM Transaction
-    SELECT count(*)
-    TIMESERIES 1 hours
-    SINCE 1 day ago
+    COMPARE WITH 1 week ago
+    TIMESERIES
     """
     @State var results: NrdbResults?
     @State var metadata: NrdbMetadata?
@@ -45,80 +47,13 @@ struct NRQLEditorView: View {
     }
     
     func saveWidget() {
+        if let result = ChartSamples.sampleData(faceted: true, size: .small) {
+            results = result.results
+            metadata = result.metadata
+        } else {
+            print("failed to get samples")
+        }
         print("uh....")
-    }
-}
-
-struct TimeseriesChart: View {
-    var data: [NrdbResults.Datum]
-    var metadata: NrdbMetadata
-    
-    @State var isStacked: Bool = false
-    @State var selectedDate: Date?
-    @State var selectedDateRange: ClosedRange<Date>?
-    
-    var body: some View {
-        GroupBox {
-            HStack {
-                Toggle("Stacked", isOn: $isStacked).toggleStyle(.switch)
-            }
-        }
-//        if selectedDate {
-//            GroupBox {
-//                
-//            }
-//        }
-        Chart(data) { datum in
-            if let selectedDateRange {
-                RectangleMark(
-                    xStart: .value("Start", selectedDateRange.lowerBound, unit: .minute),
-                    xEnd: .value("End", selectedDateRange.upperBound, unit: .minute)
-                )
-                .foregroundStyle(.gray.opacity(0.03 ))
-                .zIndex(-2)
-                .annotation(
-                    position: .topLeading, spacing: 0,
-                    overflowResolution: .init(
-                        x: .fit(to: .chart),
-                        y: .disabled
-                    )
-                ){ Text( "bar" ) }
-            }
-            if let selectedDate {
-                RuleMark(
-                    x: .value("Selected", selectedDate, unit: .minute)
-                )
-                .zIndex(-1)
-                .annotation(
-                    position: .topLeading, spacing: 0,
-                    overflowResolution: .init(
-                        x: .fit(to: .chart),
-                        y: .disabled
-                    )
-                ){ Text( "foo" ) }
-            }
-            if isStacked {
-                AreaMark(
-                    x: .value("Timestamp", datum.beginTime!),
-                    y: .value("Count", datum.numberFields["count"]!)
-                )
-                .foregroundStyle(by: .value("Facet", (datum.facet ?? "Count")))
-                .symbol(by: .value("Facet", (datum.facet ?? "Count")))
-                .interpolationMethod(.catmullRom)
-                
-            } else {
-                LineMark(
-                    x: .value("Timestamp", datum.beginTime!),
-                    y: .value("Count", datum.numberFields["count"]!)
-                )
-                .foregroundStyle(by: .value("Facet", (datum.facet ?? "Count")))
-                .symbol(by: .value("Facet", (datum.facet ?? "Count")))
-                .interpolationMethod(.catmullRom)
-                
-            }
-        }
-        .chartXSelection(value: $selectedDate)
-        .chartXSelection(range: $selectedDateRange)
     }
 }
 

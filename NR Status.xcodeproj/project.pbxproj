@@ -33,9 +33,22 @@
 		3F57148E2C9EA7BD00685FEA /* NR StatusUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "NR StatusUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		3F28B1B92CB96AFF00CCB8DD /* Exceptions for "NR Status" folder in "Compile Sources" phase from "NR Status" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = 3F57146F2C9EA7BC00685FEA /* Sources */;
+			membershipExceptions = (
+				"Preview Content/ChartData/FacetedTimeseriesSmall.json",
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		3F5714752C9EA7BC00685FEA /* NR Status */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				3F28B1B92CB96AFF00CCB8DD /* Exceptions for "NR Status" folder in "Compile Sources" phase from "NR Status" target */,
+			);
 			path = "NR Status";
 			sourceTree = "<group>";
 		};

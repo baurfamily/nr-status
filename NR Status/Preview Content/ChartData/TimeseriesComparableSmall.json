@@ -5,45 +5,31 @@
         "currentResults": [
           {
             "comparison": "current",
-            "beginTimeSeconds": 1728064363,
-            "endTimeSeconds": 1728150763,
-            "count": 926
+            "beginTimeSeconds": 1728663057,
+            "endTimeSeconds": 1728684657,
+            "count": 261,
+            "uniqueCount.name": 3
           },
           {
             "comparison": "current",
-            "beginTimeSeconds": 1728150763,
-            "endTimeSeconds": 1728237163,
-            "count": 1899
+            "beginTimeSeconds": 1728684657,
+            "endTimeSeconds": 1728706257,
+            "count": 254,
+            "uniqueCount.name": 3
           },
           {
             "comparison": "current",
-            "beginTimeSeconds": 1728237163,
-            "endTimeSeconds": 1728323563,
-            "count": 1973
+            "beginTimeSeconds": 1728706257,
+            "endTimeSeconds": 1728727857,
+            "count": 304,
+            "uniqueCount.name": 3
           },
           {
             "comparison": "current",
-            "beginTimeSeconds": 1728323563,
-            "endTimeSeconds": 1728409963,
-            "count": 1074
-          },
-          {
-            "comparison": "current",
-            "beginTimeSeconds": 1728409963,
-            "endTimeSeconds": 1728496363,
-            "count": 1056
-          },
-          {
-            "comparison": "current",
-            "beginTimeSeconds": 1728496363,
-            "endTimeSeconds": 1728582763,
-            "count": 1203
-          },
-          {
-            "comparison": "current",
-            "beginTimeSeconds": 1728582763,
-            "endTimeSeconds": 1728669163,
-            "count": 1376
+            "beginTimeSeconds": 1728727857,
+            "endTimeSeconds": 1728749457,
+            "count": 413,
+            "uniqueCount.name": 4
           }
         ],
         "metadata": {
@@ -53,142 +39,100 @@
           "facets": null,
           "messages": null,
           "timeWindow": {
-            "begin": 1728064363698,
-            "compareWith": "1 MONTHS AGO",
-            "end": 1728669163698,
-            "since": "1 WEEKS AGO",
+            "begin": 1728663057169,
+            "compareWith": "2 DAYS AGO",
+            "end": 1728749457169,
+            "since": "1 DAYS AGO",
             "until": "NOW"
           }
         },
-        "nrql": "SELECT count(*) FROM Transaction SINCE 1 week ago TIMESERIES  1 day COMPARE WITH 1 month ago",
+        "nrql": "SELECT count(*), uniqueCount(name) FROM Transaction SINCE 1 day ago TIMESERIES 6 hours COMPARE WITH 2 days ago",
         "previousResults": [
           {
             "comparison": "previous",
-            "beginTimeSeconds": 1725472363,
-            "endTimeSeconds": 1725558763,
-            "count": 0
+            "beginTimeSeconds": 1728490257,
+            "endTimeSeconds": 1728511857,
+            "count": 235,
+            "uniqueCount.name": 3
           },
           {
             "comparison": "previous",
-            "beginTimeSeconds": 1725558763,
-            "endTimeSeconds": 1725645163,
-            "count": 0
+            "beginTimeSeconds": 1728511857,
+            "endTimeSeconds": 1728533457,
+            "count": 407,
+            "uniqueCount.name": 3
           },
           {
             "comparison": "previous",
-            "beginTimeSeconds": 1725645163,
-            "endTimeSeconds": 1725731563,
-            "count": 0
+            "beginTimeSeconds": 1728533457,
+            "endTimeSeconds": 1728555057,
+            "count": 245,
+            "uniqueCount.name": 3
           },
           {
             "comparison": "previous",
-            "beginTimeSeconds": 1725731563,
-            "endTimeSeconds": 1725817963,
-            "count": 0
-          },
-          {
-            "comparison": "previous",
-            "beginTimeSeconds": 1725817963,
-            "endTimeSeconds": 1725904363,
-            "count": 0
-          },
-          {
-            "comparison": "previous",
-            "beginTimeSeconds": 1725904363,
-            "endTimeSeconds": 1725990763,
-            "count": 0
-          },
-          {
-            "comparison": "previous",
-            "beginTimeSeconds": 1725990763,
-            "endTimeSeconds": 1726077163,
-            "count": 0
+            "beginTimeSeconds": 1728555057,
+            "endTimeSeconds": 1728576657,
+            "count": 362,
+            "uniqueCount.name": 3
           }
         ],
         "results": [
           {
             "comparison": "current",
-            "beginTimeSeconds": 1728064363,
-            "endTimeSeconds": 1728150763,
-            "count": 926
+            "beginTimeSeconds": 1728663057,
+            "endTimeSeconds": 1728684657,
+            "count": 261,
+            "uniqueCount.name": 3
           },
           {
             "comparison": "current",
-            "beginTimeSeconds": 1728150763,
-            "endTimeSeconds": 1728237163,
-            "count": 1899
+            "beginTimeSeconds": 1728684657,
+            "endTimeSeconds": 1728706257,
+            "count": 254,
+            "uniqueCount.name": 3
           },
           {
             "comparison": "current",
-            "beginTimeSeconds": 1728237163,
-            "endTimeSeconds": 1728323563,
-            "count": 1973
+            "beginTimeSeconds": 1728706257,
+            "endTimeSeconds": 1728727857,
+            "count": 304,
+            "uniqueCount.name": 3
           },
           {
             "comparison": "current",
-            "beginTimeSeconds": 1728323563,
-            "endTimeSeconds": 1728409963,
-            "count": 1074
-          },
-          {
-            "comparison": "current",
-            "beginTimeSeconds": 1728409963,
-            "endTimeSeconds": 1728496363,
-            "count": 1056
-          },
-          {
-            "comparison": "current",
-            "beginTimeSeconds": 1728496363,
-            "endTimeSeconds": 1728582763,
-            "count": 1203
-          },
-          {
-            "comparison": "current",
-            "beginTimeSeconds": 1728582763,
-            "endTimeSeconds": 1728669163,
-            "count": 1376
+            "beginTimeSeconds": 1728727857,
+            "endTimeSeconds": 1728749457,
+            "count": 413,
+            "uniqueCount.name": 4
           },
           {
             "comparison": "previous",
-            "beginTimeSeconds": 1725472363,
-            "endTimeSeconds": 1725558763,
-            "count": 0
+            "beginTimeSeconds": 1728490257,
+            "endTimeSeconds": 1728511857,
+            "count": 235,
+            "uniqueCount.name": 3
           },
           {
             "comparison": "previous",
-            "beginTimeSeconds": 1725558763,
-            "endTimeSeconds": 1725645163,
-            "count": 0
+            "beginTimeSeconds": 1728511857,
+            "endTimeSeconds": 1728533457,
+            "count": 407,
+            "uniqueCount.name": 3
           },
           {
             "comparison": "previous",
-            "beginTimeSeconds": 1725645163,
-            "endTimeSeconds": 1725731563,
-            "count": 0
+            "beginTimeSeconds": 1728533457,
+            "endTimeSeconds": 1728555057,
+            "count": 245,
+            "uniqueCount.name": 3
           },
           {
             "comparison": "previous",
-            "beginTimeSeconds": 1725731563,
-            "endTimeSeconds": 1725817963,
-            "count": 0
-          },
-          {
-            "comparison": "previous",
-            "beginTimeSeconds": 1725817963,
-            "endTimeSeconds": 1725904363,
-            "count": 0
-          },
-          {
-            "comparison": "previous",
-            "beginTimeSeconds": 1725904363,
-            "endTimeSeconds": 1725990763,
-            "count": 0
-          },
-          {
-            "comparison": "previous",
-            "beginTimeSeconds": 1725990763,
-            "endTimeSeconds": 1726077163,
-            "count": 0
+            "beginTimeSeconds": 1728555057,
+            "endTimeSeconds": 1728576657,
+            "count": 362,
+            "uniqueCount.name": 3
           }
         ],
         "totalResult": null

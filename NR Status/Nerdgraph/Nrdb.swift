@@ -57,6 +57,9 @@ struct NrdbResults: Decodable {
     var isComparable: Bool {
         return data.first?.isComparable ?? false
     }
+    var fieldNames: [String] {
+        return data.first?.fieldNames ?? []
+    }
     var allFacets: Set<String> {
         // does not deal with array facet
         if isFaceted {
@@ -64,6 +67,19 @@ struct NrdbResults: Decodable {
         } else {
             return []
         }
+    }
+    var minDate: Date {
+        return data.filter{ $0.comparison == .current }.map{ $0.beginTime ?? .distantPast }.min()!
+    }
+    var maxDate: Date {
+        return data.filter{ $0.comparison == .current }.map{ $0.endTime ?? .distantFuture }.max()!
+    }
+    var dateAdjustment: TimeInterval {
+        return minDate.timeIntervalSince1970 - data.filter{ $0.comparison == .previous }.map{ $0.beginTime ?? .distantPast }.min()!.timeIntervalSince1970
+    }
+    
+    func adjustedTime(_ date: Date) -> Date {
+        return date.addingTimeInterval(dateAdjustment)
     }
     
     struct Datum : Decodable, Identifiable {

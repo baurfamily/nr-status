@@ -46,10 +46,42 @@ struct TimeseriesChart: View {
         }
     }
     
+    func seriesNames(for field: String, in datum: NrdbResults.Datum ) -> (String,String) {
+        let prefix = datum.isComparable ? "\(datum.comparison): " : ""
+        let facetPrefix = datum.isFaceted ? "Facet" : "Data"
+        
+        let groupName = facetPrefix
+        let fieldName: String
+        if let facet = datum.facet {
+            fieldName = "\(prefix)\(facet)(\(field))"
+        } else {
+            fieldName = "\(prefix)\(field)"
+        }
+        
+        return (groupName, fieldName)
+    }
+    
+    func lineStyle(for comparison: NrdbResults.Datum.Comparison) -> StrokeStyle {
+        if comparison == .current {
+            return .init()
+        } else {
+            return .init( dash: [ 10, 5, 2, 5 ] )
+        }
+    }
+    func dateFor(_ datum: NrdbResults.Datum) -> Date {
+        if resultsContainer.results.isComparable && datum.comparison == .previous{
+             return resultsContainer.results.adjustedTime(datum.beginTime!)
+        } else {
+            return datum.beginTime!
+        }
+    }
+    
     var body: some View {
         GroupBox {
             HStack {
-                Toggle("Stacked", isOn: $isStacked).toggleStyle(.switch)
+                if !resultsContainer.results.isComparable && selectedFields.count == 1 {
+                    Toggle("Stacked", isOn: $isStacked).toggleStyle(.switch)
+                }
                 Toggle("Smoothed", isOn: $isSmoothed).toggleStyle(.switch)
                 Toggle("Points", isOn: $showDataPoints).toggleStyle(.switch)
                 if fields.count > 1 {
@@ -95,7 +127,7 @@ struct TimeseriesChart: View {
 
                 if isStacked {
                     AreaMark(
-                        x: .value("Timestamp", datum.beginTime!),
+                        x: .value("Timestamp", dateFor(datum)),
                         y: .value(field, datum.numberFields[field]!)
                     )
                     .foregroundStyle(by: .value(seriesNames.0, seriesNames.1))
@@ -103,7 +135,7 @@ struct TimeseriesChart: View {
                     
                 } else {
                     LineMark(
-                        x: .value("Timestamp", datum.beginTime!),
+                        x: .value("Timestamp", dateFor(datum)),
                         y: .value(field, datum.numberFields[field] ?? 0)
                     )
                     .lineStyle(lineStyle(for: datum.comparison))
@@ -116,29 +148,6 @@ struct TimeseriesChart: View {
         }
         .chartXSelection(value: $selectedDate)
         .chartXSelection(range: $selectedDateRange)
-    }
-    
-    func seriesNames(for field: String, in datum: NrdbResults.Datum ) -> (String,String) {
-        let prefix = datum.isComparable ? "\(datum.comparison): " : ""
-        let facetPrefix = datum.isFaceted ? "Facet" : "Data"
-        
-        let groupName = "\(prefix)\(facetPrefix)"
-        let fieldName: String
-        if let facet = datum.facet {
-            fieldName = "\(facet)(\(field))"
-        } else {
-            fieldName = field
-        }
-        
-        return (groupName, fieldName)
-    }
-    
-    func lineStyle(for comparison: NrdbResults.Datum.Comparison) -> StrokeStyle {
-        if comparison == .current {
-            return .init()
-        } else {
-            return .init( dash: [ 10, 5, 2, 5 ] )
-        }
     }
 }
 
@@ -182,26 +191,6 @@ struct SeriesSelectionView : View {
     
 }
 
-//struct FieldSelectionView : View {
-//    @State private var show = false
-//    
-//    var body: some View {
-//        Button("Open Popover") {
-//            self.show = true
-//        }
-//        .buttonStyle(.borderedProminent)
-//        .popover(isPresented: self.$show,
-//                 attachmentAnchor: .point(.center),
-//                 arrowEdge: .top,
-//                 content: {
-//            Text("Hello, World!")
-//                .padding()
-//                .presentationCompactAdaptation(.none)
-//        })
-//    }
-//    
-//}
-
 #Preview("Timeseries (small)") {
     if let single = ChartSamples.sampleData(size: .small) {
         TimeseriesChart(resultsContainer: single)
@@ -237,14 +226,6 @@ struct SeriesSelectionView : View {
 #Preview("Timeseries comparable (small)") {
     if let single = ChartSamples.sampleData(comparable: true, size: .small) {
         TimeseriesChart(resultsContainer: single)
-    } else {
-        Text("No sample data")
-    }
-}
-
-#Preview("Faceted Timeseries comparable (small)") {
-    if let faceted = ChartSamples.sampleData(faceted: true, comparable: true, size: .small) {
-        TimeseriesChart(resultsContainer: faceted)
     } else {
         Text("No sample data")
     }

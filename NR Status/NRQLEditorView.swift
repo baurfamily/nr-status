@@ -14,8 +14,9 @@ struct NRQLEditorView: View {
         count(*),
         uniqueCount(name)
     FROM Transaction
-    COMPARE WITH 1 week ago
-    TIMESERIES
+    SINCE 1 day ago
+    COMPARE WITH 2 days ago
+    TIMESERIES 6 hours
     """
     @State var resultContainer: NrdbResultContainer?
     

@@ -1,0 +1,198 @@
+{
+  "data": {
+    "actor": {
+      "nrql": {
+        "currentResults": [
+          {
+            "comparison": "current",
+            "beginTimeSeconds": 1728064363,
+            "endTimeSeconds": 1728150763,
+            "count": 926
+          },
+          {
+            "comparison": "current",
+            "beginTimeSeconds": 1728150763,
+            "endTimeSeconds": 1728237163,
+            "count": 1899
+          },
+          {
+            "comparison": "current",
+            "beginTimeSeconds": 1728237163,
+            "endTimeSeconds": 1728323563,
+            "count": 1973
+          },
+          {
+            "comparison": "current",
+            "beginTimeSeconds": 1728323563,
+            "endTimeSeconds": 1728409963,
+            "count": 1074
+          },
+          {
+            "comparison": "current",
+            "beginTimeSeconds": 1728409963,
+            "endTimeSeconds": 1728496363,
+            "count": 1056
+          },
+          {
+            "comparison": "current",
+            "beginTimeSeconds": 1728496363,
+            "endTimeSeconds": 1728582763,
+            "count": 1203
+          },
+          {
+            "comparison": "current",
+            "beginTimeSeconds": 1728582763,
+            "endTimeSeconds": 1728669163,
+            "count": 1376
+          }
+        ],
+        "metadata": {
+          "eventTypes": [
+            "Transaction"
+          ],
+          "facets": null,
+          "messages": null,
+          "timeWindow": {
+            "begin": 1728064363698,
+            "compareWith": "1 MONTHS AGO",
+            "end": 1728669163698,
+            "since": "1 WEEKS AGO",
+            "until": "NOW"
+          }
+        },
+        "nrql": "SELECT count(*) FROM Transaction SINCE 1 week ago TIMESERIES  1 day COMPARE WITH 1 month ago",
+        "previousResults": [
+          {
+            "comparison": "previous",
+            "beginTimeSeconds": 1725472363,
+            "endTimeSeconds": 1725558763,
+            "count": 0
+          },
+          {
+            "comparison": "previous",
+            "beginTimeSeconds": 1725558763,
+            "endTimeSeconds": 1725645163,
+            "count": 0
+          },
+          {
+            "comparison": "previous",
+            "beginTimeSeconds": 1725645163,
+            "endTimeSeconds": 1725731563,
+            "count": 0
+          },
+          {
+            "comparison": "previous",
+            "beginTimeSeconds": 1725731563,
+            "endTimeSeconds": 1725817963,
+            "count": 0
+          },
+          {
+            "comparison": "previous",
+            "beginTimeSeconds": 1725817963,
+            "endTimeSeconds": 1725904363,
+            "count": 0
+          },
+          {
+            "comparison": "previous",
+            "beginTimeSeconds": 1725904363,
+            "endTimeSeconds": 1725990763,
+            "count": 0
+          },
+          {
+            "comparison": "previous",
+            "beginTimeSeconds": 1725990763,
+            "endTimeSeconds": 1726077163,
+            "count": 0
+          }
+        ],
+        "results": [
+          {
+            "comparison": "current",
+            "beginTimeSeconds": 1728064363,
+            "endTimeSeconds": 1728150763,
+            "count": 926
+          },
+          {
+            "comparison": "current",
+            "beginTimeSeconds": 1728150763,
+            "endTimeSeconds": 1728237163,
+            "count": 1899
+          },
+          {
+            "comparison": "current",
+            "beginTimeSeconds": 1728237163,
+            "endTimeSeconds": 1728323563,
+            "count": 1973
+          },
+          {
+            "comparison": "current",
+            "beginTimeSeconds": 1728323563,
+            "endTimeSeconds": 1728409963,
+            "count": 1074
+          },
+          {
+            "comparison": "current",
+            "beginTimeSeconds": 1728409963,
+            "endTimeSeconds": 1728496363,
+            "count": 1056
+          },
+          {
+            "comparison": "current",
+            "beginTimeSeconds": 1728496363,
+            "endTimeSeconds": 1728582763,
+            "count": 1203
+          },
+          {
+            "comparison": "current",
+            "beginTimeSeconds": 1728582763,
+            "endTimeSeconds": 1728669163,
+            "count": 1376
+          },
+          {
+            "comparison": "previous",
+            "beginTimeSeconds": 1725472363,
+            "endTimeSeconds": 1725558763,
+            "count": 0
+          },
+          {
+            "comparison": "previous",
+            "beginTimeSeconds": 1725558763,
+            "endTimeSeconds": 1725645163,
+            "count": 0
+          },
+          {
+            "comparison": "previous",
+            "beginTimeSeconds": 1725645163,
+            "endTimeSeconds": 1725731563,
+            "count": 0
+          },
+          {
+            "comparison": "previous",
+            "beginTimeSeconds": 1725731563,
+            "endTimeSeconds": 1725817963,
+            "count": 0
+          },
+          {
+            "comparison": "previous",
+            "beginTimeSeconds": 1725817963,
+            "endTimeSeconds": 1725904363,
+            "count": 0
+          },
+          {
+            "comparison": "previous",
+            "beginTimeSeconds": 1725904363,
+            "endTimeSeconds": 1725990763,
+            "count": 0
+          },
+          {
+            "comparison": "previous",
+            "beginTimeSeconds": 1725990763,
+            "endTimeSeconds": 1726077163,
+            "count": 0
+          }
+        ],
+        "totalResult": null
+      }
+    }
+  }
+}

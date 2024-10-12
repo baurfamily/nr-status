@@ -17,19 +17,18 @@ struct NRQLEditorView: View {
     COMPARE WITH 1 week ago
     TIMESERIES
     """
-    @State var results: NrdbResults?
-    @State var metadata: NrdbMetadata?
+    @State var resultContainer: NrdbResultContainer?
     
     var body: some View {
         HStack {
             Button(action: runQuery, label: { Text("Run Query") })
-            Button(action: saveWidget, label: { Text("Make Widget") })
+            Button(action: getSample, label: { Text("Get Sample") })
         }
         TextEditor(text: $query)
         GroupBox("Results") {
-            if let results = results, let metadata = metadata {
-                if results.isTimeseries {
-                    TimeseriesChart(data: results.data, metadata: metadata)
+            if let resultContainer {
+                if resultContainer.results.isTimeseries {
+                    TimeseriesChart(resultsContainer: resultContainer)
                 } else {
                     Text("facted, not timeseries data")
                 }
@@ -40,16 +39,13 @@ struct NRQLEditorView: View {
     func  runQuery() {
         Queries.nrql(query: query, debug: true) { result in
             guard let result = result else { return }
-            
-            results = result.results
-            metadata = result.metadata
+            resultContainer = result
         }
     }
     
-    func saveWidget() {
+    func getSample() {
         if let result = ChartSamples.sampleData(faceted: true, size: .small) {
-            results = result.results
-            metadata = result.metadata
+            resultContainer = result
         } else {
             print("failed to get samples")
         }

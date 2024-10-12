@@ -1,0 +1,1151 @@
+{
+  "data": {
+    "actor": {
+      "nrql": {
+        "currentResults": [
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728064491,
+            "endTimeSeconds": 1728150891,
+            "count": 693,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728150891,
+            "endTimeSeconds": 1728237291,
+            "count": 1694,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728237291,
+            "endTimeSeconds": 1728323691,
+            "count": 1802,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728323691,
+            "endTimeSeconds": 1728410091,
+            "count": 922,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728410091,
+            "endTimeSeconds": 1728496491,
+            "count": 892,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728496491,
+            "endTimeSeconds": 1728582891,
+            "count": 1012,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728582891,
+            "endTimeSeconds": 1728669291,
+            "count": 1196,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call"
+          },
+          {
+            "facet": "Controller/users/login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728064491,
+            "endTimeSeconds": 1728150891,
+            "count": 156,
+            "name": "Controller/users/login"
+          },
+          {
+            "facet": "Controller/users/login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728150891,
+            "endTimeSeconds": 1728237291,
+            "count": 153,
+            "name": "Controller/users/login"
+          },
+          {
+            "facet": "Controller/users/login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728237291,
+            "endTimeSeconds": 1728323691,
+            "count": 147,
+            "name": "Controller/users/login"
+          },
+          {
+            "facet": "Controller/users/login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728323691,
+            "endTimeSeconds": 1728410091,
+            "count": 113,
+            "name": "Controller/users/login"
+          },
+          {
+            "facet": "Controller/users/login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728410091,
+            "endTimeSeconds": 1728496491,
+            "count": 140,
+            "name": "Controller/users/login"
+          },
+          {
+            "facet": "Controller/users/login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728496491,
+            "endTimeSeconds": 1728582891,
+            "count": 153,
+            "name": "Controller/users/login"
+          },
+          {
+            "facet": "Controller/users/login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728582891,
+            "endTimeSeconds": 1728669291,
+            "count": 164,
+            "name": "Controller/users/login"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728064491,
+            "endTimeSeconds": 1728150891,
+            "count": 29,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728150891,
+            "endTimeSeconds": 1728237291,
+            "count": 37,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728237291,
+            "endTimeSeconds": 1728323691,
+            "count": 23,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728323691,
+            "endTimeSeconds": 1728410091,
+            "count": 18,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728410091,
+            "endTimeSeconds": 1728496491,
+            "count": 24,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728496491,
+            "endTimeSeconds": 1728582891,
+            "count": 39,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728582891,
+            "endTimeSeconds": 1728669291,
+            "count": 15,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call"
+          },
+          {
+            "facet": "Controller/items/list",
+            "comparison": "current",
+            "beginTimeSeconds": 1728064491,
+            "endTimeSeconds": 1728150891,
+            "count": 0,
+            "name": "Controller/items/list"
+          },
+          {
+            "facet": "Controller/items/list",
+            "comparison": "current",
+            "beginTimeSeconds": 1728150891,
+            "endTimeSeconds": 1728237291,
+            "count": 9,
+            "name": "Controller/items/list"
+          },
+          {
+            "facet": "Controller/items/list",
+            "comparison": "current",
+            "beginTimeSeconds": 1728237291,
+            "endTimeSeconds": 1728323691,
+            "count": 0,
+            "name": "Controller/items/list"
+          },
+          {
+            "facet": "Controller/items/list",
+            "comparison": "current",
+            "beginTimeSeconds": 1728323691,
+            "endTimeSeconds": 1728410091,
+            "count": 9,
+            "name": "Controller/items/list"
+          },
+          {
+            "facet": "Controller/items/list",
+            "comparison": "current",
+            "beginTimeSeconds": 1728410091,
+            "endTimeSeconds": 1728496491,
+            "count": 0,
+            "name": "Controller/items/list"
+          },
+          {
+            "facet": "Controller/items/list",
+            "comparison": "current",
+            "beginTimeSeconds": 1728496491,
+            "endTimeSeconds": 1728582891,
+            "count": 0,
+            "name": "Controller/items/list"
+          },
+          {
+            "facet": "Controller/items/list",
+            "comparison": "current",
+            "beginTimeSeconds": 1728582891,
+            "endTimeSeconds": 1728669291,
+            "count": 0,
+            "name": "Controller/items/list"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728064491,
+            "endTimeSeconds": 1728150891,
+            "count": 9,
+            "name": "Controller/Middleware/Rack/Rack::Cors/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728150891,
+            "endTimeSeconds": 1728237291,
+            "count": 0,
+            "name": "Controller/Middleware/Rack/Rack::Cors/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728237291,
+            "endTimeSeconds": 1728323691,
+            "count": 0,
+            "name": "Controller/Middleware/Rack/Rack::Cors/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728323691,
+            "endTimeSeconds": 1728410091,
+            "count": 0,
+            "name": "Controller/Middleware/Rack/Rack::Cors/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728410091,
+            "endTimeSeconds": 1728496491,
+            "count": 0,
+            "name": "Controller/Middleware/Rack/Rack::Cors/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728496491,
+            "endTimeSeconds": 1728582891,
+            "count": 0,
+            "name": "Controller/Middleware/Rack/Rack::Cors/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728582891,
+            "endTimeSeconds": 1728669291,
+            "count": 0,
+            "name": "Controller/Middleware/Rack/Rack::Cors/call"
+          },
+          {
+            "facet": "Controller/items/index",
+            "comparison": "current",
+            "beginTimeSeconds": 1728064491,
+            "endTimeSeconds": 1728150891,
+            "count": 1,
+            "name": "Controller/items/index"
+          },
+          {
+            "facet": "Controller/items/index",
+            "comparison": "current",
+            "beginTimeSeconds": 1728150891,
+            "endTimeSeconds": 1728237291,
+            "count": 2,
+            "name": "Controller/items/index"
+          },
+          {
+            "facet": "Controller/items/index",
+            "comparison": "current",
+            "beginTimeSeconds": 1728237291,
+            "endTimeSeconds": 1728323691,
+            "count": 0,
+            "name": "Controller/items/index"
+          },
+          {
+            "facet": "Controller/items/index",
+            "comparison": "current",
+            "beginTimeSeconds": 1728323691,
+            "endTimeSeconds": 1728410091,
+            "count": 4,
+            "name": "Controller/items/index"
+          },
+          {
+            "facet": "Controller/items/index",
+            "comparison": "current",
+            "beginTimeSeconds": 1728410091,
+            "endTimeSeconds": 1728496491,
+            "count": 0,
+            "name": "Controller/items/index"
+          },
+          {
+            "facet": "Controller/items/index",
+            "comparison": "current",
+            "beginTimeSeconds": 1728496491,
+            "endTimeSeconds": 1728582891,
+            "count": 0,
+            "name": "Controller/items/index"
+          },
+          {
+            "facet": "Controller/items/index",
+            "comparison": "current",
+            "beginTimeSeconds": 1728582891,
+            "endTimeSeconds": 1728669291,
+            "count": 0,
+            "name": "Controller/items/index"
+          },
+          {
+            "facet": "Controller/users/logout",
+            "comparison": "current",
+            "beginTimeSeconds": 1728064491,
+            "endTimeSeconds": 1728150891,
+            "count": 0,
+            "name": "Controller/users/logout"
+          },
+          {
+            "facet": "Controller/users/logout",
+            "comparison": "current",
+            "beginTimeSeconds": 1728150891,
+            "endTimeSeconds": 1728237291,
+            "count": 2,
+            "name": "Controller/users/logout"
+          },
+          {
+            "facet": "Controller/users/logout",
+            "comparison": "current",
+            "beginTimeSeconds": 1728237291,
+            "endTimeSeconds": 1728323691,
+            "count": 1,
+            "name": "Controller/users/logout"
+          },
+          {
+            "facet": "Controller/users/logout",
+            "comparison": "current",
+            "beginTimeSeconds": 1728323691,
+            "endTimeSeconds": 1728410091,
+            "count": 3,
+            "name": "Controller/users/logout"
+          },
+          {
+            "facet": "Controller/users/logout",
+            "comparison": "current",
+            "beginTimeSeconds": 1728410091,
+            "endTimeSeconds": 1728496491,
+            "count": 0,
+            "name": "Controller/users/logout"
+          },
+          {
+            "facet": "Controller/users/logout",
+            "comparison": "current",
+            "beginTimeSeconds": 1728496491,
+            "endTimeSeconds": 1728582891,
+            "count": 0,
+            "name": "Controller/users/logout"
+          },
+          {
+            "facet": "Controller/users/logout",
+            "comparison": "current",
+            "beginTimeSeconds": 1728582891,
+            "endTimeSeconds": 1728669291,
+            "count": 0,
+            "name": "Controller/users/logout"
+          },
+          {
+            "facet": "Controller/GraphQL/mutation.login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728064491,
+            "endTimeSeconds": 1728150891,
+            "count": 1,
+            "name": "Controller/GraphQL/mutation.login"
+          },
+          {
+            "facet": "Controller/GraphQL/mutation.login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728150891,
+            "endTimeSeconds": 1728237291,
+            "count": 2,
+            "name": "Controller/GraphQL/mutation.login"
+          },
+          {
+            "facet": "Controller/GraphQL/mutation.login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728237291,
+            "endTimeSeconds": 1728323691,
+            "count": 0,
+            "name": "Controller/GraphQL/mutation.login"
+          },
+          {
+            "facet": "Controller/GraphQL/mutation.login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728323691,
+            "endTimeSeconds": 1728410091,
+            "count": 3,
+            "name": "Controller/GraphQL/mutation.login"
+          },
+          {
+            "facet": "Controller/GraphQL/mutation.login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728410091,
+            "endTimeSeconds": 1728496491,
+            "count": 0,
+            "name": "Controller/GraphQL/mutation.login"
+          },
+          {
+            "facet": "Controller/GraphQL/mutation.login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728496491,
+            "endTimeSeconds": 1728582891,
+            "count": 0,
+            "name": "Controller/GraphQL/mutation.login"
+          },
+          {
+            "facet": "Controller/GraphQL/mutation.login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728582891,
+            "endTimeSeconds": 1728669291,
+            "count": 0,
+            "name": "Controller/GraphQL/mutation.login"
+          },
+          {
+            "facet": "Controller/items/search",
+            "comparison": "current",
+            "beginTimeSeconds": 1728064491,
+            "endTimeSeconds": 1728150891,
+            "count": 5,
+            "name": "Controller/items/search"
+          },
+          {
+            "facet": "Controller/items/search",
+            "comparison": "current",
+            "beginTimeSeconds": 1728150891,
+            "endTimeSeconds": 1728237291,
+            "count": 0,
+            "name": "Controller/items/search"
+          },
+          {
+            "facet": "Controller/items/search",
+            "comparison": "current",
+            "beginTimeSeconds": 1728237291,
+            "endTimeSeconds": 1728323691,
+            "count": 0,
+            "name": "Controller/items/search"
+          },
+          {
+            "facet": "Controller/items/search",
+            "comparison": "current",
+            "beginTimeSeconds": 1728323691,
+            "endTimeSeconds": 1728410091,
+            "count": 0,
+            "name": "Controller/items/search"
+          },
+          {
+            "facet": "Controller/items/search",
+            "comparison": "current",
+            "beginTimeSeconds": 1728410091,
+            "endTimeSeconds": 1728496491,
+            "count": 0,
+            "name": "Controller/items/search"
+          },
+          {
+            "facet": "Controller/items/search",
+            "comparison": "current",
+            "beginTimeSeconds": 1728496491,
+            "endTimeSeconds": 1728582891,
+            "count": 0,
+            "name": "Controller/items/search"
+          },
+          {
+            "facet": "Controller/items/search",
+            "comparison": "current",
+            "beginTimeSeconds": 1728582891,
+            "endTimeSeconds": 1728669291,
+            "count": 0,
+            "name": "Controller/items/search"
+          },
+          {
+            "facet": "Controller/GraphQL/query.useSupplierSelection",
+            "comparison": "current",
+            "beginTimeSeconds": 1728064491,
+            "endTimeSeconds": 1728150891,
+            "count": 3,
+            "name": "Controller/GraphQL/query.useSupplierSelection"
+          },
+          {
+            "facet": "Controller/GraphQL/query.useSupplierSelection",
+            "comparison": "current",
+            "beginTimeSeconds": 1728150891,
+            "endTimeSeconds": 1728237291,
+            "count": 0,
+            "name": "Controller/GraphQL/query.useSupplierSelection"
+          },
+          {
+            "facet": "Controller/GraphQL/query.useSupplierSelection",
+            "comparison": "current",
+            "beginTimeSeconds": 1728237291,
+            "endTimeSeconds": 1728323691,
+            "count": 0,
+            "name": "Controller/GraphQL/query.useSupplierSelection"
+          },
+          {
+            "facet": "Controller/GraphQL/query.useSupplierSelection",
+            "comparison": "current",
+            "beginTimeSeconds": 1728323691,
+            "endTimeSeconds": 1728410091,
+            "count": 0,
+            "name": "Controller/GraphQL/query.useSupplierSelection"
+          },
+          {
+            "facet": "Controller/GraphQL/query.useSupplierSelection",
+            "comparison": "current",
+            "beginTimeSeconds": 1728410091,
+            "endTimeSeconds": 1728496491,
+            "count": 0,
+            "name": "Controller/GraphQL/query.useSupplierSelection"
+          },
+          {
+            "facet": "Controller/GraphQL/query.useSupplierSelection",
+            "comparison": "current",
+            "beginTimeSeconds": 1728496491,
+            "endTimeSeconds": 1728582891,
+            "count": 0,
+            "name": "Controller/GraphQL/query.useSupplierSelection"
+          },
+          {
+            "facet": "Controller/GraphQL/query.useSupplierSelection",
+            "comparison": "current",
+            "beginTimeSeconds": 1728582891,
+            "endTimeSeconds": 1728669291,
+            "count": 0,
+            "name": "Controller/GraphQL/query.useSupplierSelection"
+          }
+        ],
+        "metadata": {
+          "eventTypes": [
+            "Transaction"
+          ],
+          "facets": [
+            "name"
+          ],
+          "messages": null,
+          "timeWindow": {
+            "begin": 1728064491916,
+            "compareWith": "1 MONTHS AGO",
+            "end": 1728669291916,
+            "since": "1 WEEKS AGO",
+            "until": "NOW"
+          }
+        },
+        "nrql": "SELECT count(*) FROM Transaction SINCE 1 week ago TIMESERIES  1 day COMPARE WITH 1 month ago FACET name",
+        "previousResults": [],
+        "results": [
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728064491,
+            "endTimeSeconds": 1728150891,
+            "count": 693,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728150891,
+            "endTimeSeconds": 1728237291,
+            "count": 1694,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728237291,
+            "endTimeSeconds": 1728323691,
+            "count": 1802,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728323691,
+            "endTimeSeconds": 1728410091,
+            "count": 922,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728410091,
+            "endTimeSeconds": 1728496491,
+            "count": 892,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728496491,
+            "endTimeSeconds": 1728582891,
+            "count": 1012,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728582891,
+            "endTimeSeconds": 1728669291,
+            "count": 1196,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call"
+          },
+          {
+            "facet": "Controller/users/login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728064491,
+            "endTimeSeconds": 1728150891,
+            "count": 156,
+            "name": "Controller/users/login"
+          },
+          {
+            "facet": "Controller/users/login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728150891,
+            "endTimeSeconds": 1728237291,
+            "count": 153,
+            "name": "Controller/users/login"
+          },
+          {
+            "facet": "Controller/users/login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728237291,
+            "endTimeSeconds": 1728323691,
+            "count": 147,
+            "name": "Controller/users/login"
+          },
+          {
+            "facet": "Controller/users/login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728323691,
+            "endTimeSeconds": 1728410091,
+            "count": 113,
+            "name": "Controller/users/login"
+          },
+          {
+            "facet": "Controller/users/login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728410091,
+            "endTimeSeconds": 1728496491,
+            "count": 140,
+            "name": "Controller/users/login"
+          },
+          {
+            "facet": "Controller/users/login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728496491,
+            "endTimeSeconds": 1728582891,
+            "count": 153,
+            "name": "Controller/users/login"
+          },
+          {
+            "facet": "Controller/users/login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728582891,
+            "endTimeSeconds": 1728669291,
+            "count": 164,
+            "name": "Controller/users/login"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728064491,
+            "endTimeSeconds": 1728150891,
+            "count": 29,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728150891,
+            "endTimeSeconds": 1728237291,
+            "count": 37,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728237291,
+            "endTimeSeconds": 1728323691,
+            "count": 23,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728323691,
+            "endTimeSeconds": 1728410091,
+            "count": 18,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728410091,
+            "endTimeSeconds": 1728496491,
+            "count": 24,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728496491,
+            "endTimeSeconds": 1728582891,
+            "count": 39,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728582891,
+            "endTimeSeconds": 1728669291,
+            "count": 15,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call"
+          },
+          {
+            "facet": "Controller/items/list",
+            "comparison": "current",
+            "beginTimeSeconds": 1728064491,
+            "endTimeSeconds": 1728150891,
+            "count": 0,
+            "name": "Controller/items/list"
+          },
+          {
+            "facet": "Controller/items/list",
+            "comparison": "current",
+            "beginTimeSeconds": 1728150891,
+            "endTimeSeconds": 1728237291,
+            "count": 9,
+            "name": "Controller/items/list"
+          },
+          {
+            "facet": "Controller/items/list",
+            "comparison": "current",
+            "beginTimeSeconds": 1728237291,
+            "endTimeSeconds": 1728323691,
+            "count": 0,
+            "name": "Controller/items/list"
+          },
+          {
+            "facet": "Controller/items/list",
+            "comparison": "current",
+            "beginTimeSeconds": 1728323691,
+            "endTimeSeconds": 1728410091,
+            "count": 9,
+            "name": "Controller/items/list"
+          },
+          {
+            "facet": "Controller/items/list",
+            "comparison": "current",
+            "beginTimeSeconds": 1728410091,
+            "endTimeSeconds": 1728496491,
+            "count": 0,
+            "name": "Controller/items/list"
+          },
+          {
+            "facet": "Controller/items/list",
+            "comparison": "current",
+            "beginTimeSeconds": 1728496491,
+            "endTimeSeconds": 1728582891,
+            "count": 0,
+            "name": "Controller/items/list"
+          },
+          {
+            "facet": "Controller/items/list",
+            "comparison": "current",
+            "beginTimeSeconds": 1728582891,
+            "endTimeSeconds": 1728669291,
+            "count": 0,
+            "name": "Controller/items/list"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728064491,
+            "endTimeSeconds": 1728150891,
+            "count": 9,
+            "name": "Controller/Middleware/Rack/Rack::Cors/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728150891,
+            "endTimeSeconds": 1728237291,
+            "count": 0,
+            "name": "Controller/Middleware/Rack/Rack::Cors/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728237291,
+            "endTimeSeconds": 1728323691,
+            "count": 0,
+            "name": "Controller/Middleware/Rack/Rack::Cors/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728323691,
+            "endTimeSeconds": 1728410091,
+            "count": 0,
+            "name": "Controller/Middleware/Rack/Rack::Cors/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728410091,
+            "endTimeSeconds": 1728496491,
+            "count": 0,
+            "name": "Controller/Middleware/Rack/Rack::Cors/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728496491,
+            "endTimeSeconds": 1728582891,
+            "count": 0,
+            "name": "Controller/Middleware/Rack/Rack::Cors/call"
+          },
+          {
+            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
+            "comparison": "current",
+            "beginTimeSeconds": 1728582891,
+            "endTimeSeconds": 1728669291,
+            "count": 0,
+            "name": "Controller/Middleware/Rack/Rack::Cors/call"
+          },
+          {
+            "facet": "Controller/items/index",
+            "comparison": "current",
+            "beginTimeSeconds": 1728064491,
+            "endTimeSeconds": 1728150891,
+            "count": 1,
+            "name": "Controller/items/index"
+          },
+          {
+            "facet": "Controller/items/index",
+            "comparison": "current",
+            "beginTimeSeconds": 1728150891,
+            "endTimeSeconds": 1728237291,
+            "count": 2,
+            "name": "Controller/items/index"
+          },
+          {
+            "facet": "Controller/items/index",
+            "comparison": "current",
+            "beginTimeSeconds": 1728237291,
+            "endTimeSeconds": 1728323691,
+            "count": 0,
+            "name": "Controller/items/index"
+          },
+          {
+            "facet": "Controller/items/index",
+            "comparison": "current",
+            "beginTimeSeconds": 1728323691,
+            "endTimeSeconds": 1728410091,
+            "count": 4,
+            "name": "Controller/items/index"
+          },
+          {
+            "facet": "Controller/items/index",
+            "comparison": "current",
+            "beginTimeSeconds": 1728410091,
+            "endTimeSeconds": 1728496491,
+            "count": 0,
+            "name": "Controller/items/index"
+          },
+          {
+            "facet": "Controller/items/index",
+            "comparison": "current",
+            "beginTimeSeconds": 1728496491,
+            "endTimeSeconds": 1728582891,
+            "count": 0,
+            "name": "Controller/items/index"
+          },
+          {
+            "facet": "Controller/items/index",
+            "comparison": "current",
+            "beginTimeSeconds": 1728582891,
+            "endTimeSeconds": 1728669291,
+            "count": 0,
+            "name": "Controller/items/index"
+          },
+          {
+            "facet": "Controller/users/logout",
+            "comparison": "current",
+            "beginTimeSeconds": 1728064491,
+            "endTimeSeconds": 1728150891,
+            "count": 0,
+            "name": "Controller/users/logout"
+          },
+          {
+            "facet": "Controller/users/logout",
+            "comparison": "current",
+            "beginTimeSeconds": 1728150891,
+            "endTimeSeconds": 1728237291,
+            "count": 2,
+            "name": "Controller/users/logout"
+          },
+          {
+            "facet": "Controller/users/logout",
+            "comparison": "current",
+            "beginTimeSeconds": 1728237291,
+            "endTimeSeconds": 1728323691,
+            "count": 1,
+            "name": "Controller/users/logout"
+          },
+          {
+            "facet": "Controller/users/logout",
+            "comparison": "current",
+            "beginTimeSeconds": 1728323691,
+            "endTimeSeconds": 1728410091,
+            "count": 3,
+            "name": "Controller/users/logout"
+          },
+          {
+            "facet": "Controller/users/logout",
+            "comparison": "current",
+            "beginTimeSeconds": 1728410091,
+            "endTimeSeconds": 1728496491,
+            "count": 0,
+            "name": "Controller/users/logout"
+          },
+          {
+            "facet": "Controller/users/logout",
+            "comparison": "current",
+            "beginTimeSeconds": 1728496491,
+            "endTimeSeconds": 1728582891,
+            "count": 0,
+            "name": "Controller/users/logout"
+          },
+          {
+            "facet": "Controller/users/logout",
+            "comparison": "current",
+            "beginTimeSeconds": 1728582891,
+            "endTimeSeconds": 1728669291,
+            "count": 0,
+            "name": "Controller/users/logout"
+          },
+          {
+            "facet": "Controller/GraphQL/mutation.login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728064491,
+            "endTimeSeconds": 1728150891,
+            "count": 1,
+            "name": "Controller/GraphQL/mutation.login"
+          },
+          {
+            "facet": "Controller/GraphQL/mutation.login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728150891,
+            "endTimeSeconds": 1728237291,
+            "count": 2,
+            "name": "Controller/GraphQL/mutation.login"
+          },
+          {
+            "facet": "Controller/GraphQL/mutation.login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728237291,
+            "endTimeSeconds": 1728323691,
+            "count": 0,
+            "name": "Controller/GraphQL/mutation.login"
+          },
+          {
+            "facet": "Controller/GraphQL/mutation.login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728323691,
+            "endTimeSeconds": 1728410091,
+            "count": 3,
+            "name": "Controller/GraphQL/mutation.login"
+          },
+          {
+            "facet": "Controller/GraphQL/mutation.login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728410091,
+            "endTimeSeconds": 1728496491,
+            "count": 0,
+            "name": "Controller/GraphQL/mutation.login"
+          },
+          {
+            "facet": "Controller/GraphQL/mutation.login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728496491,
+            "endTimeSeconds": 1728582891,
+            "count": 0,
+            "name": "Controller/GraphQL/mutation.login"
+          },
+          {
+            "facet": "Controller/GraphQL/mutation.login",
+            "comparison": "current",
+            "beginTimeSeconds": 1728582891,
+            "endTimeSeconds": 1728669291,
+            "count": 0,
+            "name": "Controller/GraphQL/mutation.login"
+          },
+          {
+            "facet": "Controller/items/search",
+            "comparison": "current",
+            "beginTimeSeconds": 1728064491,
+            "endTimeSeconds": 1728150891,
+            "count": 5,
+            "name": "Controller/items/search"
+          },
+          {
+            "facet": "Controller/items/search",
+            "comparison": "current",
+            "beginTimeSeconds": 1728150891,
+            "endTimeSeconds": 1728237291,
+            "count": 0,
+            "name": "Controller/items/search"
+          },
+          {
+            "facet": "Controller/items/search",
+            "comparison": "current",
+            "beginTimeSeconds": 1728237291,
+            "endTimeSeconds": 1728323691,
+            "count": 0,
+            "name": "Controller/items/search"
+          },
+          {
+            "facet": "Controller/items/search",
+            "comparison": "current",
+            "beginTimeSeconds": 1728323691,
+            "endTimeSeconds": 1728410091,
+            "count": 0,
+            "name": "Controller/items/search"
+          },
+          {
+            "facet": "Controller/items/search",
+            "comparison": "current",
+            "beginTimeSeconds": 1728410091,
+            "endTimeSeconds": 1728496491,
+            "count": 0,
+            "name": "Controller/items/search"
+          },
+          {
+            "facet": "Controller/items/search",
+            "comparison": "current",
+            "beginTimeSeconds": 1728496491,
+            "endTimeSeconds": 1728582891,
+            "count": 0,
+            "name": "Controller/items/search"
+          },
+          {
+            "facet": "Controller/items/search",
+            "comparison": "current",
+            "beginTimeSeconds": 1728582891,
+            "endTimeSeconds": 1728669291,
+            "count": 0,
+            "name": "Controller/items/search"
+          },
+          {
+            "facet": "Controller/GraphQL/query.useSupplierSelection",
+            "comparison": "current",
+            "beginTimeSeconds": 1728064491,
+            "endTimeSeconds": 1728150891,
+            "count": 3,
+            "name": "Controller/GraphQL/query.useSupplierSelection"
+          },
+          {
+            "facet": "Controller/GraphQL/query.useSupplierSelection",
+            "comparison": "current",
+            "beginTimeSeconds": 1728150891,
+            "endTimeSeconds": 1728237291,
+            "count": 0,
+            "name": "Controller/GraphQL/query.useSupplierSelection"
+          },
+          {
+            "facet": "Controller/GraphQL/query.useSupplierSelection",
+            "comparison": "current",
+            "beginTimeSeconds": 1728237291,
+            "endTimeSeconds": 1728323691,
+            "count": 0,
+            "name": "Controller/GraphQL/query.useSupplierSelection"
+          },
+          {
+            "facet": "Controller/GraphQL/query.useSupplierSelection",
+            "comparison": "current",
+            "beginTimeSeconds": 1728323691,
+            "endTimeSeconds": 1728410091,
+            "count": 0,
+            "name": "Controller/GraphQL/query.useSupplierSelection"
+          },
+          {
+            "facet": "Controller/GraphQL/query.useSupplierSelection",
+            "comparison": "current",
+            "beginTimeSeconds": 1728410091,
+            "endTimeSeconds": 1728496491,
+            "count": 0,
+            "name": "Controller/GraphQL/query.useSupplierSelection"
+          },
+          {
+            "facet": "Controller/GraphQL/query.useSupplierSelection",
+            "comparison": "current",
+            "beginTimeSeconds": 1728496491,
+            "endTimeSeconds": 1728582891,
+            "count": 0,
+            "name": "Controller/GraphQL/query.useSupplierSelection"
+          },
+          {
+            "facet": "Controller/GraphQL/query.useSupplierSelection",
+            "comparison": "current",
+            "beginTimeSeconds": 1728582891,
+            "endTimeSeconds": 1728669291,
+            "count": 0,
+            "name": "Controller/GraphQL/query.useSupplierSelection"
+          }
+        ],
+        "totalResult": null
+      }
+    }
+  }
+}

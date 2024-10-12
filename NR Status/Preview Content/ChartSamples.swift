@@ -32,11 +32,12 @@ struct ChartSamples {
         return nil
     }
     
-    static func sampleData(faceted: Bool = false, timeseries: Bool = true, size: DataSize = .medium) -> NrdbResultContainer? {
-        let type = faceted ? "Faceted" : "Single"
-        let timeseriesType = timeseries ? "Timeseries" : "Single"
+    static func sampleData(faceted: Bool = false, timeseries: Bool = true, comparable: Bool = false, size: DataSize = .medium) -> NrdbResultContainer? {
+        let type = faceted ? "Faceted" : ""
+        let timeseriesType = timeseries ? "Timeseries" : ""
+        let comparableType = comparable ? "Comparable" : ""
         
-        return loadFrom(filename: "\(type)\(timeseriesType)\(size.rawValue)")
+        return loadFrom(filename: "\(type)\(timeseriesType)\(comparableType)\(size.rawValue)")
     }
     
 }

@@ -12,542 +12,507 @@
           ],
           "messages": null,
           "timeWindow": {
-            "begin": 1728051405234,
+            "begin": 1728075764003,
             "compareWith": null,
-            "end": 1728656205234,
+            "end": 1728680564003,
             "since": "1 WEEKS AGO",
             "until": "NOW"
           }
         },
-        "nrql": "SELECT count(*) FROM Transaction SINCE 1 week ago TIMESERIES 1 day FACET name",
+        "nrql": "SELECT count(*), uniqueCount(name) FROM Transaction SINCE 1 week ago TIMESERIES  1 day FACET name",
         "previousResults": null,
         "results": [
           {
-            "beginTimeSeconds": 1728051405,
-            "endTimeSeconds": 1728137805,
             "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
-            "count": 897,
-            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call"
+            "beginTimeSeconds": 1728075764,
+            "endTimeSeconds": 1728162164,
+            "count": 1767,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728137805,
-            "endTimeSeconds": 1728224205,
             "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
-            "count": 1672,
-            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call"
+            "beginTimeSeconds": 1728162164,
+            "endTimeSeconds": 1728248564,
+            "count": 1169,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728224205,
-            "endTimeSeconds": 1728310605,
             "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
-            "count": 1331,
-            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call"
+            "beginTimeSeconds": 1728248564,
+            "endTimeSeconds": 1728334964,
+            "count": 1279,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728310605,
-            "endTimeSeconds": 1728397005,
             "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
-            "count": 1208,
-            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call"
+            "beginTimeSeconds": 1728334964,
+            "endTimeSeconds": 1728421364,
+            "count": 985,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728397005,
-            "endTimeSeconds": 1728483405,
             "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
-            "count": 1089,
-            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call"
+            "beginTimeSeconds": 1728421364,
+            "endTimeSeconds": 1728507764,
+            "count": 878,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728483405,
-            "endTimeSeconds": 1728569805,
             "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
-            "count": 998,
-            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call"
+            "beginTimeSeconds": 1728507764,
+            "endTimeSeconds": 1728594164,
+            "count": 1080,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728569805,
-            "endTimeSeconds": 1728656205,
             "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
-            "count": 1201,
-            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call"
+            "beginTimeSeconds": 1728594164,
+            "endTimeSeconds": 1728680564,
+            "count": 1105,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728051405,
-            "endTimeSeconds": 1728137805,
             "facet": "Controller/users/login",
-            "count": 168,
-            "name": "Controller/users/login"
+            "beginTimeSeconds": 1728075764,
+            "endTimeSeconds": 1728162164,
+            "count": 155,
+            "name": "Controller/users/login",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728137805,
-            "endTimeSeconds": 1728224205,
             "facet": "Controller/users/login",
-            "count": 145,
-            "name": "Controller/users/login"
+            "beginTimeSeconds": 1728162164,
+            "endTimeSeconds": 1728248564,
+            "count": 155,
+            "name": "Controller/users/login",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728224205,
-            "endTimeSeconds": 1728310605,
             "facet": "Controller/users/login",
+            "beginTimeSeconds": 1728248564,
+            "endTimeSeconds": 1728334964,
             "count": 148,
-            "name": "Controller/users/login"
+            "name": "Controller/users/login",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728310605,
-            "endTimeSeconds": 1728397005,
             "facet": "Controller/users/login",
-            "count": 115,
-            "name": "Controller/users/login"
+            "beginTimeSeconds": 1728334964,
+            "endTimeSeconds": 1728421364,
+            "count": 110,
+            "name": "Controller/users/login",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728397005,
-            "endTimeSeconds": 1728483405,
             "facet": "Controller/users/login",
-            "count": 141,
-            "name": "Controller/users/login"
+            "beginTimeSeconds": 1728421364,
+            "endTimeSeconds": 1728507764,
+            "count": 137,
+            "name": "Controller/users/login",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728483405,
-            "endTimeSeconds": 1728569805,
             "facet": "Controller/users/login",
-            "count": 154,
-            "name": "Controller/users/login"
+            "beginTimeSeconds": 1728507764,
+            "endTimeSeconds": 1728594164,
+            "count": 159,
+            "name": "Controller/users/login",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728569805,
-            "endTimeSeconds": 1728656205,
             "facet": "Controller/users/login",
-            "count": 164,
-            "name": "Controller/users/login"
+            "beginTimeSeconds": 1728594164,
+            "endTimeSeconds": 1728680564,
+            "count": 162,
+            "name": "Controller/users/login",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728051405,
-            "endTimeSeconds": 1728137805,
             "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
-            "count": 29,
-            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call"
+            "beginTimeSeconds": 1728075764,
+            "endTimeSeconds": 1728162164,
+            "count": 38,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728137805,
-            "endTimeSeconds": 1728224205,
             "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
-            "count": 36,
-            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call"
+            "beginTimeSeconds": 1728162164,
+            "endTimeSeconds": 1728248564,
+            "count": 27,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728224205,
-            "endTimeSeconds": 1728310605,
             "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
-            "count": 22,
-            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call"
-          },
-          {
-            "beginTimeSeconds": 1728310605,
-            "endTimeSeconds": 1728397005,
-            "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "beginTimeSeconds": 1728248564,
+            "endTimeSeconds": 1728334964,
             "count": 23,
-            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call"
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728397005,
-            "endTimeSeconds": 1728483405,
             "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "beginTimeSeconds": 1728334964,
+            "endTimeSeconds": 1728421364,
             "count": 19,
-            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call"
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728483405,
-            "endTimeSeconds": 1728569805,
             "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
-            "count": 42,
-            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call"
+            "beginTimeSeconds": 1728421364,
+            "endTimeSeconds": 1728507764,
+            "count": 26,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728569805,
-            "endTimeSeconds": 1728656205,
             "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "beginTimeSeconds": 1728507764,
+            "endTimeSeconds": 1728594164,
+            "count": 35,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "beginTimeSeconds": 1728594164,
+            "endTimeSeconds": 1728680564,
             "count": 15,
-            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call"
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728051405,
-            "endTimeSeconds": 1728137805,
             "facet": "Controller/items/list",
-            "count": 45,
-            "name": "Controller/items/list"
+            "beginTimeSeconds": 1728075764,
+            "endTimeSeconds": 1728162164,
+            "count": 4,
+            "name": "Controller/items/list",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728137805,
-            "endTimeSeconds": 1728224205,
             "facet": "Controller/items/list",
-            "count": 9,
-            "name": "Controller/items/list"
+            "beginTimeSeconds": 1728162164,
+            "endTimeSeconds": 1728248564,
+            "count": 5,
+            "name": "Controller/items/list",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728224205,
-            "endTimeSeconds": 1728310605,
             "facet": "Controller/items/list",
-            "count": 0,
-            "name": "Controller/items/list"
-          },
-          {
-            "beginTimeSeconds": 1728310605,
-            "endTimeSeconds": 1728397005,
-            "facet": "Controller/items/list",
+            "beginTimeSeconds": 1728248564,
+            "endTimeSeconds": 1728334964,
             "count": 3,
-            "name": "Controller/items/list"
+            "name": "Controller/items/list",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728397005,
-            "endTimeSeconds": 1728483405,
             "facet": "Controller/items/list",
+            "beginTimeSeconds": 1728334964,
+            "endTimeSeconds": 1728421364,
             "count": 6,
-            "name": "Controller/items/list"
+            "name": "Controller/items/list",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728483405,
-            "endTimeSeconds": 1728569805,
             "facet": "Controller/items/list",
+            "beginTimeSeconds": 1728421364,
+            "endTimeSeconds": 1728507764,
             "count": 0,
-            "name": "Controller/items/list"
+            "name": "Controller/items/list",
+            "uniqueCount.name": 0
           },
           {
-            "beginTimeSeconds": 1728569805,
-            "endTimeSeconds": 1728656205,
             "facet": "Controller/items/list",
+            "beginTimeSeconds": 1728507764,
+            "endTimeSeconds": 1728594164,
             "count": 0,
-            "name": "Controller/items/list"
+            "name": "Controller/items/list",
+            "uniqueCount.name": 0
           },
           {
-            "beginTimeSeconds": 1728051405,
-            "endTimeSeconds": 1728137805,
-            "facet": "Controller/items/search",
-            "count": 43,
-            "name": "Controller/items/search"
-          },
-          {
-            "beginTimeSeconds": 1728137805,
-            "endTimeSeconds": 1728224205,
-            "facet": "Controller/items/search",
+            "facet": "Controller/items/list",
+            "beginTimeSeconds": 1728594164,
+            "endTimeSeconds": 1728680564,
             "count": 0,
-            "name": "Controller/items/search"
+            "name": "Controller/items/list",
+            "uniqueCount.name": 0
           },
           {
-            "beginTimeSeconds": 1728224205,
-            "endTimeSeconds": 1728310605,
-            "facet": "Controller/items/search",
-            "count": 0,
-            "name": "Controller/items/search"
-          },
-          {
-            "beginTimeSeconds": 1728310605,
-            "endTimeSeconds": 1728397005,
-            "facet": "Controller/items/search",
-            "count": 0,
-            "name": "Controller/items/search"
-          },
-          {
-            "beginTimeSeconds": 1728397005,
-            "endTimeSeconds": 1728483405,
-            "facet": "Controller/items/search",
-            "count": 0,
-            "name": "Controller/items/search"
-          },
-          {
-            "beginTimeSeconds": 1728483405,
-            "endTimeSeconds": 1728569805,
-            "facet": "Controller/items/search",
-            "count": 0,
-            "name": "Controller/items/search"
-          },
-          {
-            "beginTimeSeconds": 1728569805,
-            "endTimeSeconds": 1728656205,
-            "facet": "Controller/items/search",
-            "count": 0,
-            "name": "Controller/items/search"
-          },
-          {
-            "beginTimeSeconds": 1728051405,
-            "endTimeSeconds": 1728137805,
-            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
-            "count": 20,
-            "name": "Controller/Middleware/Rack/Rack::Cors/call"
-          },
-          {
-            "beginTimeSeconds": 1728137805,
-            "endTimeSeconds": 1728224205,
-            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
-            "count": 0,
-            "name": "Controller/Middleware/Rack/Rack::Cors/call"
-          },
-          {
-            "beginTimeSeconds": 1728224205,
-            "endTimeSeconds": 1728310605,
-            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
-            "count": 0,
-            "name": "Controller/Middleware/Rack/Rack::Cors/call"
-          },
-          {
-            "beginTimeSeconds": 1728310605,
-            "endTimeSeconds": 1728397005,
-            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
-            "count": 0,
-            "name": "Controller/Middleware/Rack/Rack::Cors/call"
-          },
-          {
-            "beginTimeSeconds": 1728397005,
-            "endTimeSeconds": 1728483405,
-            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
-            "count": 0,
-            "name": "Controller/Middleware/Rack/Rack::Cors/call"
-          },
-          {
-            "beginTimeSeconds": 1728483405,
-            "endTimeSeconds": 1728569805,
-            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
-            "count": 0,
-            "name": "Controller/Middleware/Rack/Rack::Cors/call"
-          },
-          {
-            "beginTimeSeconds": 1728569805,
-            "endTimeSeconds": 1728656205,
-            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
-            "count": 0,
-            "name": "Controller/Middleware/Rack/Rack::Cors/call"
-          },
-          {
-            "beginTimeSeconds": 1728051405,
-            "endTimeSeconds": 1728137805,
-            "facet": "Controller/items/index",
-            "count": 7,
-            "name": "Controller/items/index"
-          },
-          {
-            "beginTimeSeconds": 1728137805,
-            "endTimeSeconds": 1728224205,
-            "facet": "Controller/items/index",
-            "count": 2,
-            "name": "Controller/items/index"
-          },
-          {
-            "beginTimeSeconds": 1728224205,
-            "endTimeSeconds": 1728310605,
-            "facet": "Controller/items/index",
-            "count": 0,
-            "name": "Controller/items/index"
-          },
-          {
-            "beginTimeSeconds": 1728310605,
-            "endTimeSeconds": 1728397005,
-            "facet": "Controller/items/index",
+            "facet": "Controller/users/logout",
+            "beginTimeSeconds": 1728075764,
+            "endTimeSeconds": 1728162164,
             "count": 1,
-            "name": "Controller/items/index"
+            "name": "Controller/users/logout",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728397005,
-            "endTimeSeconds": 1728483405,
+            "facet": "Controller/users/logout",
+            "beginTimeSeconds": 1728162164,
+            "endTimeSeconds": 1728248564,
+            "count": 2,
+            "name": "Controller/users/logout",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/users/logout",
+            "beginTimeSeconds": 1728248564,
+            "endTimeSeconds": 1728334964,
+            "count": 1,
+            "name": "Controller/users/logout",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/users/logout",
+            "beginTimeSeconds": 1728334964,
+            "endTimeSeconds": 1728421364,
+            "count": 2,
+            "name": "Controller/users/logout",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/users/logout",
+            "beginTimeSeconds": 1728421364,
+            "endTimeSeconds": 1728507764,
+            "count": 0,
+            "name": "Controller/users/logout",
+            "uniqueCount.name": 0
+          },
+          {
+            "facet": "Controller/users/logout",
+            "beginTimeSeconds": 1728507764,
+            "endTimeSeconds": 1728594164,
+            "count": 0,
+            "name": "Controller/users/logout",
+            "uniqueCount.name": 0
+          },
+          {
+            "facet": "Controller/users/logout",
+            "beginTimeSeconds": 1728594164,
+            "endTimeSeconds": 1728680564,
+            "count": 0,
+            "name": "Controller/users/logout",
+            "uniqueCount.name": 0
+          },
+          {
             "facet": "Controller/items/index",
+            "beginTimeSeconds": 1728075764,
+            "endTimeSeconds": 1728162164,
+            "count": 1,
+            "name": "Controller/items/index",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/items/index",
+            "beginTimeSeconds": 1728162164,
+            "endTimeSeconds": 1728248564,
+            "count": 1,
+            "name": "Controller/items/index",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/items/index",
+            "beginTimeSeconds": 1728248564,
+            "endTimeSeconds": 1728334964,
+            "count": 1,
+            "name": "Controller/items/index",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/items/index",
+            "beginTimeSeconds": 1728334964,
+            "endTimeSeconds": 1728421364,
             "count": 3,
-            "name": "Controller/items/index"
+            "name": "Controller/items/index",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728483405,
-            "endTimeSeconds": 1728569805,
             "facet": "Controller/items/index",
+            "beginTimeSeconds": 1728421364,
+            "endTimeSeconds": 1728507764,
             "count": 0,
-            "name": "Controller/items/index"
+            "name": "Controller/items/index",
+            "uniqueCount.name": 0
           },
           {
-            "beginTimeSeconds": 1728569805,
-            "endTimeSeconds": 1728656205,
             "facet": "Controller/items/index",
+            "beginTimeSeconds": 1728507764,
+            "endTimeSeconds": 1728594164,
             "count": 0,
-            "name": "Controller/items/index"
+            "name": "Controller/items/index",
+            "uniqueCount.name": 0
           },
           {
-            "beginTimeSeconds": 1728051405,
-            "endTimeSeconds": 1728137805,
-            "facet": "Controller/event_instances/show",
-            "count": 13,
-            "name": "Controller/event_instances/show"
-          },
-          {
-            "beginTimeSeconds": 1728137805,
-            "endTimeSeconds": 1728224205,
-            "facet": "Controller/event_instances/show",
+            "facet": "Controller/items/index",
+            "beginTimeSeconds": 1728594164,
+            "endTimeSeconds": 1728680564,
             "count": 0,
-            "name": "Controller/event_instances/show"
+            "name": "Controller/items/index",
+            "uniqueCount.name": 0
           },
           {
-            "beginTimeSeconds": 1728224205,
-            "endTimeSeconds": 1728310605,
-            "facet": "Controller/event_instances/show",
+            "facet": "Controller/GraphQL/mutation.login",
+            "beginTimeSeconds": 1728075764,
+            "endTimeSeconds": 1728162164,
+            "count": 1,
+            "name": "Controller/GraphQL/mutation.login",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/GraphQL/mutation.login",
+            "beginTimeSeconds": 1728162164,
+            "endTimeSeconds": 1728248564,
+            "count": 1,
+            "name": "Controller/GraphQL/mutation.login",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/GraphQL/mutation.login",
+            "beginTimeSeconds": 1728248564,
+            "endTimeSeconds": 1728334964,
+            "count": 1,
+            "name": "Controller/GraphQL/mutation.login",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/GraphQL/mutation.login",
+            "beginTimeSeconds": 1728334964,
+            "endTimeSeconds": 1728421364,
+            "count": 2,
+            "name": "Controller/GraphQL/mutation.login",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/GraphQL/mutation.login",
+            "beginTimeSeconds": 1728421364,
+            "endTimeSeconds": 1728507764,
             "count": 0,
-            "name": "Controller/event_instances/show"
+            "name": "Controller/GraphQL/mutation.login",
+            "uniqueCount.name": 0
           },
           {
-            "beginTimeSeconds": 1728310605,
-            "endTimeSeconds": 1728397005,
-            "facet": "Controller/event_instances/show",
+            "facet": "Controller/GraphQL/mutation.login",
+            "beginTimeSeconds": 1728507764,
+            "endTimeSeconds": 1728594164,
             "count": 0,
-            "name": "Controller/event_instances/show"
+            "name": "Controller/GraphQL/mutation.login",
+            "uniqueCount.name": 0
           },
           {
-            "beginTimeSeconds": 1728397005,
-            "endTimeSeconds": 1728483405,
-            "facet": "Controller/event_instances/show",
+            "facet": "Controller/GraphQL/mutation.login",
+            "beginTimeSeconds": 1728594164,
+            "endTimeSeconds": 1728680564,
             "count": 0,
-            "name": "Controller/event_instances/show"
+            "name": "Controller/GraphQL/mutation.login",
+            "uniqueCount.name": 0
           },
           {
-            "beginTimeSeconds": 1728483405,
-            "endTimeSeconds": 1728569805,
-            "facet": "Controller/event_instances/show",
+            "facet": "Controller/users/index",
+            "beginTimeSeconds": 1728075764,
+            "endTimeSeconds": 1728162164,
             "count": 0,
-            "name": "Controller/event_instances/show"
+            "name": "Controller/users/index",
+            "uniqueCount.name": 0
           },
           {
-            "beginTimeSeconds": 1728569805,
-            "endTimeSeconds": 1728656205,
-            "facet": "Controller/event_instances/show",
+            "facet": "Controller/users/index",
+            "beginTimeSeconds": 1728162164,
+            "endTimeSeconds": 1728248564,
             "count": 0,
-            "name": "Controller/event_instances/show"
+            "name": "Controller/users/index",
+            "uniqueCount.name": 0
           },
           {
-            "beginTimeSeconds": 1728051405,
-            "endTimeSeconds": 1728137805,
-            "facet": "Controller/GraphQL/query.useReceipts",
-            "count": 12,
-            "name": "Controller/GraphQL/query.useReceipts"
+            "facet": "Controller/users/index",
+            "beginTimeSeconds": 1728248564,
+            "endTimeSeconds": 1728334964,
+            "count": 2,
+            "name": "Controller/users/index",
+            "uniqueCount.name": 1
           },
           {
-            "beginTimeSeconds": 1728137805,
-            "endTimeSeconds": 1728224205,
-            "facet": "Controller/GraphQL/query.useReceipts",
+            "facet": "Controller/users/index",
+            "beginTimeSeconds": 1728334964,
+            "endTimeSeconds": 1728421364,
             "count": 0,
-            "name": "Controller/GraphQL/query.useReceipts"
+            "name": "Controller/users/index",
+            "uniqueCount.name": 0
           },
           {
-            "beginTimeSeconds": 1728224205,
-            "endTimeSeconds": 1728310605,
-            "facet": "Controller/GraphQL/query.useReceipts",
+            "facet": "Controller/users/index",
+            "beginTimeSeconds": 1728421364,
+            "endTimeSeconds": 1728507764,
             "count": 0,
-            "name": "Controller/GraphQL/query.useReceipts"
+            "name": "Controller/users/index",
+            "uniqueCount.name": 0
           },
           {
-            "beginTimeSeconds": 1728310605,
-            "endTimeSeconds": 1728397005,
-            "facet": "Controller/GraphQL/query.useReceipts",
+            "facet": "Controller/users/index",
+            "beginTimeSeconds": 1728507764,
+            "endTimeSeconds": 1728594164,
             "count": 0,
-            "name": "Controller/GraphQL/query.useReceipts"
+            "name": "Controller/users/index",
+            "uniqueCount.name": 0
           },
           {
-            "beginTimeSeconds": 1728397005,
-            "endTimeSeconds": 1728483405,
-            "facet": "Controller/GraphQL/query.useReceipts",
+            "facet": "Controller/users/index",
+            "beginTimeSeconds": 1728594164,
+            "endTimeSeconds": 1728680564,
             "count": 0,
-            "name": "Controller/GraphQL/query.useReceipts"
-          },
-          {
-            "beginTimeSeconds": 1728483405,
-            "endTimeSeconds": 1728569805,
-            "facet": "Controller/GraphQL/query.useReceipts",
-            "count": 0,
-            "name": "Controller/GraphQL/query.useReceipts"
-          },
-          {
-            "beginTimeSeconds": 1728569805,
-            "endTimeSeconds": 1728656205,
-            "facet": "Controller/GraphQL/query.useReceipts",
-            "count": 0,
-            "name": "Controller/GraphQL/query.useReceipts"
-          },
-          {
-            "beginTimeSeconds": 1728051405,
-            "endTimeSeconds": 1728137805,
-            "facet": "Controller/receipts/edit",
-            "count": 12,
-            "name": "Controller/receipts/edit"
-          },
-          {
-            "beginTimeSeconds": 1728137805,
-            "endTimeSeconds": 1728224205,
-            "facet": "Controller/receipts/edit",
-            "count": 0,
-            "name": "Controller/receipts/edit"
-          },
-          {
-            "beginTimeSeconds": 1728224205,
-            "endTimeSeconds": 1728310605,
-            "facet": "Controller/receipts/edit",
-            "count": 0,
-            "name": "Controller/receipts/edit"
-          },
-          {
-            "beginTimeSeconds": 1728310605,
-            "endTimeSeconds": 1728397005,
-            "facet": "Controller/receipts/edit",
-            "count": 0,
-            "name": "Controller/receipts/edit"
-          },
-          {
-            "beginTimeSeconds": 1728397005,
-            "endTimeSeconds": 1728483405,
-            "facet": "Controller/receipts/edit",
-            "count": 0,
-            "name": "Controller/receipts/edit"
-          },
-          {
-            "beginTimeSeconds": 1728483405,
-            "endTimeSeconds": 1728569805,
-            "facet": "Controller/receipts/edit",
-            "count": 0,
-            "name": "Controller/receipts/edit"
-          },
-          {
-            "beginTimeSeconds": 1728569805,
-            "endTimeSeconds": 1728656205,
-            "facet": "Controller/receipts/edit",
-            "count": 0,
-            "name": "Controller/receipts/edit"
+            "name": "Controller/users/index",
+            "uniqueCount.name": 0
           }
         ],
         "totalResult": [
           {
-            "beginTimeSeconds": 1728051405,
-            "endTimeSeconds": 1728137805,
-            "count": 1357
+            "beginTimeSeconds": 1728075764,
+            "endTimeSeconds": 1728162164,
+            "count": 1967,
+            "uniqueCount.name": 7
           },
           {
-            "beginTimeSeconds": 1728137805,
-            "endTimeSeconds": 1728224205,
-            "count": 1868
+            "beginTimeSeconds": 1728162164,
+            "endTimeSeconds": 1728248564,
+            "count": 1360,
+            "uniqueCount.name": 7
           },
           {
-            "beginTimeSeconds": 1728224205,
-            "endTimeSeconds": 1728310605,
-            "count": 1504
+            "beginTimeSeconds": 1728248564,
+            "endTimeSeconds": 1728334964,
+            "count": 1458,
+            "uniqueCount.name": 8
           },
           {
-            "beginTimeSeconds": 1728310605,
-            "endTimeSeconds": 1728397005,
-            "count": 1352
+            "beginTimeSeconds": 1728334964,
+            "endTimeSeconds": 1728421364,
+            "count": 1127,
+            "uniqueCount.name": 7
           },
           {
-            "beginTimeSeconds": 1728397005,
-            "endTimeSeconds": 1728483405,
-            "count": 1262
+            "beginTimeSeconds": 1728421364,
+            "endTimeSeconds": 1728507764,
+            "count": 1041,
+            "uniqueCount.name": 3
           },
           {
-            "beginTimeSeconds": 1728483405,
-            "endTimeSeconds": 1728569805,
-            "count": 1194
+            "beginTimeSeconds": 1728507764,
+            "endTimeSeconds": 1728594164,
+            "count": 1274,
+            "uniqueCount.name": 3
           },
           {
-            "beginTimeSeconds": 1728569805,
-            "endTimeSeconds": 1728656205,
-            "count": 1380
+            "beginTimeSeconds": 1728594164,
+            "endTimeSeconds": 1728680564,
+            "count": 1282,
+            "uniqueCount.name": 3
           }
         ]
       }

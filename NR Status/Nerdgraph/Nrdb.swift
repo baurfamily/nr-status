@@ -52,10 +52,18 @@ struct NrdbResults: Decodable {
         return data.first?.isTimeseries ?? false
     }
     var isFaceted: Bool {
-        return data.first?.facet != nil
+        return data.first?.isFaceted ?? false
     }
     var isComparable: Bool {
-        return data.first?.isComparable != nil
+        return data.first?.isComparable ?? false
+    }
+    var allFacets: Set<String> {
+        // does not deal with array facet
+        if isFaceted {
+            return Set<String>(data.map { $0.facet! })
+        } else {
+            return []
+        }
     }
     
     struct Datum : Decodable, Identifiable {
@@ -77,6 +85,7 @@ struct NrdbResults: Decodable {
         
         var id: Double { beginTime?.timeIntervalSince1970 ?? 0 }
         
+        var isFaceted: Bool { facet != nil }
         var isTimeseries: Bool {
             if beginTime != nil && endTime != nil {
                 return true

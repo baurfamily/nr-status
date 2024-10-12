@@ -1,0 +1,70 @@
+{
+  "data": {
+    "actor": {
+      "nrql": {
+        "currentResults": null,
+        "metadata": {
+          "eventTypes": [
+            "Transaction"
+          ],
+          "facets": null,
+          "messages": null,
+          "timeWindow": {
+            "begin": 1728075795957,
+            "compareWith": null,
+            "end": 1728680595957,
+            "since": "1 WEEKS AGO",
+            "until": "NOW"
+          }
+        },
+        "nrql": "SELECT count(*), uniqueCount(name) FROM Transaction SINCE 1 week ago TIMESERIES  1 day",
+        "previousResults": null,
+        "results": [
+          {
+            "beginTimeSeconds": 1728075795,
+            "endTimeSeconds": 1728162195,
+            "count": 1967,
+            "uniqueCount.name": 7
+          },
+          {
+            "beginTimeSeconds": 1728162195,
+            "endTimeSeconds": 1728248595,
+            "count": 1360,
+            "uniqueCount.name": 7
+          },
+          {
+            "beginTimeSeconds": 1728248595,
+            "endTimeSeconds": 1728334995,
+            "count": 1459,
+            "uniqueCount.name": 8
+          },
+          {
+            "beginTimeSeconds": 1728334995,
+            "endTimeSeconds": 1728421395,
+            "count": 1126,
+            "uniqueCount.name": 7
+          },
+          {
+            "beginTimeSeconds": 1728421395,
+            "endTimeSeconds": 1728507795,
+            "count": 1041,
+            "uniqueCount.name": 3
+          },
+          {
+            "beginTimeSeconds": 1728507795,
+            "endTimeSeconds": 1728594195,
+            "count": 1284,
+            "uniqueCount.name": 3
+          },
+          {
+            "beginTimeSeconds": 1728594195,
+            "endTimeSeconds": 1728680595,
+            "count": 1272,
+            "uniqueCount.name": 3
+          }
+        ],
+        "totalResult": null
+      }
+    }
+  }
+}

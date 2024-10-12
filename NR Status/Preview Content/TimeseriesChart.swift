@@ -79,7 +79,7 @@ struct TimeseriesChart: View {
     var body: some View {
         GroupBox {
             HStack {
-                if !resultsContainer.results.isComparable && selectedFields.count == 1 {
+                if !resultsContainer.results.isComparable && selectedFields.count == 1 && selectedFacets.count > 1 {
                     Toggle("Stacked", isOn: $isStacked).toggleStyle(.switch)
                 }
                 Toggle("Smoothed", isOn: $isSmoothed).toggleStyle(.switch)

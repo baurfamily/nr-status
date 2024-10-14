@@ -9,22 +9,22 @@ import WidgetKit
 import SwiftUI
 
 struct Provider: AppIntentTimelineProvider {
-    func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(
+    func placeholder(in context: Context) -> NrdbResultEntry {
+        NrdbResultEntry(
             resultContainer: ChartSamples.randomSample(),
             configuration: ConfigurationAppIntent()
         )
     }
 
-    func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
-        SimpleEntry(
+    func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> NrdbResultEntry {
+        NrdbResultEntry(
             resultContainer: ChartSamples.randomSample(),
             configuration: ConfigurationAppIntent()
         )
     }
     
-    func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
-        var entries: [SimpleEntry] = []
+    func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<NrdbResultEntry> {
+        var entries: [NrdbResultEntry] = []
         let queries = Queries(
             host: configuration.apiHost,
             apiKey: configuration.apiKey,
@@ -32,7 +32,7 @@ struct Provider: AppIntentTimelineProvider {
         )
         let resultContainer = await queries.getNrqlData(query: configuration.nrqlQuery, debug: true)
         guard let resultContainer else {
-            let entry = SimpleEntry(
+            let entry = NrdbResultEntry(
                 comment: configuration.nrqlQuery,
                 configuration: configuration
             )
@@ -41,7 +41,7 @@ struct Provider: AppIntentTimelineProvider {
             
         // Generate a timeline consisting of five entries an hour apart, starting from the current date.
         let entryDate = Date.now
-        let entry = SimpleEntry(
+        let entry = NrdbResultEntry(
             date: entryDate,
             resultContainer: resultContainer,
             configuration: configuration
@@ -56,7 +56,7 @@ struct Provider: AppIntentTimelineProvider {
 //    }
 }
 
-struct SimpleEntry: TimelineEntry {
+struct NrdbResultEntry: TimelineEntry {
     var date: Date = Date.now
     var comment: String?
     var resultContainer: NrdbResultContainer?
@@ -71,8 +71,14 @@ struct NRQL_ViewerEntryView : View {
     var body: some View {
         if let resultContainer = entry.resultContainer {
             Text(entry.configuration.title)
-            TimeseriesChart(resultsContainer: resultContainer)
-                .chartLegend(.hidden)
+            TimeseriesChart(
+                resultsContainer: resultContainer,
+                config: ChartConfiguration(
+                    isStacked: entry.configuration.isStacked,
+                    isSmoothed: entry.configuration.isSmoothed,
+                    showDataPoints: entry.configuration.showDataPoints
+                )
+            ).chartLegend(.hidden)
         } else {
             Text("Error loading data")
         }

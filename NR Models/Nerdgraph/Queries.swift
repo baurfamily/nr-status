@@ -8,17 +8,31 @@
 import Foundation
 
 struct Queries {
-    static var host: String {
-        return UserDefaults.standard.string(forKey: "host") ?? "https://api.newrelic.com"
+    var _host: String?
+    var host: String {
+        guard _host == nil else { return _host! }
+        return UserDefaults.standard.string(forKey: "host") ?? "api.newrelic.com"
     }
-    static var apiKey: String {
+    
+    var _apiKey: String?
+    var apiKey: String {
+        guard _apiKey == nil else { return _apiKey! }
         return UserDefaults.standard.string(forKey: "apiKey") ?? "NRAK-"
     }
-    static var accountIds: String {
+    
+    var _accountIds: String?
+    var accountIds: String {
+        guard _accountIds == nil else { return _accountIds! }
         return UserDefaults.standard.string(forKey: "accountIds") ?? ""
     }
     
-    static func user(debug: Bool = false, _ callback: @escaping (User?) -> Void) {
+    init(host: String? = nil, apiKey: String? = nil, accountIds: String? = nil) {
+        self._host = host
+        self._apiKey = apiKey
+        self._accountIds = accountIds
+    }
+    
+    func user(debug: Bool = false, _ callback: @escaping (User?) -> Void) {
         let query = "query NRStatus_User { actor { user { email } } }"
         
         NerdgraphClient(host: host, apiKey: apiKey).query(query, debug: debug) { result in
@@ -26,7 +40,7 @@ struct Queries {
         }
     }
     
-    static func accounts(debug: Bool = false, _ callback: @escaping ([Account]?) -> Void) {
+    func accounts(debug: Bool = false, _ callback: @escaping ([Account]?) -> Void) {
         let query = "query NRStatus_Accounts { actor { accounts { id name } } }"
         
         NerdgraphClient(host: host, apiKey: apiKey).query(query, debug: debug) { result in
@@ -34,7 +48,35 @@ struct Queries {
         }
     }
     
-    static func nrql(query nrql: String, debug: Bool = false, _ callback: @escaping (NrdbResultContainer?) -> Void) {
+    func getNrqlData(query nrql: String, debug: Bool = false) async -> NrdbResultContainer? {
+        let query = """
+        query NRStatus_Nrql($nrql: Nrql!) {
+            actor {
+                user { email name }
+                nrql(accounts: [\(accountIds)], query: $nrql) {
+                    nrql
+                    results
+                    metadata {
+                        facets
+                        eventTypes
+                        timeWindow {
+                            begin
+                            end
+                            since
+                            until
+                        }
+                    }
+                }
+            }
+        }
+        """
+        let variables = ["nrql": nrql]
+        
+        let result = await NerdgraphClient(host: host, apiKey: apiKey).getData(query: query, variables: variables, debug: debug)
+        return result?.data?.actor?.nrql
+    }
+    
+    func nrql(query nrql: String, debug: Bool = false, _ callback: @escaping (NrdbResultContainer?) -> Void) {
         let query = """
         query NRStatus_Nrql($nrql: Nrql!) {
             actor {
@@ -67,7 +109,7 @@ struct Queries {
      */
     //"variables":{"cursor":null,"includeCount":true,"includeResults":true,"includeSummaryMetrics":false,"includeTags":false,"limit":300,"sortType":["REPORTING","ALERT_SEVERITY","NAME"],"nrql":"(alertable IS TRUE AND accountId = '265881' AND (domain = 'APM' AND type = 'APPLICATION'))"}}
 
-    static func entities(domain: Entity.Domain, debug: Bool = false, _ callback: @escaping ([Entity]?) -> Void) {
+    func entities(domain: Entity.Domain, debug: Bool = false, _ callback: @escaping ([Entity]?) -> Void) {
         let query = """
              query NRStatus_EntitySearch(
                 $cursor: String = null,

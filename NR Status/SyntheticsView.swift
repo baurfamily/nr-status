@@ -16,7 +16,7 @@ struct SyntheticsView: View {
         }
         .padding()
         .task {
-            Queries.entities(domain: .SYNTH) { monitors in
+            Queries().entities(domain: .SYNTH) { monitors in
                 if let monitors = monitors {
                     self.monitors = monitors
                 }

@@ -9,6 +9,7 @@ import SwiftUI
 
 struct PreferencesView: View {
     @AppStorage("host") var host: String = "api.newrelic.com"
+    // this is not particularly secure... :( 
     @AppStorage("apiKey") var apiKey: String = "YOUR_API_KEY"
     @AppStorage("accountIds") var accountIds: String = ""
     
@@ -41,7 +42,7 @@ struct PreferencesView: View {
     }
     
     func testRequest() {
-        Queries.user() { user in
+        Queries().user() { user in
             if let email = user?.email {
                 self.email = email
                 self.emailCheck = true
@@ -49,7 +50,7 @@ struct PreferencesView: View {
                 self.emailCheck = false
             }
         }
-        Queries.accounts() { accounts in
+        Queries().accounts() { accounts in
             if let accounts = accounts {
                 let names = accounts.map() { "\($0.name ?? "no name found") (\(String($0.id ?? 0)))" }
                 let ids = accounts.map() { $0.id }

@@ -32,6 +32,18 @@ struct ChartSamples {
         return nil
     }
     
+    static func randomSample() -> NrdbResultContainer? {
+        switch Int.random(in: 0..<6) {
+        case 0: return ChartSamples.sampleData(size: .medium)
+        case 1: return ChartSamples.sampleData(size: .small)
+        case 2: return ChartSamples.sampleData(faceted: true, size: .medium)
+        case 3: return ChartSamples.sampleData(faceted: true, size: .small)
+        case 4: return ChartSamples.sampleData(faceted: true, size: .medium)
+        case 5: return ChartSamples.sampleData(faceted: true, size: .small)
+        default: return ChartSamples.sampleData()
+        }
+    }
+    
     static func sampleData(faceted: Bool = false, timeseries: Bool = true, comparable: Bool = false, size: DataSize = .medium) -> NrdbResultContainer? {
         let type = faceted ? "Faceted" : ""
         let timeseriesType = timeseries ? "Timeseries" : ""

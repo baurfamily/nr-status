@@ -11,35 +11,44 @@ import SwiftUI
 struct Provider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
         SimpleEntry(
-            date: Date(),
-            resultContainer: ChartSamples.sampleData(timeseries: true, comparable: true, size: .small),
+            resultContainer: ChartSamples.randomSample(),
             configuration: ConfigurationAppIntent()
         )
     }
 
     func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
         SimpleEntry(
-            date: Date(),
-            resultContainer: ChartSamples.sampleData(timeseries: true, comparable: true, size: .small),
+            resultContainer: ChartSamples.randomSample(),
             configuration: ConfigurationAppIntent()
         )
     }
     
     func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
-        // I think you can pre-populate things
         var entries: [SimpleEntry] = []
-
+        let queries = Queries(
+            host: configuration.apiHost,
+            apiKey: configuration.apiKey,
+            accountIds: configuration.accountIds
+        )
+        let resultContainer = await queries.getNrqlData(query: configuration.nrqlQuery, debug: true)
+        guard let resultContainer else {
+            let entry = SimpleEntry(
+                comment: configuration.nrqlQuery,
+                configuration: configuration
+            )
+            return Timeline(entries: [entry], policy: .after(Date(timeIntervalSinceNow: 10)))
+        }
+            
         // Generate a timeline consisting of five entries an hour apart, starting from the current date.
-        let currentDate = Date()
-        let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
+        let entryDate = Date.now
         let entry = SimpleEntry(
             date: entryDate,
-            resultContainer: ChartSamples.sampleData(timeseries: true, comparable: true, size: .small),
-            configuration: ConfigurationAppIntent()
+            resultContainer: resultContainer,
+            configuration: configuration
         )
         entries.append(entry)
 
-        return Timeline(entries: entries, policy: .atEnd)
+        return Timeline(entries: entries, policy: .after(Date(timeIntervalSinceNow: 60)))
     }
 
 //    func relevances() async -> WidgetRelevances<ConfigurationAppIntent> {
@@ -48,21 +57,25 @@ struct Provider: AppIntentTimelineProvider {
 }
 
 struct SimpleEntry: TimelineEntry {
-    let date: Date
-    let resultContainer: NrdbResultContainer?
+    var date: Date = Date.now
+    var comment: String?
+    var resultContainer: NrdbResultContainer?
     let configuration: ConfigurationAppIntent
 }
 
 struct NRQL_ViewerEntryView : View {
     var entry: Provider.Entry
+    
+    @State var resultContainer: NrdbResultContainer?
 
     var body: some View {
         if let resultContainer = entry.resultContainer {
+            Text(entry.configuration.title)
             TimeseriesChart(resultsContainer: resultContainer)
+                .chartLegend(.hidden)
         } else {
-            Text("nothing to see here")
+            Text("Error loading data")
         }
-        
     }
 }
 

@@ -22,7 +22,7 @@ struct SyntheticMonitor {
     
     static func all() -> [SyntheticMonitor] {
         var apps: [SyntheticMonitor] = []
-        Queries.entities(domain: .APM) { applications in
+        Queries().entities(domain: .APM) { applications in
             if let applications = applications {
                 apps = applications.map { Self(entity: $0) }
             }

@@ -9,43 +9,28 @@ import SwiftUI
 import Charts
 
 struct TimeseriesChart: View {
-    let resultsContainer: NrdbResultContainer
-    
+    var resultsContainer: NrdbResultContainer
+    var config: ChartConfiguration = ChartConfiguration()
+
     var data: [NrdbResults.Datum] { resultsContainer.results.data }
     var metadata: NrdbMetadata { resultsContainer.metadata }
     
-    @State var isStacked: Bool = false
-    @State var isSmoothed: Bool = true
-    @State var showDataPoints: Bool = false
-    
-    @State var selectedFields: Set<String> = []
-    @State var selectedFacets: Set<String> = []
-    
+    var selectedFacets: Set<String> {
+        if config.selectedFacets.count > 0 {
+            return config.selectedFacets
+        }
+        return resultsContainer.results.allFacets
+    }
+    var selectedFields: Set<String> {
+        if config.selectedFields.count > 0 {
+            return config.selectedFields
+        }
+        return Set(resultsContainer.results.data.first?.numberFields.keys.map(\.self) ?? [])
+    }
+
     @State var selectedDate: Date?
     @State var selectedDateRange: ClosedRange<Date>?
-    
-    var fields: [String] {
-        if let first = data.first {
-            return first.numberFields.keys.map { "\($0)" }
-        } else {
-            return []
-        }
-    }
-    var facets: [String] {
-        resultsContainer.results.allFacets.sorted()
-    }
-    
-    init(resultsContainer: NrdbResultContainer) {
-        self.resultsContainer = resultsContainer
-        
-        if let fields = data.first?.numberFields.keys.map(\.self) {
-            self._selectedFields = State(wrappedValue: Set(fields))
-        }
-        if facets.count > 0 {
-            self._selectedFacets = State(wrappedValue: Set(facets))
-        }
-    }
-    
+
     func seriesNames(for field: String, in datum: NrdbResults.Datum ) -> (String,String) {
         let prefix = datum.isComparable ? "\(datum.comparison): " : ""
         let facetPrefix = datum.isFaceted ? "Facet" : "Data"
@@ -77,21 +62,6 @@ struct TimeseriesChart: View {
     }
     
     var body: some View {
-        GroupBox {
-            HStack {
-                if !resultsContainer.results.isComparable && selectedFields.count == 1 && selectedFacets.count > 1 {
-                    Toggle("Stacked", isOn: $isStacked).toggleStyle(.switch)
-                }
-                Toggle("Smoothed", isOn: $isSmoothed).toggleStyle(.switch)
-                Toggle("Points", isOn: $showDataPoints).toggleStyle(.switch)
-                if fields.count > 1 {
-                    SeriesSelectionView(fieldList: fields, selectedFields: $selectedFields)
-                }
-                if facets.count > 1 {
-                    SeriesSelectionView(fieldList: facets, selectedFields: $selectedFacets)
-                }
-            }
-        }
         Chart(data.filter { $0.facet == nil || selectedFacets.contains($0.facet!)}) { datum in
             if let selectedDateRange {
                 RectangleMark(
@@ -125,13 +95,13 @@ struct TimeseriesChart: View {
             ForEach(selectedFields.sorted(), id: \.self) { field in
                 let seriesNames = seriesNames(for: field, in: datum)
 
-                if isStacked {
+                if config.isStacked {
                     AreaMark(
                         x: .value("Timestamp", dateFor(datum)),
                         y: .value(field, datum.numberFields[field]!)
                     )
                     .foregroundStyle(by: .value(seriesNames.0, seriesNames.1))
-                    .interpolationMethod((isSmoothed ? .catmullRom : .linear))
+                    .interpolationMethod((config.isSmoothed ? .catmullRom : .linear))
                     
                 } else {
                     LineMark(
@@ -141,92 +111,12 @@ struct TimeseriesChart: View {
                     .lineStyle(lineStyle(for: datum.comparison))
                     .foregroundStyle(by: .value(seriesNames.0, seriesNames.1))
                     .symbol(by: .value(seriesNames.0, seriesNames.1))
-                    .symbolSize(showDataPoints ? 50 : 0)
-                    .interpolationMethod((isSmoothed ? .catmullRom : .linear))
+                    .symbolSize(config.showDataPoints ? 50 : 0)
+                    .interpolationMethod((config.isSmoothed ? .catmullRom : .linear))
                 }
             }
         }
         .chartXSelection(value: $selectedDate)
         .chartXSelection(range: $selectedDateRange)
-    }
-}
-
-struct AnnotationView : View {
-    var datum: NrdbResults.Datum
-    var date: Date
-    
-    init(for datum: NrdbResults.Datum, on date: Date) {
-        self.datum = datum
-        self.date = date
-    }
-    
-    var body: some View {
-        Text(date.description)
-    }
-}
-
-struct SeriesSelectionView : View {
-    let fieldList: [String]
-    
-    @State private var show = false
-    @Binding var selectedFields: Set<String>
-    
-    func toggle(field: String) {
-        if selectedFields.contains(field) {
-            selectedFields.remove(field)
-        } else {
-            self.selectedFields.insert(field)
-        }
-    }
-    
-    var body: some View {
-        Menu {
-            ForEach(fieldList, id: \.self) { field in
-                Button(field, action: { toggle(field: field) })
-            }
-        } label: {
-            Text(selectedFields.joined(separator: ", "))
-        }
-    }
-    
-}
-
-#Preview("Timeseries (small)") {
-    if let single = ChartSamples.sampleData(size: .small) {
-        TimeseriesChart(resultsContainer: single)
-    } else {
-        Text("No sample data")
-    }
-}
-
-#Preview("Faceted Timeseries (small)") {
-    if let faceted = ChartSamples.sampleData(faceted: true, size: .small) {
-        TimeseriesChart(resultsContainer: faceted)
-    } else {
-        Text("No sample data")
-    }
-}
-
-#Preview("Timeseries (medium)") {
-    if let single = ChartSamples.sampleData() {
-        TimeseriesChart(resultsContainer: single)
-    } else {
-        Text("No sample data")
-    }
-}
-
-#Preview("Faceted Timeseries (medium)") {
-    if let faceted = ChartSamples.sampleData(faceted: true) {
-        TimeseriesChart(resultsContainer: faceted)
-    } else {
-        Text("No sample data")
-    }
-}
-
-#Preview("Timeseries comparable (small)") {
-    if let single = ChartSamples.sampleData(comparable: true, size: .small) {
-        TimeseriesChart(resultsContainer: single)
-    } else {
-        Text("No sample data")
     }
 }

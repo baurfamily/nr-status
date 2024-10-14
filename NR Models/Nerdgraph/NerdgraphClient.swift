@@ -9,7 +9,7 @@ import Foundation
 
 struct NerdgraphClient {
     static var host: String {
-        return UserDefaults.standard.string(forKey: "host") ?? "https://api.newrelic.com"
+        return UserDefaults.standard.string(forKey: "host") ?? "api.newrelic.com"
     }
     static var apiKey: String {
         return UserDefaults.standard.string(forKey: "apiKey") ?? "NRAK-"
@@ -77,6 +77,44 @@ struct NerdgraphClient {
         task.resume()
     }
 
+    func getData(query: String, variables: [String:Any] = [:], debug: Bool = false ) async -> Root? {
+        var request = defaultRequest
+
+        let json: [String:Any] = ["query": query, "variables": variables ]
+        if debug {
+            print("request query: \(query)")
+            print("request vars: \(variables)")
+        }
+        guard let data = try? JSONSerialization.data(withJSONObject: json) else { return nil }
+
+        request.httpBody = data
+
+        var responseData: Data = Data()
+        do {
+            let (maybeData, _) = try await URLSession.shared.data(for: request)
+            responseData = maybeData
+        } catch {
+            print("Failed to load data: \(error)")
+            return nil
+        }
+        
+        if debug {
+            print("response data: \(String(decoding: responseData, as: Unicode.UTF8.self))")
+        }
+
+        do {
+            let responseObject = try JSONDecoder().decode(Root.self, from: responseData)
+            if debug {
+                print("responseObject: \(responseObject)")
+            }
+            return responseObject
+        
+        } catch {
+            print("Failed to decode JSON: \(error)")
+            return nil
+        }
+    }
+    
     func query(_ query: String, variables: [String:Any] = [:], debug: Bool = false, callback: @escaping (Root) -> ()) {
         var request = defaultRequest
 

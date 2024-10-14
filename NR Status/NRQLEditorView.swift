@@ -29,16 +29,25 @@ struct NRQLEditorView: View {
         GroupBox("Results") {
             if let resultContainer {
                 if resultContainer.results.isTimeseries {
-                    TimeseriesChart(resultsContainer: resultContainer)
+                    ConfigurableChartView(resultsContainer: resultContainer)
                 } else {
                     Text("facted, not timeseries data")
                 }
             }
         }
+        
+        .task {
+            let queries = Queries(
+                host: UserDefaults.standard.string(forKey: "host"),
+                apiKey: UserDefaults.standard.string(forKey: "apiKey"),
+                accountIds: UserDefaults.standard.string(forKey: "accountIds")
+            )            
+            resultContainer = await queries.getNrqlData(query: query, debug: true)
+        }
     }
     
-    func  runQuery() {
-        Queries.nrql(query: query, debug: true) { result in
+    func runQuery() {
+        Queries().nrql(query: query, debug: true) { result in
             guard let result = result else { return }
             resultContainer = result
         }

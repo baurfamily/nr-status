@@ -44,6 +44,41 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES"
       shouldAutocreateTestPlan = "YES">
+      <Testables>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "3F57148D2C9EA7BD00685FEA"
+               BuildableName = "NR StatusUITests.xctest"
+               BlueprintName = "NR StatusUITests"
+               ReferencedContainer = "container:NR Status.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "3F5714832C9EA7BD00685FEA"
+               BuildableName = "NR StatusTests.xctest"
+               BlueprintName = "NR StatusTests"
+               ReferencedContainer = "container:NR Status.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "3F28B36D2CBB996200CCB8DD"
+               BuildableName = "NR ModelsTests.xctest"
+               BlueprintName = "NR ModelsTests"
+               ReferencedContainer = "container:NR Status.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+      </Testables>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"

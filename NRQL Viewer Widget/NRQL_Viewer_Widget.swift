@@ -36,7 +36,7 @@ struct Provider: AppIntentTimelineProvider {
                 comment: configuration.nrqlQuery,
                 configuration: configuration
             )
-            return Timeline(entries: [entry], policy: .after(Date(timeIntervalSinceNow: 10)))
+            return Timeline(entries: [entry], policy: .after(Date(timeIntervalSinceNow: 60*5)))
         }
             
         // Generate a timeline consisting of five entries an hour apart, starting from the current date.
@@ -48,7 +48,7 @@ struct Provider: AppIntentTimelineProvider {
         )
         entries.append(entry)
 
-        return Timeline(entries: entries, policy: .after(Date(timeIntervalSinceNow: 60)))
+        return Timeline(entries: entries, policy: .after(Date(timeIntervalSinceNow: 60*5)))
     }
 
 //    func relevances() async -> WidgetRelevances<ConfigurationAppIntent> {
@@ -79,7 +79,7 @@ struct NRQL_ViewerEntryView : View {
     }
 }
 
-struct NRQL_Viewer: Widget {
+struct NRQL_Viewer_Widget: Widget {
     let kind: String = "NRQL_Viewer"
 
     var body: some WidgetConfiguration {

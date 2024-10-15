@@ -32,3 +32,13 @@ struct SeriesSelectionView : View {
     }
     
 }
+
+#Preview {
+    @Previewable @State var selectedFields: Set<String> = []
+    GroupBox {
+        SeriesSelectionView(
+            fieldList: ["A", "B", "C"],
+            selectedFields: $selectedFields
+        )
+    }
+}

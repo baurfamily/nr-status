@@ -1,0 +1,27 @@
+
+// Faceted timseries medium
+SELECT count(*) FROM Transaction SINCE 1 week ago TIMESERIES FACET name WHERE name NOT LIKE '%RouteSet/call'
+
+// Faceted timeseries small
+SELECT count(*), uniqueCount(name) FROM Transaction SINCE 1 week ago TIMESERIES  1 day FACET name
+
+// Timeseries Comparable medium
+SELECT count(*) FROM Transaction SINCE 1 day ago TIMESERIES 1 hour COMPARE WITH 1 week ago
+
+// Timeseries comparable small
+SELECT count(*), uniqueCount(name) FROM Transaction SINCE 1 day ago TIMESERIES 6 hours COMPARE WITH 2 days ago
+
+// Timeseries medium
+SELECT count(*) FROM Transaction SINCE 1 week ago TIMESERIES
+
+// Timseries small
+SELECT count(*), uniqueCount(name) FROM Transaction SINCE 1 week ago TIMESERIES  1 day
+
+// List
+SELECT * FROM Transaction
+
+// Aggregate
+SELECT count(*) FROM Transaction SINCE 1 week ago
+
+// Aggregates
+SELECT count(*), uniqueCount(name) FROM Transaction SINCE 1 week ago

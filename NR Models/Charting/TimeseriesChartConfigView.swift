@@ -33,3 +33,12 @@ struct TimeseriesChartConfigView: View {
         }
     }
 }
+
+#Preview {
+    @Previewable @State var config: ChartConfiguration = .init()
+    TimeseriesChartConfigView(
+        fields: ["Field 1", "Field 2"],
+        facets: ["Facet 1", "Facet 2"],
+        config: $config
+    )
+}

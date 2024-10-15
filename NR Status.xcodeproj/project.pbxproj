@@ -17,6 +17,20 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		3F01FD392CBDFAE100D9E068 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3F57146B2C9EA7BC00685FEA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3F01FD242CBDFADF00D9E068;
+			remoteInfo = "NRQL Editor";
+		};
+		3F01FD432CBDFAE100D9E068 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3F57146B2C9EA7BC00685FEA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3F01FD242CBDFADF00D9E068;
+			remoteInfo = "NRQL Editor";
+		};
 		3F28B3702CBB996200CCB8DD /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 3F57146B2C9EA7BC00685FEA /* Project object */;
@@ -87,6 +101,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		3F01FD252CBDFADF00D9E068 /* NRQL Editor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NRQL Editor.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3F01FD382CBDFAE100D9E068 /* NRQL EditorTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "NRQL EditorTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3F01FD422CBDFAE100D9E068 /* NRQL EditorUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "NRQL EditorUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3F28B29F2CBB3CBD00CCB8DD /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		3F28B2A12CBB3CBD00CCB8DD /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		3F28B3652CBB996200CCB8DD /* NR_Models.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = NR_Models.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -98,6 +115,27 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		3F01FD4A2CBDFAE100D9E068 /* Exceptions for "NRQL Editor" folder in "NRQL Editor" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 3F01FD242CBDFADF00D9E068 /* NRQL Editor */;
+		};
+		3F01FD6F2CBE2AA200D9E068 /* Exceptions for "NR Models" folder in "NR Status" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Preview Content/samples.nrql",
+			);
+			target = 3F5714722C9EA7BC00685FEA /* NR Status */;
+		};
+		3F01FD702CBE2AA200D9E068 /* Exceptions for "NR Models" folder in "NRQL Viewer WidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Preview Content/samples.nrql",
+			);
+			target = 3FFDAEBC2CBCE7B200B26893 /* NRQL Viewer WidgetExtension */;
+		};
 		3F28B37C2CBB996200CCB8DD /* Exceptions for "NR Models" folder in "NR Models" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -124,6 +162,7 @@
 				"Preview Content/ChartData/TimeseriesSmall.json",
 				"Preview Content/ChartSamples.swift",
 				"Preview Content/Preview Assets.xcassets",
+				"Preview Content/samples.nrql",
 			);
 			publicHeaders = (
 				NR_Models.h,
@@ -140,10 +179,30 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		3F01FD262CBDFADF00D9E068 /* NRQL Editor */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				3F01FD4A2CBDFAE100D9E068 /* Exceptions for "NRQL Editor" folder in "NRQL Editor" target */,
+			);
+			path = "NRQL Editor";
+			sourceTree = "<group>";
+		};
+		3F01FD3B2CBDFAE100D9E068 /* NRQL EditorTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "NRQL EditorTests";
+			sourceTree = "<group>";
+		};
+		3F01FD452CBDFAE100D9E068 /* NRQL EditorUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "NRQL EditorUITests";
+			sourceTree = "<group>";
+		};
 		3F28B3662CBB996200CCB8DD /* NR Models */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				3F01FD6F2CBE2AA200D9E068 /* Exceptions for "NR Models" folder in "NR Status" target */,
 				3F28B37C2CBB996200CCB8DD /* Exceptions for "NR Models" folder in "NR Models" target */,
+				3F01FD702CBE2AA200D9E068 /* Exceptions for "NR Models" folder in "NRQL Viewer WidgetExtension" target */,
 			);
 			path = "NR Models";
 			sourceTree = "<group>";
@@ -179,6 +238,27 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		3F01FD222CBDFADF00D9E068 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3F01FD352CBDFAE100D9E068 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3F01FD3F2CBDFAE100D9E068 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		3F28B3622CBB996200CCB8DD /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -247,6 +327,9 @@
 				3F28B3662CBB996200CCB8DD /* NR Models */,
 				3F28B3742CBB996200CCB8DD /* NR ModelsTests */,
 				3FFDAEC02CBCE7B200B26893 /* NRQL Viewer Widget */,
+				3F01FD262CBDFADF00D9E068 /* NRQL Editor */,
+				3F01FD3B2CBDFAE100D9E068 /* NRQL EditorTests */,
+				3F01FD452CBDFAE100D9E068 /* NRQL EditorUITests */,
 				3F5714742C9EA7BC00685FEA /* Products */,
 				3F28B29E2CBB3CBD00CCB8DD /* Frameworks */,
 			);
@@ -261,6 +344,9 @@
 				3F28B3652CBB996200CCB8DD /* NR_Models.framework */,
 				3F28B36E2CBB996200CCB8DD /* NR ModelsTests.xctest */,
 				3FFDAEBD2CBCE7B200B26893 /* NRQL Viewer WidgetExtension.appex */,
+				3F01FD252CBDFADF00D9E068 /* NRQL Editor.app */,
+				3F01FD382CBDFAE100D9E068 /* NRQL EditorTests.xctest */,
+				3F01FD422CBDFAE100D9E068 /* NRQL EditorUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -278,6 +364,75 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
+		3F01FD242CBDFADF00D9E068 /* NRQL Editor */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3F01FD4B2CBDFAE100D9E068 /* Build configuration list for PBXNativeTarget "NRQL Editor" */;
+			buildPhases = (
+				3F01FD212CBDFADF00D9E068 /* Sources */,
+				3F01FD222CBDFADF00D9E068 /* Frameworks */,
+				3F01FD232CBDFADF00D9E068 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				3F01FD262CBDFADF00D9E068 /* NRQL Editor */,
+				3F28B3662CBB996200CCB8DD /* NR Models */,
+			);
+			name = "NRQL Editor";
+			packageProductDependencies = (
+			);
+			productName = "NRQL Editor";
+			productReference = 3F01FD252CBDFADF00D9E068 /* NRQL Editor.app */;
+			productType = "com.apple.product-type.application";
+		};
+		3F01FD372CBDFAE100D9E068 /* NRQL EditorTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3F01FD4E2CBDFAE100D9E068 /* Build configuration list for PBXNativeTarget "NRQL EditorTests" */;
+			buildPhases = (
+				3F01FD342CBDFAE100D9E068 /* Sources */,
+				3F01FD352CBDFAE100D9E068 /* Frameworks */,
+				3F01FD362CBDFAE100D9E068 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3F01FD3A2CBDFAE100D9E068 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				3F01FD3B2CBDFAE100D9E068 /* NRQL EditorTests */,
+			);
+			name = "NRQL EditorTests";
+			packageProductDependencies = (
+			);
+			productName = "NRQL EditorTests";
+			productReference = 3F01FD382CBDFAE100D9E068 /* NRQL EditorTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		3F01FD412CBDFAE100D9E068 /* NRQL EditorUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3F01FD512CBDFAE100D9E068 /* Build configuration list for PBXNativeTarget "NRQL EditorUITests" */;
+			buildPhases = (
+				3F01FD3E2CBDFAE100D9E068 /* Sources */,
+				3F01FD3F2CBDFAE100D9E068 /* Frameworks */,
+				3F01FD402CBDFAE100D9E068 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3F01FD442CBDFAE100D9E068 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				3F01FD452CBDFAE100D9E068 /* NRQL EditorUITests */,
+			);
+			name = "NRQL EditorUITests";
+			packageProductDependencies = (
+			);
+			productName = "NRQL EditorUITests";
+			productReference = 3F01FD422CBDFAE100D9E068 /* NRQL EditorUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		3F28B3642CBB996200CCB8DD /* NR Models */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3F28B37D2CBB996200CCB8DD /* Build configuration list for PBXNativeTarget "NR Models" */;
@@ -432,6 +587,17 @@
 				LastSwiftUpdateCheck = 1600;
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
+					3F01FD242CBDFADF00D9E068 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					3F01FD372CBDFAE100D9E068 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = 3F01FD242CBDFADF00D9E068;
+					};
+					3F01FD412CBDFAE100D9E068 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = 3F01FD242CBDFADF00D9E068;
+					};
 					3F28B3642CBB996200CCB8DD = {
 						CreatedOnToolsVersion = 16.0;
 					};
@@ -478,11 +644,35 @@
 				3F28B3642CBB996200CCB8DD /* NR Models */,
 				3F28B36D2CBB996200CCB8DD /* NR ModelsTests */,
 				3FFDAEBC2CBCE7B200B26893 /* NRQL Viewer WidgetExtension */,
+				3F01FD242CBDFADF00D9E068 /* NRQL Editor */,
+				3F01FD372CBDFAE100D9E068 /* NRQL EditorTests */,
+				3F01FD412CBDFAE100D9E068 /* NRQL EditorUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		3F01FD232CBDFADF00D9E068 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3F01FD362CBDFAE100D9E068 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3F01FD402CBDFAE100D9E068 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		3F28B3632CBB996200CCB8DD /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -528,6 +718,27 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		3F01FD212CBDFADF00D9E068 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3F01FD342CBDFAE100D9E068 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3F01FD3E2CBDFAE100D9E068 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		3F28B3612CBB996200CCB8DD /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -573,6 +784,16 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		3F01FD3A2CBDFAE100D9E068 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3F01FD242CBDFADF00D9E068 /* NRQL Editor */;
+			targetProxy = 3F01FD392CBDFAE100D9E068 /* PBXContainerItemProxy */;
+		};
+		3F01FD442CBDFAE100D9E068 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3F01FD242CBDFADF00D9E068 /* NRQL Editor */;
+			targetProxy = 3F01FD432CBDFAE100D9E068 /* PBXContainerItemProxy */;
+		};
 		3F28B3712CBB996200CCB8DD /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 3F28B3642CBB996200CCB8DD /* NR Models */;
@@ -606,6 +827,130 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		3F01FD4C2CBDFAE100D9E068 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "NRQL Editor/NRQL_Editor.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"NRQL Editor/Preview Content\"";
+				DEVELOPMENT_TEAM = EHM929N34N;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "NRQL Editor/Info.plist";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NRQL-Editor";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		3F01FD4D2CBDFAE100D9E068 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "NRQL Editor/NRQL EditorRelease.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"NRQL Editor/Preview Content\"";
+				DEVELOPMENT_TEAM = EHM929N34N;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "NRQL Editor/Info.plist";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NRQL-Editor";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		3F01FD4F2CBDFAE100D9E068 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = EHM929N34N;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NRQL-EditorTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NRQL Editor.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NRQL Editor";
+			};
+			name = Debug;
+		};
+		3F01FD502CBDFAE100D9E068 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = EHM929N34N;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NRQL-EditorTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NRQL Editor.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NRQL Editor";
+			};
+			name = Release;
+		};
+		3F01FD522CBDFAE100D9E068 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = EHM929N34N;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NRQL-EditorUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = "NRQL Editor";
+			};
+			name = Debug;
+		};
+		3F01FD532CBDFAE100D9E068 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = EHM929N34N;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NRQL-EditorUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = "NRQL Editor";
+			};
+			name = Release;
+		};
 		3F28B37E2CBB996200CCB8DD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1013,6 +1358,33 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		3F01FD4B2CBDFAE100D9E068 /* Build configuration list for PBXNativeTarget "NRQL Editor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3F01FD4C2CBDFAE100D9E068 /* Debug */,
+				3F01FD4D2CBDFAE100D9E068 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3F01FD4E2CBDFAE100D9E068 /* Build configuration list for PBXNativeTarget "NRQL EditorTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3F01FD4F2CBDFAE100D9E068 /* Debug */,
+				3F01FD502CBDFAE100D9E068 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3F01FD512CBDFAE100D9E068 /* Build configuration list for PBXNativeTarget "NRQL EditorUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3F01FD522CBDFAE100D9E068 /* Debug */,
+				3F01FD532CBDFAE100D9E068 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		3F28B37D2CBB996200CCB8DD /* Build configuration list for PBXNativeTarget "NR Models" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

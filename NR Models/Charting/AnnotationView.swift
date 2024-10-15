@@ -20,3 +20,15 @@ struct AnnotationView : View {
         Text(date.description)
     }
 }
+
+#Preview {
+    let resultContainer = ChartSamples.sampleData()
+    if let datum = resultContainer?.results.data.first {
+        GroupBox {
+            AnnotationView(
+                for: datum,
+                on: datum.beginTime!
+            )
+        }
+    }
+}

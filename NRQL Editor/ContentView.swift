@@ -11,7 +11,7 @@ import LanguageSupport
 
 struct ContentView: View {
     @Environment(\.colorScheme) private var colorScheme: ColorScheme
-
+    
     @Binding var document: NRQL_EditorDocument
     
     @State var messages: Set<TextLocated<Message>> = Set()
@@ -19,10 +19,8 @@ struct ContentView: View {
     
     var body: some View {
         NavigationSplitView {
-            List {
-                Text("one")
-                Text("two")
-                Text("three")
+            List(document.queries) { query in
+                Text(query.title)
             }
         } content: {
             CodeEditor(
@@ -32,21 +30,15 @@ struct ContentView: View {
                 language: .nrql(),
                 layout: CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true)
             ).environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight)).navigationSplitViewColumnWidth(min: 200, ideal: 500, max: 1000)
-            
-//                  .environment(\.codeEditorTheme, colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight)
-              
-//            TextEditor(text: $document.text)
-        }
-        detail: {
+        } detail: {
             List {
                 Image(systemName: "checkmark")
                 Image(systemName: "house")
             }
         }
-        
-        
     }
 }
+
 
 #Preview {
     ContentView(document: .constant(NRQL_EditorDocument()))

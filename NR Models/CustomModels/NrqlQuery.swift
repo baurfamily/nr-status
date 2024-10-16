@@ -5,7 +5,11 @@
 //  Created by Eric Baur on 10/14/24.
 //
 
-struct NrqlQuery {
+import Foundation
+
+struct NrqlQuery : Identifiable {
+    var id: String = UUID().uuidString
+    
     var title: String = "NRQL Query"
     var nrql: String
     

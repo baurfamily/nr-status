@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3F01FD7C2CBF718600D9E068 /* CodeEditorView in Frameworks */ = {isa = PBXBuildFile; productRef = 3F01FD7B2CBF718600D9E068 /* CodeEditorView */; };
+		3F01FD7E2CBF718600D9E068 /* LanguageSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 3F01FD7D2CBF718600D9E068 /* LanguageSupport */; };
 		3F28B36F2CBB996200CCB8DD /* NR_Models.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B3652CBB996200CCB8DD /* NR_Models.framework */; };
 		3F28B37A2CBB996200CCB8DD /* NR_Models.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B3652CBB996200CCB8DD /* NR_Models.framework */; };
 		3F28B37B2CBB996200CCB8DD /* NR_Models.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B3652CBB996200CCB8DD /* NR_Models.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -125,6 +127,7 @@
 		3F01FD6F2CBE2AA200D9E068 /* Exceptions for "NR Models" folder in "NR Status" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				CustomModels/NrqlQuery.swift,
 				"Preview Content/samples.nrql",
 			);
 			target = 3F5714722C9EA7BC00685FEA /* NR Status */;
@@ -132,6 +135,7 @@
 		3F01FD702CBE2AA200D9E068 /* Exceptions for "NR Models" folder in "NRQL Viewer WidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				CustomModels/NrqlQuery.swift,
 				"Preview Content/samples.nrql",
 			);
 			target = 3FFDAEBC2CBCE7B200B26893 /* NRQL Viewer WidgetExtension */;
@@ -145,6 +149,7 @@
 				Charting/SeriesSelectionView.swift,
 				Charting/TimeseriesChart.swift,
 				Charting/TimeseriesChartConfigView.swift,
+				CustomModels/NrqlQuery.swift,
 				Models/Application.swift,
 				Models/SyntheticMonitor.swift,
 				Nerdgraph/Alert.swift,
@@ -242,6 +247,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3F01FD7E2CBF718600D9E068 /* LanguageSupport in Frameworks */,
+				3F01FD7C2CBF718600D9E068 /* CodeEditorView in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -382,6 +389,8 @@
 			);
 			name = "NRQL Editor";
 			packageProductDependencies = (
+				3F01FD7B2CBF718600D9E068 /* CodeEditorView */,
+				3F01FD7D2CBF718600D9E068 /* LanguageSupport */,
 			);
 			productName = "NRQL Editor";
 			productReference = 3F01FD252CBDFADF00D9E068 /* NRQL Editor.app */;
@@ -632,6 +641,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				3F7896472CA7CE1100A03646 /* XCRemoteSwiftPackageReference "HexGrid" */,
+				3F01FD7A2CBF718600D9E068 /* XCRemoteSwiftPackageReference "CodeEditorView" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3F5714742C9EA7BC00685FEA /* Products */;
@@ -1451,6 +1461,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		3F01FD7A2CBF718600D9E068 /* XCRemoteSwiftPackageReference "CodeEditorView" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/mchakravarty/CodeEditorView";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.14.0;
+			};
+		};
 		3F7896472CA7CE1100A03646 /* XCRemoteSwiftPackageReference "HexGrid" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ksemianov/HexGrid";
@@ -1462,6 +1480,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		3F01FD7B2CBF718600D9E068 /* CodeEditorView */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3F01FD7A2CBF718600D9E068 /* XCRemoteSwiftPackageReference "CodeEditorView" */;
+			productName = CodeEditorView;
+		};
+		3F01FD7D2CBF718600D9E068 /* LanguageSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3F01FD7A2CBF718600D9E068 /* XCRemoteSwiftPackageReference "CodeEditorView" */;
+			productName = LanguageSupport;
+		};
 		3F7896482CA7CE1100A03646 /* HexGrid */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 3F7896472CA7CE1100A03646 /* XCRemoteSwiftPackageReference "HexGrid" */;

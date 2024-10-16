@@ -17,7 +17,7 @@ extension UTType {
 struct NRQL_EditorDocument: FileDocument {
     var text: String
 
-    init(text: String = "SELECT count(*) FROM Transactions FACET name SINCE 1 day ago TIMESERIES 15 minutes") {
+    init(text: String = "// Title of query\nSELECT count(*) FROM Transactions FACET name SINCE 1 day ago TIMESERIES 15 minutes") {
         self.text = text
     }
 
@@ -25,7 +25,7 @@ struct NRQL_EditorDocument: FileDocument {
 
     init(configuration: ReadConfiguration) throws {
         guard let data = configuration.file.regularFileContents,
-              let string = String(data: data, encoding: .utf8)
+            let string = String(data: data, encoding: .utf8)
         else {
             throw CocoaError(.fileReadCorruptFile)
         }
@@ -36,4 +36,11 @@ struct NRQL_EditorDocument: FileDocument {
         let data = text.data(using: .utf8)!
         return .init(regularFileWithContents: data)
     }
+    
+//    func queries() -> [NrqlQuery] {
+//        for query in text.split(separator: "\n") {
+//            return [NrqlQuery(rawValue: String(query))]
+//        }
+//    }
+    
 }

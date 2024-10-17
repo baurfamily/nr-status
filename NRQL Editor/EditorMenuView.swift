@@ -13,7 +13,7 @@ struct EditorMenuView : View {
     var body: some View {
         Group {
             Button("Run query...") {
-                if let document {
+                if var document {
                     document.runQuery()
                 }
             }.keyboardShortcut("\n")

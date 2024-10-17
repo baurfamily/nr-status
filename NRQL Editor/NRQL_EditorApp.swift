@@ -34,5 +34,9 @@ struct NRQL_EditorApp: App {
                 EditorMenuView()
             }
         }
+        
+        Settings {
+            PreferencesView()
+        }
     }
 }

@@ -19,21 +19,26 @@ struct ContentView: View {
     
     var body: some View {
         NavigationSplitView {
-            List(document.queries) { query in
-                Text(query.title)
+            List(document.queries) { docQuery in
+                Text(docQuery.query.title)
             }
         } content: {
             CodeEditor(
                 text: $document.text,
-                position: $position,
+                position: $document.position,
                 messages: $messages,
                 language: .nrql(),
                 layout: CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true)
             ).environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight)).navigationSplitViewColumnWidth(min: 200, ideal: 500, max: 1000)
         } detail: {
-            List {
-                Image(systemName: "checkmark")
-                Image(systemName: "house")
+            List(document.queries) { docQuery in
+                if let resultContainer = docQuery.query.resultContainer {
+                    TimeseriesChart(resultsContainer: resultContainer)
+                        .frame(minHeight: 300)
+                        .chartLegend(.hidden)
+                } else {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                }
             }
         }
     }

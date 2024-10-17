@@ -10,10 +10,10 @@ import RegexBuilder
 import LanguageSupport
 
 
-private let swiftReservedIdentifiers =
+private let nrqlReservedIdentifiers =
   [ "SELECT", "FROM", "AS", "COMPARE WITH", "EXTRAPOLATE", "FACET", "CASES", "ORDER BY", "JOIN", "LIMIT", "OFFSET", "SHOW EVENT TYPES", "SINCE", "SLIDE BY", "TIMESERIES", "UNTIL", "WHERE", "WITH METRIC_FORMAT", "WITH", "TIMEZONE", "LIMIT", "IN", "NOT", "LIKE", "RLIKE", "IS", "AND", "OR", "NULL", "TRUE", "FALSE" ]
 
-private let swiftReservedOperators =
+private let nrqlReservedOperators =
   [".", "(", ")", "<", ">", "=", "week", "weeks", "ago", "minutes", "minute", "hour", "hours", "months", "month", "day", "days", "second", "seconds", "aggregationendtime", "apdex", "average", "bucketPercentile", "cardinality", "cdfPercentage", "count", "derivative", "earliest", "filter", "funnel", "histogram", "keyset", "latest", "latestrate", "max", "median", "min", "percentage", "percentile", "predictLinear", "rate", "stdvar", "sum", "uniqueCount", "uniques", "accountId", "aparse", "blob", "buckets", "concat", "convert", "capture", "decode", "dimensions", "encode", "cidrAddress", "eventType", "getField", "getCdfCount", "if", "jparse", "length", "lookup", "lower", "mapKeys", "mapValues", "minuteOf", "mod", "position", "round", "stddev", "string", "substring", "toDatetime", "toTimestamp", "upper" ]
 
 extension LanguageConfiguration {
@@ -65,9 +65,9 @@ extension LanguageConfiguration {
         }
       }
     }
-    return LanguageConfiguration(name: "Swift",
-                                 supportsSquareBrackets: true,
-                                 supportsCurlyBrackets: true,
+    return LanguageConfiguration(name: "NRQL",
+                                 supportsSquareBrackets: false,
+                                 supportsCurlyBrackets: false,
                                  stringRegex: /\"(?:\\\"|[^\"])*+\"/,
                                  characterRegex: nil,
                                  numberRegex: numberRegex,
@@ -75,8 +75,8 @@ extension LanguageConfiguration {
                                  nestedComment: (open: "/*", close: "*/"),
                                  identifierRegex: identifierRegex,
                                  operatorRegex: operatorRegex,
-                                 reservedIdentifiers: swiftReservedIdentifiers,
-                                 reservedOperators: swiftReservedOperators,
+                                 reservedIdentifiers: nrqlReservedIdentifiers,
+                                 reservedOperators: nrqlReservedOperators,
                                  languageService: languageService)
   }
 }

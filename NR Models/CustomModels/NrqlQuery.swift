@@ -6,17 +6,46 @@
 //
 
 import Foundation
+import CryptoKit
 
-struct NrqlQuery : Identifiable {
-    var id: String = UUID().uuidString
+
+
+class NrqlQuery : Identifiable {
+    var nrql: String {
+        willSet {
+            self.resultContainer = nil
+        }
+    }
+    var resultContainer: NrdbResultContainer?
     
-    var title: String = "NRQL Query"
-    var nrql: String
+    var id: String {
+        SHA256.hash( data:Data(self.nrql.utf8) ).description
+    }
     
-//    var _resultContainer: NrdbResultContainer?
-//    var resultContainer: NrdbResultContainer {
-//        guard _resultContainer == nil else { return _resultContainer! }
-//        self._resultContainer = Queries().getNrqlData(query: nrql, debug: false)
-//        return _resultContainer!
-//    }
+    var title: String {
+        let defaultTitle = "NRQL Query"
+        guard let titleString = nrql.split(separator: "\n").first else { return defaultTitle }
+        guard titleString.starts(with: "//") else { return defaultTitle }
+        
+        let title = titleString.dropFirst(2).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else { return defaultTitle }
+        
+        return title
+    }
+    
+    init(nrql: String, runQuery: Bool = false) {
+        self.nrql = nrql
+        if runQuery {
+            self.runQuery()
+        }
+    }
+    
+    func getData() async {
+        self.resultContainer = await Queries().getNrqlData(query: nrql, debug: false)
+    }
+    
+    func runQuery() {
+        Queries().nrql(query: nrql) { print("got results! \($0?.nrql)"); self.resultContainer = $0 }
+    }
 }
+

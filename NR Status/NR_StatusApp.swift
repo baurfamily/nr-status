@@ -1,41 +1,50 @@
 //
-//  NR_StatusApp.swift
-//  NR Status
+//  NRQL_EditorApp.swift
+//  NRQL Editor
 //
-//  Created by Eric Baur on 9/21/24.
+//  Created by Eric Baur on 10/14/24.
 //
 
 import SwiftUI
 
+struct DocumentFocusedValueKey: FocusedValueKey {
+  typealias Value = Binding<NRQL_EditorDocument>
+}
+    
+extension FocusedValues {
+  var document: DocumentFocusedValueKey.Value? {
+    get {
+      return self[DocumentFocusedValueKey.self]
+    }
+            
+    set {
+        self[DocumentFocusedValueKey.self] = newValue
+    }
+  }
+}
+
 @main
-struct NR_StatusApp: App {
+struct NRQL_EditorApp: App {
     @Environment(\.openWindow) var openWindow
     
     var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
+        WindowGroup(id: "summary-view") { SummaryView() }
         .commands {
-            CommandMenu("Custom Menu") {
+            CommandMenu("Summaries") {
                 Button(action: {
-                    print("Menu Button selected")
+                    openWindow(id: "summary-view")
                 }, label: {
-                    Text("Menu Button")
-                })
-            }
-            CommandMenu("NRQL") {
-                Button(action: {
-                    openWindow(id: "NRQLEditor")
-                }, label: {
-                    Text("Open NRQL Editor")
+                    Text("Summary View")
                 })
             }
         }
-        
-        WindowGroup("NRQLEditor", id: "NRQLEditor") {
-            NRQLEditorView()
+        DocumentGroup(newDocument: NRQL_EditorDocument()) { file in
+            ContentView(document: file.$document).focusedSceneValue(\.document, file.$document)
+        }.commands {
+            CommandMenu("Editor") { EditorMenuView() }
         }
         
+
         Settings {
             PreferencesView()
         }

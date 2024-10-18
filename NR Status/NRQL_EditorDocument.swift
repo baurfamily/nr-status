@@ -8,6 +8,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 import CodeEditorView
+import LanguageSupport
 
 extension UTType {
     static var exampleText: UTType {
@@ -17,7 +18,8 @@ extension UTType {
 
 struct DocumentQuery : Identifiable {
     var position: CodeEditor.Position
-    var query: NrqlQuery
+    // not sure if this attirbute accomplishes anything
+    @ObservedObject var query: NrqlQuery
     var focused: Bool = false
     
     var startCharacter: Int {
@@ -53,6 +55,8 @@ struct NRQL_EditorDocument: FileDocument {
 //    var results: [Int:NrdbResultContainer] = [:]
     var focusedResult: NrdbResultContainer?
     var focusedQueryId: Int?
+    
+    var messages: Set<TextLocated<Message>> = Set()
     
     var queries: [DocumentQuery] = []
 
@@ -149,14 +153,26 @@ struct NRQL_EditorDocument: FileDocument {
     }
     
     mutating func runQuery() {
-        print("running current query")
-        print("at: \(position)")
-        
         guard let range = position.selections.first else { return }
         guard let docQuery = queries.first( where:{ NSLocationInRange(range.lowerBound, $0.position.selections.first!) }) else { return }
         
-        print("running query: \(docQuery.query.nrql)")
         docQuery.query.runQuery()
-        position.selections = [range]
+        self.position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
+//        self.position = docQuery.position
+        print("message!")
+        self.messages.insert(
+            TextLocated(
+                location: TextLocation(oneBasedLine: 1, column: 1),
+                entity: Message.init(category: .informational, length: 10, summary: "foobar baz", description: "more text here that can be long and formatted")
+                )
+            )
+
+    }
+    
+    func getData(_ callback: @escaping (NrdbResultContainer?) -> Void) {
+        queryAt(position)?.query.runQuery() { result in
+                callback(result)
+        }
+        
     }
 }

@@ -8,7 +8,7 @@
 import Foundation
 import CryptoKit
 
-class NrqlQuery : Identifiable {
+class NrqlQuery : Identifiable, ObservableObject {
     // this is the full text, including comments
     var text: String = "" {
         willSet { textWillUpdate(to: newValue) }
@@ -17,7 +17,6 @@ class NrqlQuery : Identifiable {
     // this is just the functional part, minus comments
     var nrql: String {
         willSet {
-            print("invalidating query")
             self.invalidated = true
         }
     }
@@ -26,7 +25,8 @@ class NrqlQuery : Identifiable {
     var invalidated: Bool = false
     
     // the data behind the NRQL, but not trustworthy if invalidated == true
-    var resultContainer: NrdbResultContainer?
+    // this attribute should work with observableobject, but I'm not sure it's working as I expected
+    @Published var resultContainer: NrdbResultContainer?
     
     var id: String { hash(nrql: self.nrql) }
     
@@ -68,7 +68,6 @@ class NrqlQuery : Identifiable {
     }
     
     private func textWillUpdate(to newValue: String) {
-        print("original query\n\(self.nrql)")
         var lines: [Substring] = []
         for line in newValue.split(separator: "\n") {
             guard !line.starts(with: "//") else { continue }

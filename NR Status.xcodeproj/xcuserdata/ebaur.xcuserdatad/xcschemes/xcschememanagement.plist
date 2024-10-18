@@ -4,6 +4,11 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
+		<key>CodeEditor (Playground).xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>5</integer>
+		</dict>
 		<key>NR Models.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
@@ -37,12 +42,22 @@
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
+		<key>3F01FD242CBDFADF00D9E068</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
 		<key>3F28B29C2CBB3CBD00CCB8DD</key>
 		<dict>
 			<key>primary</key>
 			<true/>
 		</dict>
 		<key>3F5714722C9EA7BC00685FEA</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>3FFDAEBC2CBCE7B200B26893</key>
 		<dict>
 			<key>primary</key>
 			<true/>

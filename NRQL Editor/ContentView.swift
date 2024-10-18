@@ -19,9 +19,7 @@ struct ContentView: View {
     
     var body: some View {
         NavigationSplitView {
-            List(document.queries) { docQuery in
-                Text(docQuery.query.title)
-            }
+            Text("Maybe metadata...")
         } content: {
             CodeEditor(
                 text: $document.text,
@@ -31,13 +29,66 @@ struct ContentView: View {
                 layout: CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true)
             ).environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight)).navigationSplitViewColumnWidth(min: 200, ideal: 500, max: 1000)
         } detail: {
-            List(document.queries) { docQuery in
-                if let resultContainer = docQuery.query.resultContainer {
+            HStack {
+                ResultsList(document: $document)
+                ResultsTabView(document: $document)
+            }
+        }
+    }
+}
+
+struct ResultsList : View {
+    @Binding var document: NRQL_EditorDocument
+    
+    var body: some View {
+        List(document.queries) { docQuery in
+            if let resultContainer = docQuery.query.resultContainer {
+                VStack {
+                    Text(docQuery.query.title).font(.title)
                     TimeseriesChart(resultsContainer: resultContainer)
                         .frame(minHeight: 300)
                         .chartLegend(.hidden)
+                }
+            } else {
+                if docQuery.focused {
+                    HStack {
+                        Text(docQuery.query.title)
+                        Image(systemName: "exclamationmark.triangle.fill")
+                    }
                 } else {
-                    Image(systemName: "exclamationmark.triangle.fill")
+                    HStack {
+                        Text(docQuery.query.title)
+                        Image(systemName: "questionmark.circle.fill")
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct ResultsTabView : View {
+    @Binding var document: NRQL_EditorDocument
+    
+    var body: some View {
+        TabView(selection: $document.focusedQueryId) {
+            ForEach(document.queries) { docQuery in
+                Tab(value: docQuery.id) {
+                    if let resultContainer = docQuery.query.resultContainer {
+                            TimeseriesChart(resultsContainer: resultContainer)
+                            .frame(minHeight: 300)
+                    } else {
+                        if docQuery.focused {
+                            HStack {
+                                Text(docQuery.query.title)
+                                Image(systemName: "exclamationmark.triangle.fill")
+                            }
+                        } else {
+                            HStack {
+                                Text(docQuery.query.title)
+                                Image(systemName: "questionmark.circle.fill")
+                            }
+                        }
+                    }
                 }
             }
         }

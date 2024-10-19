@@ -19,22 +19,12 @@
 			<key>orderHint</key>
 			<integer>1</integer>
 		</dict>
-		<key>NRQL Editor.xcscheme_^#shared#^_</key>
-		<dict>
-			<key>orderHint</key>
-			<integer>4</integer>
-		</dict>
 		<key>NRQL Viewer WidgetExtension.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
 			<integer>2</integer>
 		</dict>
 		<key>NRQL ViewerExtension.xcscheme_^#shared#^_</key>
-		<dict>
-			<key>orderHint</key>
-			<integer>0</integer>
-		</dict>
-		<key>NRQL WidgetExtension.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
 			<integer>0</integer>
@@ -52,7 +42,22 @@
 			<key>primary</key>
 			<true/>
 		</dict>
+		<key>3F28B36D2CBB996200CCB8DD</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
 		<key>3F5714722C9EA7BC00685FEA</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>3F5714832C9EA7BD00685FEA</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>3F57148D2C9EA7BD00685FEA</key>
 		<dict>
 			<key>primary</key>
 			<true/>

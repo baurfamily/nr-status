@@ -30,7 +30,7 @@ struct DocumentQuery : Identifiable {
         }
     }
     
-    var id: Int { position.selections.first?.upperBound ?? 0 }
+    var id: String { "\(position.selections.first?.upperBound ?? 0)-\(query.resultContainer == nil ? "nil" : "resolved")" }
     
     init(position: CodeEditor.Position, query: NrqlQuery) {
         self.position = position
@@ -54,7 +54,7 @@ struct NRQL_EditorDocument: FileDocument {
     }
 //    var results: [Int:NrdbResultContainer] = [:]
     var focusedResult: NrdbResultContainer?
-    var focusedQueryId: Int?
+    var focusedQueryId: String?
     
     var messages: Set<TextLocated<Message>> = Set()
     

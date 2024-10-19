@@ -13,13 +13,13 @@ struct ContentView: View {
     @Environment(\.colorScheme) private var colorScheme: ColorScheme
     
     @Binding var document: NRQL_EditorDocument
-    
-//    @State var messages: Set<TextLocated<Message>> = Set()
     @State var position = CodeEditor.Position()
+    @State var selectedQueryId: Int?
     
     var body: some View {
         NavigationSplitView {
-            Text("Maybe metadata...")
+//            ResultsList(queries: $document.queries, selectedQueryId: $selectedQueryId)
+            ResultsList(document: $document)
         } content: {
             CodeEditor(
                 text: $document.text,
@@ -30,7 +30,6 @@ struct ContentView: View {
             ).environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight)).navigationSplitViewColumnWidth(min: 200, ideal: 500, max: 1000)
         } detail: {
             HStack {
-                ResultsList(document: $document)
                 ResultsTabView(document: $document)
             }
         }
@@ -38,16 +37,20 @@ struct ContentView: View {
 }
 
 struct ResultsList : View {
+//    @Binding var queries: [DocumentQuery]
+//    @Binding var selectedQueryId: Int?
     @Binding var document: NRQL_EditorDocument
     
     var body: some View {
         List(document.queries) { docQuery in
             if let resultContainer = docQuery.query.resultContainer {
-                VStack {
+                HStack {
                     Text(docQuery.query.title).font(.title)
                     TimeseriesChart(resultsContainer: resultContainer)
-                        .frame(minHeight: 300)
+                        .frame(width: 50, height: 50)
                         .chartLegend(.hidden)
+                        .chartXAxis(.hidden)
+                        .chartYAxis(.hidden)
                 }
             } else {
                 if docQuery.focused {
@@ -74,8 +77,7 @@ struct ResultsTabView : View {
             ForEach(document.queries) { docQuery in
                 Tab(value: docQuery.id) {
                     if let resultContainer = docQuery.query.resultContainer {
-                            TimeseriesChart(resultsContainer: resultContainer)
-                            .frame(minHeight: 300)
+                        TimeseriesChart(resultsContainer: resultContainer)
                     } else {
                         if docQuery.focused {
                             HStack {
@@ -91,7 +93,8 @@ struct ResultsTabView : View {
                     }
                 }
             }
-        }
+        }.animation(.easeInOut(duration: 10), value:($document.wrappedValue.focusedQueryId ?? "0"))
+            .transition(.slide)
     }
 }
 

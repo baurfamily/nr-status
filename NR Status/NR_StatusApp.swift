@@ -39,7 +39,7 @@ struct NRQL_EditorApp: App {
             }
         }
         DocumentGroup(newDocument: NRQL_EditorDocument()) { file in
-            ContentView(document: file.$document).focusedSceneValue(\.document, file.$document)
+            DocumentView(document: file.$document).focusedSceneValue(\.document, file.$document)
         }.commands {
             CommandMenu("Editor") { EditorMenuView() }
         }

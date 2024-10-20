@@ -9,7 +9,7 @@ import SwiftUI
 import CodeEditorView
 import LanguageSupport
 
-struct ContentView: View {
+struct DocumentView: View {
     @Environment(\.colorScheme) private var colorScheme: ColorScheme
     
     @Binding var document: NRQL_EditorDocument
@@ -18,7 +18,6 @@ struct ContentView: View {
     
     var body: some View {
         NavigationSplitView {
-//            ResultsList(queries: $document.queries, selectedQueryId: $selectedQueryId)
             ResultsList(document: $document)
         } content: {
             CodeEditor(
@@ -37,20 +36,22 @@ struct ContentView: View {
 }
 
 struct ResultsList : View {
-//    @Binding var queries: [DocumentQuery]
-//    @Binding var selectedQueryId: Int?
     @Binding var document: NRQL_EditorDocument
     
     var body: some View {
         List(document.queries) { docQuery in
             if let resultContainer = docQuery.query.resultContainer {
-                HStack {
-                    Text(docQuery.query.title).font(.title)
-                    TimeseriesChart(resultsContainer: resultContainer)
-                        .frame(width: 50, height: 50)
-                        .chartLegend(.hidden)
-                        .chartXAxis(.hidden)
-                        .chartYAxis(.hidden)
+                VStack {
+                    Text(docQuery.query.title)
+                    if resultContainer.results.isTimeseries {
+                        TimeseriesChart(resultsContainer: resultContainer)
+                            .frame(minHeight: 25)
+                            .chartLegend(.hidden)
+                            .chartXAxis(.hidden)
+                            .chartYAxis(.hidden)
+                    } else {
+                        PieChart(resultsContainer: resultContainer)
+                    }
                 }
             } else {
                 if docQuery.focused {
@@ -77,7 +78,11 @@ struct ResultsTabView : View {
             ForEach(document.queries) { docQuery in
                 Tab(value: docQuery.id) {
                     if let resultContainer = docQuery.query.resultContainer {
-                        TimeseriesChart(resultsContainer: resultContainer)
+                        if resultContainer.results.isTimeseries {
+                            TimeseriesChart(resultsContainer: resultContainer)
+                        } else {
+                            PieChart(resultsContainer: resultContainer)
+                        }
                     } else {
                         if docQuery.focused {
                             HStack {
@@ -94,11 +99,10 @@ struct ResultsTabView : View {
                 }
             }
         }.animation(.easeInOut(duration: 10), value:($document.wrappedValue.focusedQueryId ?? "0"))
-            .transition(.slide)
     }
 }
 
 
 #Preview {
-    ContentView(document: .constant(NRQL_EditorDocument()))
+    DocumentView(document: .constant(NRQL_EditorDocument()))
 }

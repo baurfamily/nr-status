@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  SummaryView.swift
 //  NR Status
 //
 //  Created by Eric Baur on 9/21/24.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ContentView: View {
+struct SummaryView: View {
     enum ViewSelection : String, CaseIterable {
         case List, Grid
     }
@@ -44,5 +44,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    SummaryView()
 }

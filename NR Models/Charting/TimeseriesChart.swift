@@ -120,3 +120,19 @@ struct TimeseriesChart: View {
         .chartXSelection(range: $selectedDateRange)
     }
 }
+
+#Preview("Timeseries comparable (small)") {
+    if let single = ChartSamples.sampleData(comparable: true, size: .small) {
+        TimeseriesChart(resultsContainer: single)
+    } else {
+        Text("No sample data")
+    }
+}
+
+#Preview("Timeseries (medium)") {
+    if let single = ChartSamples.sampleData() {
+        TimeseriesChart(resultsContainer: single)
+    } else {
+        Text("No sample data")
+    }
+}

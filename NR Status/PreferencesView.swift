@@ -112,5 +112,5 @@ struct TestPanelView: View {
 }
 
 #Preview {
-    ContentView()
+    PreferencesView()
 }

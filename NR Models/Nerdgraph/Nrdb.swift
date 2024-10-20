@@ -165,10 +165,7 @@ struct NrdbResults: Decodable {
             
             // take the remainder and stuff it into a dictionaries
             for key in otherContainer.allKeys {
-                print("key: \(key.stringValue)")
-                print("checking: \(knownKeys)")
                 guard (!knownKeys.contains(key.stringValue)) else { continue }
-                print(" - got through")
                 
                 if let doubleValue = try? otherContainer.decode(Double.self, forKey: key) {
                     self.numberFields[key.stringValue] = doubleValue
@@ -176,7 +173,6 @@ struct NrdbResults: Decodable {
                     self.stringFields[key.stringValue] = stringValue
                 } else {
                     // does not account for an array from NRQL functions like uniques(name)
-                    print("unable to decode key: \(key)")
                     return
                 }
                 

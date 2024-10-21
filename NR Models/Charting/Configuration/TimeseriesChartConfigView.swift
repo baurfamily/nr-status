@@ -10,8 +10,8 @@ import SwiftUI
 struct TimeseriesChartConfigView: View {
     let isComparable: Bool = false
 
-    var fields: [String]
-    var facets: [String]
+    @Binding var fields: [SelectableField]
+    @Binding var facets: [SelectableField]
     
     @Binding var config: ChartConfiguration
     
@@ -24,21 +24,21 @@ struct TimeseriesChartConfigView: View {
                 Toggle("Smoothed", isOn: $config.isSmoothed).toggleStyle(.switch)
                 Toggle("Points", isOn: $config.showDataPoints).toggleStyle(.switch)
                 if fields.count > 1 {
-                    SeriesSelectionView(fieldList: fields, selectedFields: $config.selectedFields)
+                    SeriesSelectionView(title: "Select fields...", fields: $fields)
                 }
                 if facets.count > 1 {
-                    SeriesSelectionView(fieldList: facets, selectedFields: $config.selectedFacets)
+                    SeriesSelectionView(title: "Select facets...", fields: $facets)
                 }
             }
         }
     }
 }
 
-#Preview {
-    @Previewable @State var config: ChartConfiguration = .init()
-    TimeseriesChartConfigView(
-        fields: ["Field 1", "Field 2"],
-        facets: ["Facet 1", "Facet 2"],
-        config: $config
-    )
-}
+//#Preview {
+//    @Previewable @State var config: ChartConfiguration = .init()
+//    TimeseriesChartConfigView(
+//        fields: ["Field 1", "Field 2"],
+//        facets: ["Facet 1", "Facet 2"],
+//        config: $config
+//    )
+//}

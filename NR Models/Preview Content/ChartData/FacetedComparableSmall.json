@@ -1,0 +1,171 @@
+{
+  "data": {
+    "actor": {
+      "nrql": {
+        "currentResults": [
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "comparison": "current",
+            "count": 38090,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/users/login",
+            "comparison": "current",
+            "count": 1079,
+            "name": "Controller/users/login",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/items/search",
+            "comparison": "current",
+            "count": 610,
+            "name": "Controller/items/search",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/items/show",
+            "comparison": "current",
+            "count": 186,
+            "name": "Controller/items/show",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "comparison": "current",
+            "count": 165,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/receipts/edit",
+            "comparison": "current",
+            "count": 151,
+            "name": "Controller/receipts/edit",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/event_instances/show",
+            "comparison": "current",
+            "count": 149,
+            "name": "Controller/event_instances/show",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/receipts/update",
+            "comparison": "current",
+            "count": 147,
+            "name": "Controller/receipts/update",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/receipts/create",
+            "comparison": "current",
+            "count": 132,
+            "name": "Controller/receipts/create",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/receipts/new",
+            "comparison": "current",
+            "count": 132,
+            "name": "Controller/receipts/new",
+            "uniqueCount.name": 1
+          }
+        ],
+        "metadata": {
+          "eventTypes": [
+            "Transaction"
+          ],
+          "facets": [
+            "name"
+          ],
+          "messages": null,
+          "timeWindow": {
+            "begin": 1728851840641,
+            "compareWith": "2 WEEKS AGO",
+            "end": 1729456640641,
+            "since": "1 WEEKS AGO",
+            "until": "NOW"
+          }
+        },
+        "nrql": "SELECT count(*), uniqueCount(name) FROM Transaction FACET name SINCE 1 week ago COMPARE WITH 2 weeks ago",
+        "previousResults": [],
+        "results": [
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "comparison": "current",
+            "count": 38090,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/users/login",
+            "comparison": "current",
+            "count": 1079,
+            "name": "Controller/users/login",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/items/search",
+            "comparison": "current",
+            "count": 610,
+            "name": "Controller/items/search",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/items/show",
+            "comparison": "current",
+            "count": 186,
+            "name": "Controller/items/show",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "comparison": "current",
+            "count": 165,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/receipts/edit",
+            "comparison": "current",
+            "count": 151,
+            "name": "Controller/receipts/edit",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/event_instances/show",
+            "comparison": "current",
+            "count": 149,
+            "name": "Controller/event_instances/show",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/receipts/update",
+            "comparison": "current",
+            "count": 147,
+            "name": "Controller/receipts/update",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/receipts/create",
+            "comparison": "current",
+            "count": 132,
+            "name": "Controller/receipts/create",
+            "uniqueCount.name": 1
+          },
+          {
+            "facet": "Controller/receipts/new",
+            "comparison": "current",
+            "count": 132,
+            "name": "Controller/receipts/new",
+            "uniqueCount.name": 1
+          }
+        ],
+        "totalResult": null
+      }
+    }
+  }
+}

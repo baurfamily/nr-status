@@ -8,10 +8,15 @@
 import Foundation
 
 struct ChartSamples {
-    enum DataSize : String {
+    enum DataSize : String, CaseIterable {
         case small = "Small"
         case medium = "Medium"
-        case large = "Large"
+//        case large = "Large"
+    }
+    enum FacetType : String, CaseIterable {
+        case none = ""
+        case single = "Faceted"
+        case multi = "MultiFaceted"
     }
     
     static func loadFrom(filename: String) -> NrdbResultContainer? {
@@ -36,20 +41,26 @@ struct ChartSamples {
         switch Int.random(in: 0..<6) {
         case 0: return ChartSamples.sampleData(size: .medium)
         case 1: return ChartSamples.sampleData(size: .small)
-        case 2: return ChartSamples.sampleData(faceted: true, size: .medium)
-        case 3: return ChartSamples.sampleData(faceted: true, size: .small)
-        case 4: return ChartSamples.sampleData(faceted: true, size: .medium)
-        case 5: return ChartSamples.sampleData(faceted: true, size: .small)
+        case 2: return ChartSamples.sampleData(facet: .single, size: .medium)
+        case 3: return ChartSamples.sampleData(facet: .single, size: .small)
+        case 4: return ChartSamples.sampleData(facet: .single, size: .medium)
+        case 5: return ChartSamples.sampleData(facet: .single, size: .small)
         default: return ChartSamples.sampleData()
         }
     }
     
-    static func sampleData(faceted: Bool = false, timeseries: Bool = true, comparable: Bool = false, size: DataSize = .medium) -> NrdbResultContainer? {
-        let type = faceted ? "Faceted" : ""
+    static func sampleFilename(facet: FacetType = .none, timeseries: Bool = true, comparable: Bool = false, size: DataSize = .medium) -> String {
         let timeseriesType = timeseries ? "Timeseries" : ""
         let comparableType = comparable ? "Comparable" : ""
         
-        return loadFrom(filename: "\(type)\(timeseriesType)\(comparableType)\(size.rawValue)")
+        return "\(facet.rawValue)\(timeseriesType)\(comparableType)\(size.rawValue)"
+    }
+    
+    static func sampleData(facet: FacetType = .none, timeseries: Bool = true, comparable: Bool = false, size: DataSize = .medium) -> NrdbResultContainer? {
+        let timeseriesType = timeseries ? "Timeseries" : ""
+        let comparableType = comparable ? "Comparable" : ""
+        
+        return loadFrom(filename: "\(facet.rawValue)\(timeseriesType)\(comparableType)\(size.rawValue)")
     }
     
 }

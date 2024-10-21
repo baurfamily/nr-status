@@ -15,18 +15,8 @@ struct TimeseriesChart: View {
     var data: [NrdbResults.Datum] { resultsContainer.results.data }
     var metadata: NrdbMetadata { resultsContainer.metadata }
     
-    var selectedFacets: Set<String> {
-        if config.selectedFacets.count > 0 {
-            return config.selectedFacets
-        }
-        return resultsContainer.results.allFacets
-    }
-    var selectedFields: Set<String> {
-        if config.selectedFields.count > 0 {
-            return config.selectedFields
-        }
-        return Set(resultsContainer.results.data.first?.numberFields.keys.map(\.self) ?? [])
-    }
+    var selectedFacets: [String] { config.selectedFacets }
+    var selectedFields: [String] { config.selectedFields }
 
     @State var selectedDate: Date?
     @State var selectedDateRange: ClosedRange<Date>?

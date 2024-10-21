@@ -13,42 +13,37 @@ struct ConfigurableChartView: View {
     
     @State var config: ChartConfiguration
     
-    var fields: [String] {
-        if let first = resultsContainer.results.data.first {
-            return first.numberFields.keys.map { "\($0)" }
-        } else {
-            return []
-        }
-    }
-    var facets: [String] {
-        resultsContainer.results.allFacets.sorted()
-    }
+    @State var fields: [SelectableField]
+    @State var facets: [SelectableField]
     
     init(resultsContainer: NrdbResultContainer) {
         self.resultsContainer = resultsContainer
         
         // dynmaic fields not working yet?
         let data = resultsContainer.results.data
-        let facets = resultsContainer.results.allFacets.sorted()
         
-        let selectedFields = Set(data.first?.numberFields.keys.map(\.self) ?? [])
-        let selectedFacets = Set(facets.count > 0 ? facets : [])
+        var fields: [SelectableField] = []
+        var facets: [SelectableField] = []
+        
+        if let first = resultsContainer.results.data.first {
+            fields = SelectableField.wrap( first.numberFields.keys.sorted() )
+        }
+        facets = SelectableField.wrap( resultsContainer.results.allFacets.sorted() )
+        
+        self.fields = fields
+        self.facets = facets
         
         self.config = .init(
             isStacked: false,
             isSmoothed: true,
             showDataPoints: false,
-            selectedFields: selectedFields,
-            selectedFacets: selectedFacets
+            fields: fields,
+            facets: facets
         )
     }
     
     var body: some View {
-        TimeseriesChartConfigView(
-            fields: fields,
-            facets: facets,
-            config: $config
-        )
+        TimeseriesChartConfigView( fields: $fields, facets: $facets, config: $config )
         TimeseriesChart(resultsContainer: resultsContainer, config: config)
     }
 }
@@ -62,7 +57,7 @@ struct ConfigurableChartView: View {
 }
 
 #Preview("Faceted Timeseries (small)") {
-    if let faceted = ChartSamples.sampleData(faceted: true, size: .small) {
+    if let faceted = ChartSamples.sampleData(facet: .single, size: .small) {
         ConfigurableChartView(resultsContainer: faceted)
     } else {
         Text("No sample data")
@@ -78,7 +73,7 @@ struct ConfigurableChartView: View {
 }
 
 #Preview("Faceted Timeseries (medium)") {
-    if let faceted = ChartSamples.sampleData(faceted: true) {
+    if let faceted = ChartSamples.sampleData(facet: .single) {
         ConfigurableChartView(resultsContainer: faceted)
     } else {
         Text("No sample data")

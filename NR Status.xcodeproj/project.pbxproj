@@ -56,13 +56,15 @@
 		3F28B37C2CBB996200CCB8DD /* Exceptions for "NR Models" folder in "NR Models" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Charting/AnnotationView.swift,
-				Charting/ChartConfiguration.swift,
-				Charting/ConfigurableChartView.swift,
-				Charting/PieChart.swift,
-				Charting/SeriesSelectionView.swift,
-				Charting/TimeseriesChart.swift,
-				Charting/TimeseriesChartConfigView.swift,
+				Charting/Accessories/AnnotationView.swift,
+				Charting/Charts/BarChart.swift,
+				Charting/Charts/PieChart.swift,
+				Charting/Charts/TimeseriesChart.swift,
+				Charting/ChartSampleView.swift,
+				Charting/Configuration/ChartConfiguration.swift,
+				Charting/Configuration/ConfigurableChartView.swift,
+				Charting/Configuration/SeriesSelectionView.swift,
+				Charting/Configuration/TimeseriesChartConfigView.swift,
 				CustomModels/NrqlQuery.swift,
 				Models/Application.swift,
 				Models/SyntheticMonitor.swift,
@@ -73,10 +75,13 @@
 				Nerdgraph/Nrdb.swift,
 				Nerdgraph/Queries.swift,
 				"Preview Content/ApplicationSamples.swift",
-				"Preview Content/ChartData/DoubleFacetedSmall.json",
+				"Preview Content/ChartData/FacetedComparableSmall.json",
 				"Preview Content/ChartData/FacetedSmall.json",
 				"Preview Content/ChartData/FacetedTimeseriesMedium.json",
 				"Preview Content/ChartData/FacetedTimeseriesSmall.json",
+				"Preview Content/ChartData/MultiFacetedComparableSmall.json",
+				"Preview Content/ChartData/MultiFacetedSmall.json",
+				"Preview Content/ChartData/MultiFacetedTimeseriesMedium.json",
 				"Preview Content/ChartData/TimeseriesComparableMedium.json",
 				"Preview Content/ChartData/TimeseriesComparableSmall.json",
 				"Preview Content/ChartData/TimeseriesMedium.json",
@@ -90,13 +95,6 @@
 			);
 			target = 3F28B3642CBB996200CCB8DD /* NR Models */;
 		};
-		3FA5BAED2CC556AC00B75771 /* Exceptions for "NR Models" folder in "NR Status" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"Preview Content/ChartData/FacetedSmall.json",
-			);
-			target = 3F01FD242CBDFADF00D9E068 /* NR Status */;
-		};
 		3FFDAECE2CBCE7B300B26893 /* Exceptions for "NRQL Viewer Widget" folder in "NRQL Viewer WidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -107,13 +105,6 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		3FA5BAEE2CC556AC00B75771 /* Exceptions for "NR Models" folder in "Compile Sources" phase from "NR Status" target */ = {
-			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
-			buildPhase = 3F01FD212CBDFADF00D9E068 /* Sources */;
-			membershipExceptions = (
-				"Preview Content/ChartData/FacetedSmall.json",
-			);
-		};
 		3FA5BAEF2CC556AC00B75771 /* Exceptions for "NR Models" folder in "Compile Sources" phase from "NRQL Viewer WidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
 			buildPhase = 3FFDAEB92CBCE7B200B26893 /* Sources */;
@@ -135,8 +126,6 @@
 		3F28B3662CBB996200CCB8DD /* NR Models */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				3FA5BAED2CC556AC00B75771 /* Exceptions for "NR Models" folder in "NR Status" target */,
-				3FA5BAEE2CC556AC00B75771 /* Exceptions for "NR Models" folder in "Compile Sources" phase from "NR Status" target */,
 				3F28B37C2CBB996200CCB8DD /* Exceptions for "NR Models" folder in "NR Models" target */,
 				3F01FD702CBE2AA200D9E068 /* Exceptions for "NR Models" folder in "NRQL Viewer WidgetExtension" target */,
 				3FA5BAEF2CC556AC00B75771 /* Exceptions for "NR Models" folder in "Compile Sources" phase from "NRQL Viewer WidgetExtension" target */,

@@ -19,9 +19,6 @@ struct ConfigurableChartView: View {
     init(resultsContainer: NrdbResultContainer) {
         self.resultsContainer = resultsContainer
         
-        // dynmaic fields not working yet?
-        let data = resultsContainer.results.data
-        
         var fields: [SelectableField] = []
         var facets: [SelectableField] = []
         
@@ -43,7 +40,7 @@ struct ConfigurableChartView: View {
     }
     
     var body: some View {
-        TimeseriesChartConfigView( fields: $fields, facets: $facets, config: $config )
+        TimeseriesChartConfigView(config: $config)
         TimeseriesChart(resultsContainer: resultsContainer, config: config)
     }
 }

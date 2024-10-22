@@ -10,9 +10,6 @@ import SwiftUI
 struct TimeseriesChartConfigView: View {
     let isComparable: Bool = false
 
-    @Binding var fields: [SelectableField]
-    @Binding var facets: [SelectableField]
-    
     @Binding var config: ChartConfiguration
     
     var body: some View {
@@ -23,22 +20,38 @@ struct TimeseriesChartConfigView: View {
                 }
                 Toggle("Smoothed", isOn: $config.isSmoothed).toggleStyle(.switch)
                 Toggle("Points", isOn: $config.showDataPoints).toggleStyle(.switch)
-                if fields.count > 1 {
-                    SeriesSelectionView(title: "Select fields...", fields: $fields)
+                if config.fields.count > 1 {
+                    SeriesSelectionView(title: "Select fields...", fields: $config.fields)
                 }
-                if facets.count > 1 {
-                    SeriesSelectionView(title: "Select facets...", fields: $facets)
+                if config.facets.count > 1 {
+                    SeriesSelectionView(title: "Select facets...", fields: $config.facets)
                 }
             }
         }
     }
 }
-
+//
 //#Preview {
-//    @Previewable @State var config: ChartConfiguration = .init()
+//    @Previewable @State var fields = SelectableField.wrap(
+//        ["Field 1", "Field 2", "Field 3", "Field 4"]
+//    )
+//    @Previewable @State var facets = SelectableField.wrap(
+//        ["Facet 1", "Facet 2", "Facet 3", "Facet 4"]
+//    )
+//    @Previewable @State var config: ChartConfiguration = .init(
+//        fields: fields, facets: facets
+//    )
 //    TimeseriesChartConfigView(
-//        fields: ["Field 1", "Field 2"],
-//        facets: ["Facet 1", "Facet 2"],
 //        config: $config
 //    )
+//    GroupBox {
+//        HStack {
+//            VStack {
+//                ForEach(fields.filter(\.isSelected)) { Text($0.id) }
+//            }
+//            VStack {
+//                ForEach(facets.filter(\.isSelected)) { Text($0.id) }
+//            }
+//        }
+//    }
 //}

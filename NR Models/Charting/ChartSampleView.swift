@@ -69,5 +69,7 @@ struct ChartSampleView : View {
 }
 
 #Preview {
-    ChartSampleView()
+    VStack {
+        ChartSampleView()
+    }.frame(width: 500, height: 600)
 }

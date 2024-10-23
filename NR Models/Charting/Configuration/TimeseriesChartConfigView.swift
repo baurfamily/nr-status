@@ -30,28 +30,24 @@ struct TimeseriesChartConfigView: View {
         }
     }
 }
-//
-//#Preview {
-//    @Previewable @State var fields = SelectableField.wrap(
-//        ["Field 1", "Field 2", "Field 3", "Field 4"]
-//    )
-//    @Previewable @State var facets = SelectableField.wrap(
-//        ["Facet 1", "Facet 2", "Facet 3", "Facet 4"]
-//    )
-//    @Previewable @State var config: ChartConfiguration = .init(
-//        fields: fields, facets: facets
-//    )
-//    TimeseriesChartConfigView(
-//        config: $config
-//    )
-//    GroupBox {
-//        HStack {
-//            VStack {
-//                ForEach(fields.filter(\.isSelected)) { Text($0.id) }
-//            }
-//            VStack {
-//                ForEach(facets.filter(\.isSelected)) { Text($0.id) }
-//            }
-//        }
-//    }
-//}
+
+#Preview {
+    @Previewable @State var config: ChartConfiguration = .init(
+        fields: SelectableField.wrap(
+            ["Field 1", "Field 2", "Field 3", "Field 4"]
+        ), facets: SelectableField.wrap(
+            ["Facet 1", "Facet 2", "Facet 3", "Facet 4"]
+        )
+    )
+    TimeseriesChartConfigView(config: $config)
+    GroupBox {
+        HStack {
+            VStack {
+                ForEach(config.fields.filter(\.isSelected)) { Text($0.id) }
+            }
+            VStack {
+                ForEach(config.facets.filter(\.isSelected)) { Text($0.id) }
+            }
+        }
+    }
+}

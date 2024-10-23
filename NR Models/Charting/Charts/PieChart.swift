@@ -10,16 +10,13 @@ import Charts
 
 struct PieChart: View {
     var resultsContainer: NrdbResultContainer
-    var config: ChartConfiguration = ChartConfiguration()
+    @State var config: ChartConfiguration
 
     var data: [NrdbResults.Datum] { resultsContainer.results.data }
     var metadata: NrdbMetadata { resultsContainer.metadata }
     
     var selectedFacets: [String] { config.selectedFacets }
     var selectedFields: [String] { config.selectedFields }
-
-    @State var selectedDate: Date?
-    @State var selectedDateRange: ClosedRange<Date>?
 
     func seriesNames(for field: String, in datum: NrdbResults.Datum ) -> (String,String) {
         let prefix = datum.isComparable ? "\(datum.comparison): " : ""
@@ -51,7 +48,37 @@ struct PieChart: View {
         }
     }
     
+    init(resultsContainer: NrdbResultContainer) {
+        self.resultsContainer = resultsContainer
+        
+        var fields: [SelectableField] = []
+        var facets: [SelectableField] = []
+        
+        if let first = resultsContainer.results.data.first {
+            fields = SelectableField.wrap( first.numberFields.keys.sorted() )
+        }
+        facets = SelectableField.wrap( resultsContainer.results.allFacets.sorted() )
+                
+        self.config = .init(
+            isStacked: false,
+            isSmoothed: true,
+            showDataPoints: false,
+            fields: fields,
+            facets: facets
+        )
+    }
+    
     var body: some View {
+        GroupBox {
+            HStack {
+                if config.fields.count > 1 {
+                    SeriesSelectionView(title: "Select fields...", fields: $config.fields)
+                } else { Text("fields?") }
+                if config.facets.count > 1 {
+                    SeriesSelectionView(title: "Select facets...", fields: $config.facets)
+                } else { Text("facets?") }
+            }
+        }
         Chart(data.filter { $0.facet == nil || selectedFacets.contains($0.facet!)}) { datum in
 //            ForEach(selectedFacets.sorted(), id: \.self) { field in
 //                let seriesNames = seriesNames(for: field, in: datum)
@@ -69,13 +96,12 @@ struct PieChart: View {
                 )
 //            }
         }
-        .chartXSelection(value: $selectedDate)
-        .chartXSelection(range: $selectedDateRange)
     }
 }
 
 #Preview("Single facet (small)") {
     if let single = ChartSamples.sampleData(facet: .single, timeseries: false, comparable: false, size: .small) {
+        Text("data \(single.results.data.count)")
         PieChart(resultsContainer: single)
     } else {
         Text("No sample data")

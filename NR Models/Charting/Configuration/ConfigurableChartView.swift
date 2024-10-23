@@ -13,9 +13,6 @@ struct ConfigurableChartView: View {
     
     @State var config: ChartConfiguration
     
-    @State var fields: [SelectableField]
-    @State var facets: [SelectableField]
-    
     init(resultsContainer: NrdbResultContainer) {
         self.resultsContainer = resultsContainer
         
@@ -26,9 +23,6 @@ struct ConfigurableChartView: View {
             fields = SelectableField.wrap( first.numberFields.keys.sorted() )
         }
         facets = SelectableField.wrap( resultsContainer.results.allFacets.sorted() )
-        
-        self.fields = fields
-        self.facets = facets
         
         self.config = .init(
             isStacked: false,

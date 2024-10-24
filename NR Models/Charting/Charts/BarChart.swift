@@ -10,16 +10,27 @@ import Charts
 
 struct BarChart: View {
     var resultsContainer: NrdbResultContainer
-    var config: ChartConfiguration = ChartConfiguration()
+    @State var config: ChartConfiguration
+    @State var switchFieldsAndFacets: Bool = false
 
     var data: [NrdbResults.Datum] { resultsContainer.results.data }
     var metadata: NrdbMetadata { resultsContainer.metadata }
     
     var selectedFacets: [String] { config.selectedFacets }
     var selectedFields: [String] { config.selectedFields }
-
-    @State var selectedDate: Date?
-    @State var selectedDateRange: ClosedRange<Date>?
+    
+    var dimensionOne: [String] { switchFieldsAndFacets ? selectedFacets : selectedFields }
+    var dimensionTwo: [String] { switchFieldsAndFacets ? selectedFields : selectedFacets}
+    
+    var filteredData: [NrdbResults.Datum] {
+        if switchFieldsAndFacets {
+            return data
+        } else {
+            return data.filter {
+                $0.facet == nil || selectedFacets.contains($0.facet!)
+            }
+        }
+    }
 
     func seriesNames(for field: String, in datum: NrdbResults.Datum ) -> (String,String) {
         let prefix = datum.isComparable ? "\(datum.comparison): " : ""
@@ -51,38 +62,91 @@ struct BarChart: View {
         }
     }
     
-    var body: some View {
-        Chart(data.filter { $0.facet == nil || selectedFacets.contains($0.facet!)}) { datum in
-//            ForEach(selectedFacets.sorted(), id: \.self) { field in
-//                let seriesNames = seriesNames(for: field, in: datum)
-                BarMark(
-                    y: .value(datum.facet!, datum.numberFields["count"]!)
-                )
-                .foregroundStyle(
-                    by: .value(
-                        Text(verbatim: datum.facet!),
-                        datum.facet!
-                    )
-                )
-//            }
+    init(resultsContainer: NrdbResultContainer) {
+        self.resultsContainer = resultsContainer
+        
+        var fields: [SelectableField] = []
+        var facets: [SelectableField] = []
+        
+        if let first = resultsContainer.results.data.first {
+            fields = SelectableField.wrap( first.numberFields.keys.sorted() )
         }
-        .chartXSelection(value: $selectedDate)
-        .chartXSelection(range: $selectedDateRange)
+        facets = SelectableField.wrap( resultsContainer.results.allFacets.sorted() )
+                
+        self.config = .init(
+            isStacked: false,
+            isSmoothed: true,
+            showDataPoints: false,
+            fields: fields,
+            facets: facets
+        )
+    }
+    
+    var body: some View {
+        GroupBox {
+            HStack {
+                Toggle("Pivot Data", isOn: $switchFieldsAndFacets)
+                if config.fields.count > 1 {
+                    SeriesSelectionView(title: "Select fields...", fields: $config.fields)
+                } else { Text("fields?") }
+                if config.facets.count > 1 {
+                    SeriesSelectionView(title: "Select facets...", fields: $config.facets)
+                } else { Text("facets?") }
+            }
+            if !switchFieldsAndFacets && selectedFields.count != 1 {
+                Text("It is recomended that you eaither select a single field for display or pivot the data.")
+            }
+        }
+        Chart(filteredData) { datum in
+            if switchFieldsAndFacets {
+                ForEach(selectedFields, id:\.self) { fieldName in
+                    if let facet = datum.facet {
+                        if selectedFacets.contains(facet) {
+                            BarMark(
+                                x: .value( "Field", fieldName ),
+                                y: .value( facet, datum.numberFields[fieldName]! )
+                            ).foregroundStyle(
+                                by: .value(
+                                    Text(verbatim: datum.facet!),
+                                    datum.facet!
+                                )
+                            )
+                        }
+                    }
+                }
+            } else {
+                ForEach(selectedFields, id:\.self) { fieldName in
+                    BarMark(
+                        x: .value("Facet", datum.facet!),
+                        y: .value(fieldName, datum.numberFields[fieldName]!)
+                    )
+                    .foregroundStyle(
+                        by: .value(
+                            Text(verbatim: datum.facet!),
+                            datum.facet!
+                        )
+                    )
+                }
+            }
+        }
     }
 }
 
-#Preview("Timeseries comparable (small)") {
-    if let single = ChartSamples.sampleData(comparable: false, size: .small) {
+#Preview("Single facet (small)") {
+    if let single = ChartSamples.sampleData(facet: .single, timeseries: false, comparable: false, size: .small) {
+        Text("data \(single.results.data.count)")
         BarChart(resultsContainer: single)
     } else {
         Text("No sample data")
+        Text(ChartSamples.sampleFilename(facet: .single, timeseries: false, comparable: false, size: .small))
     }
 }
 
-//#Preview("Timeseries (medium)") {
-//    if let single = ChartSamples.sampleData() {
-//        TimeseriesChart(resultsContainer: single)
-//    } else {
-//        Text("No sample data")
-//    }
-//}
+#Preview("Double facet (small)") {
+    if let double = ChartSamples.sampleData(facet: .multi, timeseries: false, comparable: false, size: .small) {
+        BarChart(resultsContainer: double)
+    } else {
+        Text("No sample data")
+        Text(ChartSamples.sampleFilename(facet: .multi, timeseries: false, comparable: false, size: .small))
+    }
+}

@@ -62,6 +62,7 @@
 				Charting/Charts/TimeseriesChart.swift,
 				Charting/ChartSampleView.swift,
 				Charting/Configuration/ChartConfiguration.swift,
+				Charting/Configuration/ChartSelectionView.swift,
 				Charting/Configuration/ConfigurableChartView.swift,
 				Charting/Configuration/SeriesSelectionView.swift,
 				Charting/Configuration/TimeseriesChartConfigView.swift,

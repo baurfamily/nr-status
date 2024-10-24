@@ -1,14 +1,14 @@
 //
-//  ChartViews.swift
+//  ChartSelectionView.swift
 //  NR Status
 //
-//  Created by Eric Baur on 10/13/24.
+//  Created by Eric Baur on 10/23/24.
 //
 
 import SwiftUI
 import Charts
 
-struct ConfigurableChartView: View {
+struct ChartSelectionView: View {
     let resultsContainer: NrdbResultContainer
     
     @State var config: ChartConfiguration
@@ -55,26 +55,21 @@ struct ConfigurableChartView: View {
     }
 }
 
-#Preview("Timeseries (medium)") {
-    if let single = ChartSamples.sampleData() {
-        ConfigurableChartView(resultsContainer: single)
+#Preview("Single facet (small)") {
+    if let single = ChartSamples.sampleData(facet: .single, timeseries: false, comparable: false, size: .small) {
+        Text("data \(single.results.data.count)")
+        PieChart(resultsContainer: single)
     } else {
         Text("No sample data")
+        Text(ChartSamples.sampleFilename(facet: .single, timeseries: false, comparable: false, size: .small))
     }
 }
 
-#Preview("Faceted Timeseries (medium)") {
-    if let faceted = ChartSamples.sampleData(facet: .single) {
-        ConfigurableChartView(resultsContainer: faceted)
+#Preview("Double facet (small)") {
+    if let double = ChartSamples.sampleData(facet: .multi, timeseries: false, comparable: false, size: .small) {
+        PieChart(resultsContainer: double)
     } else {
         Text("No sample data")
-    }
-}
-
-#Preview("Timeseries comparable (small)") {
-    if let single = ChartSamples.sampleData(comparable: true, size: .small) {
-        ConfigurableChartView(resultsContainer: single)
-    } else {
-        Text("No sample data")
+        Text(ChartSamples.sampleFilename(facet: .multi, timeseries: false, comparable: false, size: .small))
     }
 }

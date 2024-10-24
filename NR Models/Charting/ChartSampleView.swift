@@ -58,7 +58,7 @@ struct ChartSampleView : View {
         if let results = resultContainer {
             Text(results.nrql).textSelection(.enabled)
             
-            if results.results.isTimeseries {
+            if results.isTimeseries {
                 ConfigurableChartView(resultsContainer: results)
             } else {
                 PieChart(resultsContainer: results)

@@ -44,8 +44,8 @@ struct TimeseriesChart: View {
         }
     }
     func dateFor(_ datum: NrdbResults.Datum) -> Date {
-        if resultsContainer.results.isComparable && datum.comparison == .previous{
-             return resultsContainer.results.adjustedTime(datum.beginTime!)
+        if resultsContainer.isComparable && datum.comparison == .previous{
+             return resultsContainer.adjustedTime(datum.beginTime!)
         } else {
             return datum.beginTime!
         }

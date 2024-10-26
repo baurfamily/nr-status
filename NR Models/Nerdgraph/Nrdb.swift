@@ -25,19 +25,13 @@ struct NrdbResultContainer : Decodable {
         return results.data
     }
     
-    var isTimeseries: Bool {
-        return results.data.first?.isTimeseries ?? false
-    }
-    var isFaceted: Bool {
-        return results.data.first?.isFaceted ?? false
-    }
-    var isComparable: Bool {
-        return results.data.first?.isComparable ?? false
-    }
+    var isTimeseries: Bool { results.data.first?.isTimeseries ?? false }
+    var isFaceted: Bool { results.data.first?.isFaceted ?? false }
+    var isMultiFaceted: Bool { results.data.first?.isMultiFaceted ?? false }
+    var isComparable: Bool { results.data.first?.isComparable ?? false }
     
-    var fieldNames: [String] {
-        return results.data.first?.fieldNames ?? []
-    }
+    var fieldNames: [String] { results.data.first?.fieldNames ?? [] }
+    
     var allFacets: Set<String> {
         // does not deal with array facet
         if isFaceted {
@@ -108,6 +102,7 @@ struct NrdbResults: Decodable {
         var id: Double { beginTime?.timeIntervalSince1970 ?? 0 }
         
         var isFaceted: Bool { facet != nil }
+        var isMultiFaceted: Bool { facets != nil }
         var isTimeseries: Bool {
             if beginTime != nil && endTime != nil {
                 return true
@@ -160,10 +155,12 @@ struct NrdbResults: Decodable {
             }
             
             // for now, we store a single facet differently than a multi-facet
-            if let facet = try container.decodeIfPresent(String.self, forKey: .facet) {
+            if let facet = try? container.decodeIfPresent(String.self, forKey: .facet) {
                 self.facet = facet
-            } else if let facets = try container.decodeIfPresent([String].self, forKey: .facet) {
+            } else if let facets = try? container.decodeIfPresent([String].self, forKey: .facet) {
                 self.facets = facets
+            } else {
+                print("unable to decode facet data!")
             }
             
             let otherContainer = try decoder.container(keyedBy: UnknownCodingKey.self)

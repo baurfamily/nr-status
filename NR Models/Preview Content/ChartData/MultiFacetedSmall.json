@@ -13,14 +13,14 @@
           ],
           "messages": null,
           "timeWindow": {
-            "begin": 1728835398956,
+            "begin": 1729185751282,
             "compareWith": null,
-            "end": 1729440198956,
+            "end": 1729790551282,
             "since": "1 WEEKS AGO",
             "until": "NOW"
           }
         },
-        "nrql": "SELECT count(*), uniqueCount(name) FROM Transaction FACET name, http.statusCode SINCE 1 week ago",
+        "nrql": "SELECT count(*), uniqueCount(request.headers.userAgent) FROM Transaction FACET name, http.statusCode SINCE 1 week ago",
         "previousResults": null,
         "results": [
           {
@@ -28,85 +28,61 @@
               "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
               "404"
             ],
-            "count": 37192,
-            "uniqueCount.name": 1
+            "count": 62725,
+            "uniqueCount.request.headers.userAgent": 2313
           },
           {
             "facet": [
               "Controller/users/login",
               "200"
             ],
-            "count": 1080,
-            "uniqueCount.name": 1
-          },
-          {
-            "facet": [
-              "Controller/items/search",
-              "200"
-            ],
-            "count": 397,
-            "uniqueCount.name": 1
-          },
-          {
-            "facet": [
-              "Controller/items/search",
-              "304"
-            ],
-            "count": 213,
-            "uniqueCount.name": 1
+            "count": 1125,
+            "uniqueCount.request.headers.userAgent": 164
           },
           {
             "facet": [
               "Controller/Middleware/Rack/ActionDispatch::Static/call",
               "200"
             ],
-            "count": 153,
-            "uniqueCount.name": 1
+            "count": 141,
+            "uniqueCount.request.headers.userAgent": 34
           },
           {
             "facet": [
-              "Controller/receipts/edit",
-              "200"
-            ],
-            "count": 151,
-            "uniqueCount.name": 1
-          },
-          {
-            "facet": [
-              "Controller/event_instances/show",
-              "200"
-            ],
-            "count": 149,
-            "uniqueCount.name": 1
-          },
-          {
-            "facet": [
-              "Controller/receipts/update",
+              "Controller/users/show",
               "302"
             ],
-            "count": 144,
-            "uniqueCount.name": 1
+            "count": 55,
+            "uniqueCount.request.headers.userAgent": 1
           },
           {
             "facet": [
-              "Controller/receipts/create",
-              "302"
+              "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+              "500"
             ],
-            "count": 132,
-            "uniqueCount.name": 1
+            "count": 38,
+            "uniqueCount.request.headers.userAgent": 1
           },
           {
             "facet": [
-              "Controller/receipts/new",
+              "Controller/GraphQL/query.IntrospectionQuery",
               "200"
             ],
-            "count": 132,
-            "uniqueCount.name": 1
+            "count": 3,
+            "uniqueCount.request.headers.userAgent": 3
+          },
+          {
+            "facet": [
+              "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+              "403"
+            ],
+            "count": 1,
+            "uniqueCount.request.headers.userAgent": 1
           }
         ],
         "totalResult": {
-          "count": 40121,
-          "uniqueCount.name": 20
+          "count": 64088,
+          "uniqueCount.request.headers.userAgent": 2382
         }
       }
     }

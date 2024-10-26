@@ -19,6 +19,8 @@ struct SelectableField: Identifiable, Hashable {
 struct SeriesSelectionView : View {
     var title: String
     @Binding var fields: [SelectableField]
+    var singleValue: Bool = false
+    
     @State private var isShowingPopover = false
     
     var body: some View {
@@ -28,26 +30,71 @@ struct SeriesSelectionView : View {
         .popover(
             isPresented: $isShowingPopover
         ) {
-            Toggle(
-                sources: $fields,
-                isOn: \.isSelected
-            ) {
-                Text("All on/off")
-                    .bold()
-            }
-            ForEach($fields) { field in
-                Toggle(isOn: field.isSelected) {
-                    Text(field.id)
+            GroupBox {
+                if singleValue {
+                    RadioSelectionView(fields: $fields)
+                } else {
+                    CheckboxSelectionView(fields: $fields)
                 }
-            }
+            }.padding(10)
         }
                     
     }
 }
 
+struct RadioSelectionView : View {
+    @Binding var fields: [SelectableField]
+    @State var selectedField: String?
+
+    var body: some View {
+        Picker("", selection: $selectedField) {
+            ForEach(fields) { field in
+                Text(field.id).tag(field.id)
+            }
+        }
+        .pickerStyle(RadioGroupPickerStyle())
+        .onChange(of: selectedField) {
+            if let selectedField {
+                for field in $fields {
+                    if field.id == selectedField {
+                        field.wrappedValue.isSelected = true
+                    } else {
+                        field.wrappedValue.isSelected = false
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct CheckboxSelectionView : View {
+    @Binding var fields: [SelectableField]
+
+    var body: some View {
+        Toggle(
+            sources: $fields,
+            isOn: \.isSelected
+        ) {
+            HStack {
+                Text("All on/off")
+                    .bold()
+                Spacer()
+            }
+            Spacer()
+        }
+        ForEach($fields) { field in
+            Toggle(isOn: field.isSelected) {
+                HStack {
+                    Text(field.id)
+                    Spacer()
+                }
+            }
+        }
+    }
+}
+
 
 #Preview("A few options") {
-    @Previewable @State var selectedFields: Set<String> = []
     @Previewable @State var fieldList = SelectableField.wrap([
         "Albert has a field to select",
         "Betty also has a field to select",
@@ -55,11 +102,34 @@ struct SeriesSelectionView : View {
     ])
     GroupBox {
         SeriesSelectionView(title: "Select fields...", fields: $fieldList )
+        ForEach(fieldList) { field in
+            HStack {
+                Text(field.id)
+                Spacer()
+                Text(field.isSelected ? "X" : " ")
+            }
+        }
     }
 }
 
+#Preview("Single selection") {
+    @Previewable @State var fieldList = SelectableField.wrap([
+        "Albert has a field to select",
+        "Betty also has a field to select",
+        "Carl would like to have a field to select"
+    ])
+    GroupBox {
+        SeriesSelectionView(title: "Select fields...", fields: $fieldList, singleValue: true )
+        ForEach(fieldList) { field in
+            HStack {
+                Text(field.id)
+                Spacer()
+                Text(field.isSelected ? "X" : " ")
+            }
+        }
+    }
+}
 #Preview("A lot of options") {
-    @Previewable @State var selectedFields: Set<String> = []
     @Previewable @State var fieldList = SelectableField.wrap([
         "Albert has a field to select, first",
         "Betty also has a field to select, first",

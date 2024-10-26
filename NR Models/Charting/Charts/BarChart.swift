@@ -116,16 +116,26 @@ struct BarChart: View {
                 }
             } else {
                 ForEach(selectedFields, id:\.self) { fieldName in
-                    BarMark(
-                        x: .value("Facet", datum.facet!),
-                        y: .value(fieldName, datum.numberFields[fieldName]!)
-                    )
-                    .foregroundStyle(
-                        by: .value(
-                            Text(verbatim: datum.facet!),
-                            datum.facet!
+                    if resultsContainer.isFaceted {
+                        BarMark(
+                            x: .value("Facet", datum.facet!),
+                            y: .value(fieldName, datum.numberFields[fieldName]!)
                         )
-                    )
+                        .foregroundStyle(
+                            by: .value(
+                                Text(verbatim: datum.facet!),
+                                datum.facet!
+                            )
+                        )
+                    } else if resultsContainer.isMultiFaceted {
+                        BarMark(
+                            x: .value("Facet", datum.facets![1]),
+                            y: .value(fieldName, datum.numberFields[fieldName]!)
+                        )
+                        .foregroundStyle(
+                            by: .value( "Facet", datum.facets![0] )
+                        )
+                    }
                 }
             }
         }

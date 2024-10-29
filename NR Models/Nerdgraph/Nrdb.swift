@@ -145,8 +145,6 @@ struct NrdbResults: Decodable {
             if let endTimeSeconds = try container.decodeIfPresent(Double.self, forKey: .endTimeSeconds) {
                 self.endTime = Date(timeIntervalSince1970: endTimeSeconds)
             }
-//            self.beginTime = try container.decodeIfPresent(Date.self, forKey: .beginTimeSeconds)
-//            self.endTime = try container.decodeIfPresent(Date.self, forKey: .endTimeSeconds)
             
             // if the comparison key is not present, we leave the default
             if container.allKeys.contains(.comparison) {
@@ -159,8 +157,6 @@ struct NrdbResults: Decodable {
                 self.facet = facet
             } else if let facets = try? container.decodeIfPresent([String].self, forKey: .facet) {
                 self.facets = facets
-            } else {
-                print("unable to decode facet data!")
             }
             
             let otherContainer = try decoder.container(keyedBy: UnknownCodingKey.self)

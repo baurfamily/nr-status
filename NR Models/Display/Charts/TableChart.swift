@@ -11,21 +11,22 @@ struct TableChart : View {
     @State var resultsContainer: NrdbResultContainer
 
     var body: some View {
-        Text("TableChart")
-        // doesn't like binding to our convinience accessor since it's a
-        // read-only calculated property
-        List($resultsContainer.results.data) { datum in
-            HStack {
-                ForEach(resultsContainer.fieldNames, id:\.self) { field in
-                    if datum.numberFields.wrappedValue.keys.contains(field) {
-                        Text(datum.numberFields[field].wrappedValue ?? 0, format: .number)
+        Table(resultsContainer.data) {
+            if resultsContainer.isTimeseries {
+                TableColumn("Timestamp") { datum in
+                    Text(datum.beginTime!, format: .dateTime)
+                }
+            }
+            TableColumnForEach(resultsContainer.fieldNames, id:\.self) { field in
+                TableColumn(field) { datum in
+                    
+                    if datum.numberFields.keys.contains(field) {
+                        Text(datum.numberFields[field] ?? 0, format: .number)
                     } else {
-                        Text(datum.stringFields[field].wrappedValue ?? "")
+                        Text(datum.stringFields[field] ?? "")
                     }
                 }
-                Text("hi")
             }
-           Text("asdf")
         }
     }
 }

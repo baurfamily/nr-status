@@ -58,7 +58,7 @@ struct ChartSelectionView: View {
        .padding(.horizontal)
         
         if config.chartType == .line {
-            TimeseriesChart(resultsContainer: resultsContainer, config: config)
+            ConfigurableChartView(resultsContainer: resultsContainer)
         } else if config.chartType == .pie {
             PieChart(resultsContainer: resultsContainer)
         } else if config.chartType == .bar {

@@ -48,6 +48,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				CustomModels/NrqlQuery.swift,
+				"Preview Content/ChartData/FacetedMedium.json",
 				"Preview Content/ChartData/FacetedSmall.json",
 				"Preview Content/samples.nrql",
 			);
@@ -56,17 +57,18 @@
 		3F28B37C2CBB996200CCB8DD /* Exceptions for "NR Models" folder in "NR Models" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Charting/Accessories/AnnotationView.swift,
-				Charting/Charts/BarChart.swift,
-				Charting/Charts/PieChart.swift,
-				Charting/Charts/TimeseriesChart.swift,
-				Charting/ChartSampleView.swift,
-				Charting/Configuration/ChartConfiguration.swift,
-				Charting/Configuration/ChartSelectionView.swift,
-				Charting/Configuration/ConfigurableChartView.swift,
-				Charting/Configuration/SeriesSelectionView.swift,
-				Charting/Configuration/TimeseriesChartConfigView.swift,
 				CustomModels/NrqlQuery.swift,
+				Display/Accessories/AnnotationView.swift,
+				Display/Charts/BarChart.swift,
+				Display/Charts/PieChart.swift,
+				Display/Charts/TableChart.swift,
+				Display/Charts/TimeseriesChart.swift,
+				Display/ChartSampleView.swift,
+				Display/Configuration/ChartConfiguration.swift,
+				Display/Configuration/ChartSelectionView.swift,
+				Display/Configuration/ConfigurableChartView.swift,
+				Display/Configuration/SeriesSelectionView.swift,
+				Display/Configuration/TimeseriesChartConfigView.swift,
 				Models/Application.swift,
 				Models/SyntheticMonitor.swift,
 				Nerdgraph/Alert.swift,
@@ -77,6 +79,7 @@
 				Nerdgraph/Queries.swift,
 				"Preview Content/ApplicationSamples.swift",
 				"Preview Content/ChartData/FacetedComparableSmall.json",
+				"Preview Content/ChartData/FacetedMedium.json",
 				"Preview Content/ChartData/FacetedSmall.json",
 				"Preview Content/ChartData/FacetedTimeseriesMedium.json",
 				"Preview Content/ChartData/FacetedTimeseriesSmall.json",
@@ -110,6 +113,7 @@
 			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
 			buildPhase = 3FFDAEB92CBCE7B200B26893 /* Sources */;
 			membershipExceptions = (
+				"Preview Content/ChartData/FacetedMedium.json",
 				"Preview Content/ChartData/FacetedSmall.json",
 			);
 		};

@@ -1,0 +1,141 @@
+{
+  "data": {
+    "actor": {
+      "nrql": {
+        "currentResults": null,
+        "metadata": {
+          "eventTypes": [
+            "Transaction"
+          ],
+          "facets": [
+            "name"
+          ],
+          "messages": null,
+          "timeWindow": {
+            "begin": 1727199109276,
+            "compareWith": null,
+            "end": 1729791109276,
+            "since": "1 MONTHS AGO",
+            "until": "NOW"
+          }
+        },
+        "nrql": "SELECT count(*), uniqueCount(http.statusCode) FROM Transaction FACET name SINCE 1 month ago LIMIT MAX",
+        "previousResults": null,
+        "results": [
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "count": 78060,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "uniqueCount.http.statusCode": 3
+          },
+          {
+            "facet": "Controller/users/login",
+            "count": 1275,
+            "name": "Controller/users/login",
+            "uniqueCount.http.statusCode": 2
+          },
+          {
+            "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "count": 169,
+            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call",
+            "uniqueCount.http.statusCode": 1
+          },
+          {
+            "facet": "Controller/users/show",
+            "count": 91,
+            "name": "Controller/users/show",
+            "uniqueCount.http.statusCode": 1
+          },
+          {
+            "facet": "Controller/items/search",
+            "count": 65,
+            "name": "Controller/items/search",
+            "uniqueCount.http.statusCode": 2
+          },
+          {
+            "facet": "Controller/receipts/edit",
+            "count": 19,
+            "name": "Controller/receipts/edit",
+            "uniqueCount.http.statusCode": 1
+          },
+          {
+            "facet": "Controller/GraphQL/query.useReceipts",
+            "count": 17,
+            "name": "Controller/GraphQL/query.useReceipts",
+            "uniqueCount.http.statusCode": 1
+          },
+          {
+            "facet": "Controller/items/show",
+            "count": 16,
+            "name": "Controller/items/show",
+            "uniqueCount.http.statusCode": 2
+          },
+          {
+            "facet": "Controller/receipts/index",
+            "count": 15,
+            "name": "Controller/receipts/index",
+            "uniqueCount.http.statusCode": 1
+          },
+          {
+            "facet": "Controller/event_instances/show",
+            "count": 13,
+            "name": "Controller/event_instances/show",
+            "uniqueCount.http.statusCode": 1
+          },
+          {
+            "facet": "Controller/receipts/update",
+            "count": 12,
+            "name": "Controller/receipts/update",
+            "uniqueCount.http.statusCode": 1
+          },
+          {
+            "facet": "Controller/Middleware/Rack/Rack::Cors/call",
+            "count": 4,
+            "name": "Controller/Middleware/Rack/Rack::Cors/call",
+            "uniqueCount.http.statusCode": 1
+          },
+          {
+            "facet": "Controller/events/index",
+            "count": 3,
+            "name": "Controller/events/index",
+            "uniqueCount.http.statusCode": 1
+          },
+          {
+            "facet": "Controller/GraphQL/query.IntrospectionQuery",
+            "count": 3,
+            "name": "Controller/GraphQL/query.IntrospectionQuery",
+            "uniqueCount.http.statusCode": 1
+          },
+          {
+            "facet": "Controller/events/edit",
+            "count": 2,
+            "name": "Controller/events/edit",
+            "uniqueCount.http.statusCode": 1
+          },
+          {
+            "facet": "Controller/users/logout",
+            "count": 1,
+            "name": "Controller/users/logout",
+            "uniqueCount.http.statusCode": 1
+          },
+          {
+            "facet": "Controller/GraphQL/mutation.login",
+            "count": 1,
+            "name": "Controller/GraphQL/mutation.login",
+            "uniqueCount.http.statusCode": 1
+          },
+          {
+            "facet": "Controller/items/index",
+            "count": 1,
+            "name": "Controller/items/index",
+            "uniqueCount.http.statusCode": 1
+          }
+        ],
+        "totalResult": {
+          "count": 79767,
+          "uniqueCount.http.statusCode": 6
+        }
+      }
+    }
+  }
+}

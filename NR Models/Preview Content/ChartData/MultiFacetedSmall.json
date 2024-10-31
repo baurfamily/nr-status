@@ -1,0 +1,90 @@
+{
+  "data": {
+    "actor": {
+      "nrql": {
+        "currentResults": null,
+        "metadata": {
+          "eventTypes": [
+            "Transaction"
+          ],
+          "facets": [
+            "name",
+            "http.statusCode"
+          ],
+          "messages": null,
+          "timeWindow": {
+            "begin": 1729185751282,
+            "compareWith": null,
+            "end": 1729790551282,
+            "since": "1 WEEKS AGO",
+            "until": "NOW"
+          }
+        },
+        "nrql": "SELECT count(*), uniqueCount(request.headers.userAgent) FROM Transaction FACET name, http.statusCode SINCE 1 week ago",
+        "previousResults": null,
+        "results": [
+          {
+            "facet": [
+              "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+              "404"
+            ],
+            "count": 62725,
+            "uniqueCount.request.headers.userAgent": 2313
+          },
+          {
+            "facet": [
+              "Controller/users/login",
+              "200"
+            ],
+            "count": 1125,
+            "uniqueCount.request.headers.userAgent": 164
+          },
+          {
+            "facet": [
+              "Controller/Middleware/Rack/ActionDispatch::Static/call",
+              "200"
+            ],
+            "count": 141,
+            "uniqueCount.request.headers.userAgent": 34
+          },
+          {
+            "facet": [
+              "Controller/users/show",
+              "302"
+            ],
+            "count": 55,
+            "uniqueCount.request.headers.userAgent": 1
+          },
+          {
+            "facet": [
+              "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+              "500"
+            ],
+            "count": 38,
+            "uniqueCount.request.headers.userAgent": 1
+          },
+          {
+            "facet": [
+              "Controller/GraphQL/query.IntrospectionQuery",
+              "200"
+            ],
+            "count": 3,
+            "uniqueCount.request.headers.userAgent": 3
+          },
+          {
+            "facet": [
+              "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+              "403"
+            ],
+            "count": 1,
+            "uniqueCount.request.headers.userAgent": 1
+          }
+        ],
+        "totalResult": {
+          "count": 64088,
+          "uniqueCount.request.headers.userAgent": 2382
+        }
+      }
+    }
+  }
+}

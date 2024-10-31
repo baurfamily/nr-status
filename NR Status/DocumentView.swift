@@ -43,7 +43,7 @@ struct ResultsList : View {
             if let resultContainer = docQuery.query.resultContainer {
                 VStack {
                     Text(docQuery.query.title)
-                    if resultContainer.results.isTimeseries {
+                    if resultContainer.isTimeseries {
                         TimeseriesChart(resultsContainer: resultContainer)
                             .frame(minHeight: 25)
                             .chartLegend(.hidden)
@@ -51,6 +51,7 @@ struct ResultsList : View {
                             .chartYAxis(.hidden)
                     } else {
                         PieChart(resultsContainer: resultContainer)
+                        BarChart(resultsContainer: resultContainer)
                     }
                 }
             } else {
@@ -78,10 +79,11 @@ struct ResultsTabView : View {
             ForEach(document.queries) { docQuery in
                 Tab(value: docQuery.id) {
                     if let resultContainer = docQuery.query.resultContainer {
-                        if resultContainer.results.isTimeseries {
+                        if resultContainer.isTimeseries {
                             TimeseriesChart(resultsContainer: resultContainer)
                         } else {
                             PieChart(resultsContainer: resultContainer)
+                            BarChart(resultsContainer: resultContainer)
                         }
                     } else {
                         if docQuery.focused {

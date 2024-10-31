@@ -12,7 +12,7 @@ import Foundation
 // all the fields - we're doing this to guarentee we can pick
 // the appropriate results sub-type
 
-// note: only implementing Decodable now, don't think I can about encoding
+// note: only implementing Decodable now, don't think I care about encoding
 struct NrdbResultContainer : Decodable {
     enum CodingKeys : String, CodingKey {
         case nrql, results, metadata
@@ -20,6 +20,40 @@ struct NrdbResultContainer : Decodable {
     var nrql: String
     var results: NrdbResults
     var metadata: NrdbMetadata
+    
+    var data: [NrdbResults.Datum] {
+        return results.data
+    }
+    
+    var isTimeseries: Bool { results.data.first?.isTimeseries ?? false }
+    var isFaceted: Bool { results.data.first?.isFaceted ?? false }
+    var isMultiFaceted: Bool { results.data.first?.isMultiFaceted ?? false }
+    var isComparable: Bool { results.data.first?.isComparable ?? false }
+    
+    var fieldNames: [String] { results.data.first?.fieldNames ?? [] }
+    
+    var allFacets: Set<String> {
+        // does not deal with array facet
+        if isFaceted {
+            return Set<String>(results.data.map { $0.facet! })
+        } else {
+            return []
+        }
+    }
+    var minDate: Date {
+        return results.data.filter{ $0.comparison == .current }.map{ $0.beginTime ?? .distantPast }.min()!
+    }
+    var maxDate: Date {
+        return results.data.filter{ $0.comparison == .current }.map{ $0.endTime ?? .distantFuture }.max()!
+    }
+    
+    var dateAdjustment: TimeInterval {
+        return minDate.timeIntervalSince1970 - data.filter{ $0.comparison == .previous }.map{ $0.beginTime ?? .distantPast }.min()!.timeIntervalSince1970
+    }
+    
+    func adjustedTime(_ date: Date) -> Date {
+        return date.addingTimeInterval(dateAdjustment)
+    }
     
     // need to "manually" decode so we can use different types for the results
     // based on the type of query (faceted, timeseries, etc)
@@ -48,40 +82,6 @@ struct TimeWindow: Decodable {
 struct NrdbResults: Decodable {
     var data: [Datum]
     
-    var isTimeseries: Bool {
-        return data.first?.isTimeseries ?? false
-    }
-    var isFaceted: Bool {
-        return data.first?.isFaceted ?? false
-    }
-    var isComparable: Bool {
-        return data.first?.isComparable ?? false
-    }
-    var fieldNames: [String] {
-        return data.first?.fieldNames ?? []
-    }
-    var allFacets: Set<String> {
-        // does not deal with array facet
-        if isFaceted {
-            return Set<String>(data.map { $0.facet! })
-        } else {
-            return []
-        }
-    }
-    var minDate: Date {
-        return data.filter{ $0.comparison == .current }.map{ $0.beginTime ?? .distantPast }.min()!
-    }
-    var maxDate: Date {
-        return data.filter{ $0.comparison == .current }.map{ $0.endTime ?? .distantFuture }.max()!
-    }
-    var dateAdjustment: TimeInterval {
-        return minDate.timeIntervalSince1970 - data.filter{ $0.comparison == .previous }.map{ $0.beginTime ?? .distantPast }.min()!.timeIntervalSince1970
-    }
-    
-    func adjustedTime(_ date: Date) -> Date {
-        return date.addingTimeInterval(dateAdjustment)
-    }
-    
     struct Datum : Decodable, Identifiable {
         enum CodingKeys : String, CodingKey, CaseIterable {
             case beginTimeSeconds, endTimeSeconds, facet, comparison
@@ -102,6 +102,7 @@ struct NrdbResults: Decodable {
         var id: Double { beginTime?.timeIntervalSince1970 ?? 0 }
         
         var isFaceted: Bool { facet != nil }
+        var isMultiFaceted: Bool { facets != nil }
         var isTimeseries: Bool {
             if beginTime != nil && endTime != nil {
                 return true
@@ -144,8 +145,6 @@ struct NrdbResults: Decodable {
             if let endTimeSeconds = try container.decodeIfPresent(Double.self, forKey: .endTimeSeconds) {
                 self.endTime = Date(timeIntervalSince1970: endTimeSeconds)
             }
-//            self.beginTime = try container.decodeIfPresent(Date.self, forKey: .beginTimeSeconds)
-//            self.endTime = try container.decodeIfPresent(Date.self, forKey: .endTimeSeconds)
             
             // if the comparison key is not present, we leave the default
             if container.allKeys.contains(.comparison) {
@@ -154,9 +153,9 @@ struct NrdbResults: Decodable {
             }
             
             // for now, we store a single facet differently than a multi-facet
-            if let facet = try container.decodeIfPresent(String.self, forKey: .facet) {
+            if let facet = try? container.decodeIfPresent(String.self, forKey: .facet) {
                 self.facet = facet
-            } else if let facets = try container.decodeIfPresent([String].self, forKey: .facet) {
+            } else if let facets = try? container.decodeIfPresent([String].self, forKey: .facet) {
                 self.facets = facets
             }
             

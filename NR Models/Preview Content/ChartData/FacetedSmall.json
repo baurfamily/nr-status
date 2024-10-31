@@ -8,84 +8,54 @@
             "Transaction"
           ],
           "facets": [
-            "name"
+            "http.statusCode"
           ],
           "messages": null,
           "timeWindow": {
-            "begin": 1728832078967,
+            "begin": 1729186205986,
             "compareWith": null,
-            "end": 1729436878967,
+            "end": 1729791005986,
             "since": "1 WEEKS AGO",
             "until": "NOW"
           }
         },
-        "nrql": "SELECT count(*), uniqueCount(name) FROM Transaction FACET name SINCE 1 week ago",
+        "nrql": "SELECT count(*), uniqueCount(name) FROM Transaction FACET http.statusCode SINCE 1 week ago",
         "previousResults": null,
         "results": [
           {
-            "facet": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
-            "count": 37228,
-            "name": "Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call",
+            "facet": "404",
+            "count": 2727,
+            "http.statusCode": "404",
             "uniqueCount.name": 1
           },
           {
-            "facet": "Controller/users/login",
-            "count": 1081,
-            "name": "Controller/users/login",
+            "facet": "200",
+            "count": 1270,
+            "http.statusCode": "200",
+            "uniqueCount.name": 3
+          },
+          {
+            "facet": "302",
+            "count": 55,
+            "http.statusCode": "302",
             "uniqueCount.name": 1
           },
           {
-            "facet": "Controller/items/search",
-            "count": 610,
-            "name": "Controller/items/search",
+            "facet": "500",
+            "count": 38,
+            "http.statusCode": "500",
             "uniqueCount.name": 1
           },
           {
-            "facet": "Controller/items/show",
-            "count": 186,
-            "name": "Controller/items/show",
-            "uniqueCount.name": 1
-          },
-          {
-            "facet": "Controller/Middleware/Rack/ActionDispatch::Static/call",
-            "count": 168,
-            "name": "Controller/Middleware/Rack/ActionDispatch::Static/call",
-            "uniqueCount.name": 1
-          },
-          {
-            "facet": "Controller/receipts/edit",
-            "count": 151,
-            "name": "Controller/receipts/edit",
-            "uniqueCount.name": 1
-          },
-          {
-            "facet": "Controller/event_instances/show",
-            "count": 149,
-            "name": "Controller/event_instances/show",
-            "uniqueCount.name": 1
-          },
-          {
-            "facet": "Controller/receipts/update",
-            "count": 147,
-            "name": "Controller/receipts/update",
-            "uniqueCount.name": 1
-          },
-          {
-            "facet": "Controller/receipts/create",
-            "count": 132,
-            "name": "Controller/receipts/create",
-            "uniqueCount.name": 1
-          },
-          {
-            "facet": "Controller/receipts/new",
-            "count": 132,
-            "name": "Controller/receipts/new",
+            "facet": "403",
+            "count": 1,
+            "http.statusCode": "403",
             "uniqueCount.name": 1
           }
         ],
         "totalResult": {
-          "count": 40119,
-          "uniqueCount.name": 20
+          "count": 64091,
+          "uniqueCount.name": 5
         }
       }
     }

@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct TableChart : View {
-    @State var resultsContainer: NrdbResultContainer
+    let resultsContainer: NrdbResultContainer
 
     var body: some View {
         Table(resultsContainer.data) {
@@ -19,7 +19,6 @@ struct TableChart : View {
             }
             TableColumnForEach(resultsContainer.fieldNames, id:\.self) { field in
                 TableColumn(field) { datum in
-                    
                     if datum.numberFields.keys.contains(field) {
                         Text(datum.numberFields[field] ?? 0, format: .number)
                     } else {

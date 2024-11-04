@@ -86,7 +86,7 @@ struct NRQL_ViewerEntryView : View {
 }
 
 struct NRQL_Widget: Widget {
-    let kind: String = "NRQL_Viewer"
+    let kind: String = "NRQL Widget"
 
     var body: some WidgetConfiguration {
         AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
@@ -94,4 +94,13 @@ struct NRQL_Widget: Widget {
                 .containerBackground(.fill.tertiary, for: .widget)
         }
     }
+}
+
+#Preview(as: .systemMedium) {
+    NRQL_Widget()
+} timeline: {
+    NrdbResultEntry(
+        resultContainer: ChartSamples.randomSample(),
+        configuration: ConfigurationAppIntent()
+    )
 }

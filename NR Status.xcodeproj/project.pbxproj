@@ -11,6 +11,10 @@
 		3F01FD7E2CBF718600D9E068 /* LanguageSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 3F01FD7D2CBF718600D9E068 /* LanguageSupport */; };
 		3F28B36F2CBB996200CCB8DD /* NR_Models.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B3652CBB996200CCB8DD /* NR_Models.framework */; };
 		3FA5BADA2CC22C5400B75771 /* HexGrid in Frameworks */ = {isa = PBXBuildFile; productRef = 3FA5BAD92CC22C5400B75771 /* HexGrid */; };
+		3FA635082CD7D4E30050F813 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B29F2CBB3CBD00CCB8DD /* WidgetKit.framework */; };
+		3FA635092CD7D4E30050F813 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B2A12CBB3CBD00CCB8DD /* SwiftUI.framework */; };
+		3FA635172CD7D4E40050F813 /* NRQL WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3FA635072CD7D4E30050F813 /* NRQL WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		3FA635442CD865250050F813 /* LanguageSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 3FA635432CD865250050F813 /* LanguageSupport */; };
 		3FFDAEBE2CBCE7B200B26893 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B29F2CBB3CBD00CCB8DD /* WidgetKit.framework */; };
 		3FFDAEBF2CBCE7B200B26893 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B2A12CBB3CBD00CCB8DD /* SwiftUI.framework */; };
 /* End PBXBuildFile section */
@@ -23,7 +27,28 @@
 			remoteGlobalIDString = 3F28B3642CBB996200CCB8DD;
 			remoteInfo = "NR Models";
 		};
+		3FA635152CD7D4E40050F813 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3F57146B2C9EA7BC00685FEA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3FA635062CD7D4E30050F813;
+			remoteInfo = "NRQL WidgetExtension";
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		3FA635182CD7D4E40050F813 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				3FA635172CD7D4E40050F813 /* NRQL WidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		3F01FD252CBDFADF00D9E068 /* NR Status.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NR Status.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -33,6 +58,7 @@
 		3F28B36E2CBB996200CCB8DD /* NR ModelsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "NR ModelsTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3F5714842C9EA7BD00685FEA /* NR StatusTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "NR StatusTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3F57148E2C9EA7BD00685FEA /* NR StatusUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "NR StatusUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3FA635072CD7D4E30050F813 /* NRQL WidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "NRQL WidgetExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3FFDAEBD2CBCE7B200B26893 /* NRQL Viewer WidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "NRQL Viewer WidgetExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -99,6 +125,13 @@
 			);
 			target = 3F28B3642CBB996200CCB8DD /* NR Models */;
 		};
+		3FA6351C2CD7D4E40050F813 /* Exceptions for "NRQL Widget" folder in "NRQL WidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 3FA635062CD7D4E30050F813 /* NRQL WidgetExtension */;
+		};
 		3FFDAECE2CBCE7B300B26893 /* Exceptions for "NRQL Viewer Widget" folder in "NRQL Viewer WidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -153,6 +186,14 @@
 			path = "NR StatusUITests";
 			sourceTree = "<group>";
 		};
+		3FA6350A2CD7D4E30050F813 /* NRQL Widget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				3FA6351C2CD7D4E40050F813 /* Exceptions for "NRQL Widget" folder in "NRQL WidgetExtension" target */,
+			);
+			path = "NRQL Widget";
+			sourceTree = "<group>";
+		};
 		3FFDAEC02CBCE7B200B26893 /* NRQL Viewer Widget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -203,6 +244,16 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3FA635042CD7D4E30050F813 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3FA635092CD7D4E30050F813 /* SwiftUI.framework in Frameworks */,
+				3FA635442CD865250050F813 /* LanguageSupport in Frameworks */,
+				3FA635082CD7D4E30050F813 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		3FFDAEBA2CBCE7B200B26893 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -233,6 +284,7 @@
 				3F28B3662CBB996200CCB8DD /* NR Models */,
 				3F28B3742CBB996200CCB8DD /* NR ModelsTests */,
 				3FFDAEC02CBCE7B200B26893 /* NRQL Viewer Widget */,
+				3FA6350A2CD7D4E30050F813 /* NRQL Widget */,
 				3F5714742C9EA7BC00685FEA /* Products */,
 				3F28B29E2CBB3CBD00CCB8DD /* Frameworks */,
 			);
@@ -247,6 +299,7 @@
 				3F28B36E2CBB996200CCB8DD /* NR ModelsTests.xctest */,
 				3FFDAEBD2CBCE7B200B26893 /* NRQL Viewer WidgetExtension.appex */,
 				3F01FD252CBDFADF00D9E068 /* NR Status.app */,
+				3FA635072CD7D4E30050F813 /* NRQL WidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -271,10 +324,12 @@
 				3F01FD212CBDFADF00D9E068 /* Sources */,
 				3F01FD222CBDFADF00D9E068 /* Frameworks */,
 				3F01FD232CBDFADF00D9E068 /* Resources */,
+				3FA635182CD7D4E40050F813 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				3FA635162CD7D4E40050F813 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				3F01FD262CBDFADF00D9E068 /* NR Status */,
@@ -380,6 +435,30 @@
 			productReference = 3F57148E2C9EA7BD00685FEA /* NR StatusUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		3FA635062CD7D4E30050F813 /* NRQL WidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3FA6351B2CD7D4E40050F813 /* Build configuration list for PBXNativeTarget "NRQL WidgetExtension" */;
+			buildPhases = (
+				3FA635032CD7D4E30050F813 /* Sources */,
+				3FA635042CD7D4E30050F813 /* Frameworks */,
+				3FA635052CD7D4E30050F813 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				3F28B3662CBB996200CCB8DD /* NR Models */,
+				3FA6350A2CD7D4E30050F813 /* NRQL Widget */,
+			);
+			name = "NRQL WidgetExtension";
+			packageProductDependencies = (
+				3FA635432CD865250050F813 /* LanguageSupport */,
+			);
+			productName = "NRQL WidgetExtension";
+			productReference = 3FA635072CD7D4E30050F813 /* NRQL WidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		3FFDAEBC2CBCE7B200B26893 /* NRQL Viewer WidgetExtension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3FFDAECF2CBCE7B300B26893 /* Build configuration list for PBXNativeTarget "NRQL Viewer WidgetExtension" */;
@@ -431,6 +510,9 @@
 						CreatedOnToolsVersion = 16.0;
 						TestTargetID = 3F5714722C9EA7BC00685FEA;
 					};
+					3FA635062CD7D4E30050F813 = {
+						CreatedOnToolsVersion = 16.1;
+					};
 					3FFDAEBC2CBCE7B200B26893 = {
 						CreatedOnToolsVersion = 16.0;
 					};
@@ -460,6 +542,7 @@
 				3F28B3642CBB996200CCB8DD /* NR Models */,
 				3F28B36D2CBB996200CCB8DD /* NR ModelsTests */,
 				3FFDAEBC2CBCE7B200B26893 /* NRQL Viewer WidgetExtension */,
+				3FA635062CD7D4E30050F813 /* NRQL WidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -494,6 +577,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		3F57148C2C9EA7BD00685FEA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3FA635052CD7D4E30050F813 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -545,6 +635,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3FA635032CD7D4E30050F813 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		3FFDAEB92CBCE7B200B26893 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -559,6 +656,11 @@
 			isa = PBXTargetDependency;
 			target = 3F28B3642CBB996200CCB8DD /* NR Models */;
 			targetProxy = 3F28B3702CBB996200CCB8DD /* PBXContainerItemProxy */;
+		};
+		3FA635162CD7D4E40050F813 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3FA635062CD7D4E30050F813 /* NRQL WidgetExtension */;
+			targetProxy = 3FA635152CD7D4E40050F813 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -922,6 +1024,64 @@
 			};
 			name = Release;
 		};
+		3FA635192CD7D4E40050F813 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = "NRQL Widget/NRQL_Widget.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = EHM929N34N;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "NRQL Widget/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "NRQL Widget";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.1;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status.NRQL-Widget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		3FA6351A2CD7D4E40050F813 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = "NRQL Widget/NRQL_Widget.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = EHM929N34N;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "NRQL Widget/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "NRQL Widget";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.1;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status.NRQL-Widget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 		3FFDAED02CBCE7B300B26893 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1040,6 +1200,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		3FA6351B2CD7D4E40050F813 /* Build configuration list for PBXNativeTarget "NRQL WidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3FA635192CD7D4E40050F813 /* Debug */,
+				3FA6351A2CD7D4E40050F813 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		3FFDAECF2CBCE7B300B26893 /* Build configuration list for PBXNativeTarget "NRQL Viewer WidgetExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1085,6 +1254,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 3F7896472CA7CE1100A03646 /* XCRemoteSwiftPackageReference "HexGrid" */;
 			productName = HexGrid;
+		};
+		3FA635432CD865250050F813 /* LanguageSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3F01FD7A2CBF718600D9E068 /* XCRemoteSwiftPackageReference "CodeEditorView" */;
+			productName = LanguageSupport;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

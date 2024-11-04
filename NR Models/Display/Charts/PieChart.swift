@@ -60,6 +60,15 @@ struct PieChart: View {
     func outerRadius(_ index: Int) -> CGFloat {
         return Double(index+1) * 1.0/Double(selectedFields.count)
     }
+    func facet(for datum: NrdbResults.Datum) -> String {
+        if let facet = datum.facet {
+            return facet
+        } else if let facets = datum.facets {
+            return facets.joined(separator:", ")
+        } else {
+            return ""
+        }
+    }
 
     var body: some View {
         ConfigView(config: $config)
@@ -70,7 +79,7 @@ struct PieChart: View {
                 ForEach(selectedFields.indices, id: \.self) { index in
                     SectorMark(
                         angle: .value(
-                            datum.facet!,
+                            facet(for: datum),
                             datum.numberFields[selectedFields[index]]!
                         ),
 //                        innerRadius: .ratio(innerRadius(index)),
@@ -79,7 +88,7 @@ struct PieChart: View {
                     )
                     .opacity(0.5)
                     .cornerRadius(2)
-                    .foregroundStyle(by: .value(datum.facet!, datum.facet!))
+                    .foregroundStyle(by: .value(facet(for: datum), facet(for: datum)))
                 }
             }
         }

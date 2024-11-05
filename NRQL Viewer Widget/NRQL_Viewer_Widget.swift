@@ -67,8 +67,21 @@ struct NRQL_ViewerEntryView : View {
     var entry: Provider.Entry
     
     @State var resultContainer: NrdbResultContainer?
+    
+    var fieldsAndFacets: ([SelectableField], [SelectableField]) {
+        if let resultContainer {
+            return ChartConfiguration.fieldsAndFacets(from: resultContainer)
+        } else {
+            return ([], [])
+        }
+    }
+    var firstField: String {
+        fieldsAndFacets.0.first?.id ?? ""
+    }
 
     var body: some View {
+        Text("-----")
+        Text(firstField)
         if let resultContainer = entry.resultContainer {
             Text(entry.configuration.title)
             TimeseriesChart(
@@ -76,9 +89,12 @@ struct NRQL_ViewerEntryView : View {
                 config: ChartConfiguration(
                     isStacked: entry.configuration.isStacked,
                     isSmoothed: entry.configuration.isSmoothed,
-                    showDataPoints: entry.configuration.showDataPoints
+                    showDataPoints: entry.configuration.showDataPoints,
+                    fields: fieldsAndFacets.0,
+                    facets: fieldsAndFacets.1
                 )
             ).chartLegend(.hidden)
+            ChartSelectionView(resultsContainer: resultContainer)//.chartLegend(.hidden)
         } else {
             Text("Error loading data")
         }

@@ -16,20 +16,14 @@ struct ConfigurableChartView: View {
     init(resultsContainer: NrdbResultContainer) {
         self.resultsContainer = resultsContainer
         
-        var fields: [SelectableField] = []
-        var facets: [SelectableField] = []
-        
-        if let first = resultsContainer.results.data.first {
-            fields = SelectableField.wrap( first.numberFields.keys.sorted() )
-        }
-        facets = SelectableField.wrap( resultsContainer.allFacets.sorted() )
+        let fieldsAndFacets = ChartConfiguration.fieldsAndFacets(from: resultsContainer)
         
         self.config = .init(
             isStacked: false,
             isSmoothed: true,
             showDataPoints: false,
-            fields: fields,
-            facets: facets
+            fields: fieldsAndFacets.0,
+            facets: fieldsAndFacets.1
         )
     }
     

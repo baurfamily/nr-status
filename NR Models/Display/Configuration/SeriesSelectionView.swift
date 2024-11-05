@@ -7,14 +7,6 @@
 
 import SwiftUI
 
-struct SelectableField: Identifiable, Hashable {
-    let id: String
-    var isSelected: Bool = true
-    
-    static func wrap(_ values: [String]) -> [Self] {
-        return values.map { Self(id: $0) }
-    }
-}
 
 struct SeriesSelectionView : View {
     var title: String

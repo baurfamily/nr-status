@@ -9,6 +9,15 @@ enum ChartType : String, CaseIterable {
     case line, pie, bar, table
 }
 
+struct SelectableField: Identifiable, Hashable {
+    let id: String
+    var isSelected: Bool = true
+    
+    static func wrap(_ values: [String]) -> [Self] {
+        return values.map { Self(id: $0) }
+    }
+}
+
 struct ChartConfiguration {
     var isStacked: Bool = false
     var isSmoothed: Bool = true
@@ -23,6 +32,18 @@ struct ChartConfiguration {
     }
     var selectedFacets: [String] {
         facets.filter(\.isSelected).map(\.id)
+    }
+    
+    static func fieldsAndFacets(from resultContainer: NrdbResultContainer) -> ([SelectableField], [SelectableField]) {
+        var fields: [SelectableField] = []
+        var facets: [SelectableField] = []
+        
+        if let first = resultContainer.results.data.first {
+            fields = SelectableField.wrap( first.numberFields.keys.sorted() )
+        }
+        facets = SelectableField.wrap( resultContainer.allFacets.sorted() )
+        
+        return (fields, facets)
     }
     
     func chartTypeFor(results: NrdbResultContainer) -> [ChartType] {

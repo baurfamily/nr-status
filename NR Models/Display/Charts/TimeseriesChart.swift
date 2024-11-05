@@ -113,7 +113,17 @@ struct TimeseriesChart: View {
 
 #Preview("Timeseries comparable (small)") {
     if let single = ChartSamples.sampleData(comparable: true, size: .small) {
-        TimeseriesChart(resultsContainer: single)
+        TimeseriesChart(
+            resultsContainer: single,
+            config: ChartConfiguration(
+                isStacked: false,
+                isSmoothed: true,
+                showDataPoints: true,
+                fields: ChartConfiguration.fieldsAndFacets(from: single).0,
+                facets: ChartConfiguration.fieldsAndFacets(from: single).1
+            )
+        )
+    
     } else {
         Text("No sample data")
     }
@@ -121,7 +131,7 @@ struct TimeseriesChart: View {
 
 #Preview("Timeseries (medium)") {
     if let single = ChartSamples.sampleData() {
-        TimeseriesChart(resultsContainer: single)
+        ConfigurableChartView(resultsContainer: single)
     } else {
         Text("No sample data")
     }

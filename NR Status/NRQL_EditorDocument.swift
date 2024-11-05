@@ -160,12 +160,13 @@ struct NRQL_EditorDocument: FileDocument {
         self.position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
 //        self.position = docQuery.position
         print("message!")
+        // I Have no idea why this isn't working...
         self.messages.insert(
             TextLocated(
                 location: TextLocation(oneBasedLine: 1, column: 1),
                 entity: Message.init(category: .informational, length: 10, summary: "foobar baz", description: "more text here that can be long and formatted")
-                )
             )
+        )
 
     }
     

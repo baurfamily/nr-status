@@ -7,6 +7,20 @@
 
 enum ChartType : String, CaseIterable {
     case line, pie, bar, table
+    
+    static func cases(for resultContainer: NrdbResultContainer) -> [ChartType] {
+        if resultContainer.isTimeseries {
+            return [ .line, .table ]
+        } else if resultContainer.isComparable {
+            return [ .line, .table ]
+        } else {
+            return [ .bar, .pie, .table ]
+        }
+    }
+    
+    func isSupported(for resultContainer: NrdbResultContainer) -> Bool {
+        return ChartType.cases(for: resultContainer).contains(self)
+    }
 }
 
 struct SelectableField: Identifiable, Hashable {
@@ -19,6 +33,8 @@ struct SelectableField: Identifiable, Hashable {
 }
 
 struct ChartConfiguration {
+    let resultContainer: NrdbResultContainer
+    
     var isStacked: Bool = false
     var isSmoothed: Bool = true
     var showDataPoints: Bool = false
@@ -34,25 +50,16 @@ struct ChartConfiguration {
         facets.filter(\.isSelected).map(\.id)
     }
     
-    static func fieldsAndFacets(from resultContainer: NrdbResultContainer) -> ([SelectableField], [SelectableField]) {
-        var fields: [SelectableField] = []
-        var facets: [SelectableField] = []
-        
-        if let first = resultContainer.results.data.first {
-            fields = SelectableField.wrap( first.numberFields.keys.sorted() )
-        }
-        facets = SelectableField.wrap( resultContainer.allFacets.sorted() )
-        
-        return (fields, facets)
+    var chartTypes: [ChartType] {
+        ChartType.cases(for: resultContainer)
     }
     
-    func chartTypeFor(results: NrdbResultContainer) -> [ChartType] {
-        if results.isTimeseries {
-            return [ .line, .table ]
-        } else if results.isComparable {
-            return [ .line, .table ]
-        } else {
-            return [ .bar, .pie, .table ]
+    init(resultContainer: NrdbResultContainer) {
+        self.resultContainer = resultContainer
+        
+        if let first = resultContainer.results.data.first {
+            self.fields = SelectableField.wrap( first.numberFields.keys.sorted() )
         }
+        self.facets = SelectableField.wrap( resultContainer.allFacets.sorted() )
     }
 }

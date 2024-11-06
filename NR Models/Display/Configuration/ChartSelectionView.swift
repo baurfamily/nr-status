@@ -17,22 +17,10 @@ struct ChartSelectionView: View {
     init(resultsContainer: NrdbResultContainer) {
         self.resultsContainer = resultsContainer
         
-        var fields: [SelectableField] = []
-        var facets: [SelectableField] = []
-        
-        if let first = resultsContainer.results.data.first {
-            fields = SelectableField.wrap( first.numberFields.keys.sorted() )
-        }
-        facets = SelectableField.wrap( resultsContainer.allFacets.sorted() )
-        
         var config = ChartConfiguration.init(
-            isStacked: false,
-            isSmoothed: true,
-            showDataPoints: false,
-            fields: fields,
-            facets: facets
+            resultContainer: resultsContainer
         )
-        availableChartTypes = config.chartTypeFor(results: resultsContainer)
+        availableChartTypes = config.chartTypes
         config.chartType = availableChartTypes.first
         self.config = config
     }

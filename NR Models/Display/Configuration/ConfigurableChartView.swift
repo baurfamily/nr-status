@@ -16,20 +16,14 @@ struct ConfigurableChartView: View {
     init(resultsContainer: NrdbResultContainer) {
         self.resultsContainer = resultsContainer
         
-        let fieldsAndFacets = ChartConfiguration.fieldsAndFacets(from: resultsContainer)
-        
         self.config = .init(
-            isStacked: false,
-            isSmoothed: true,
-            showDataPoints: false,
-            fields: fieldsAndFacets.0,
-            facets: fieldsAndFacets.1
+            resultContainer: resultsContainer
         )
     }
     
     var body: some View {
         TimeseriesChartConfigView(config: $config)
-        TimeseriesChart(resultsContainer: resultsContainer, config: config)
+        TimeseriesChart(config: config)
     }
 }
 

@@ -44,7 +44,7 @@ struct ResultsList : View {
                 VStack {
                     Text(docQuery.query.title)
                     if resultContainer.isTimeseries {
-                        TimeseriesChart(resultsContainer: resultContainer)
+                        TimeseriesChart(config: ChartConfiguration(resultContainer: resultContainer))
                             .frame(minHeight: 25)
                             .chartLegend(.hidden)
                             .chartXAxis(.hidden)
@@ -80,7 +80,7 @@ struct ResultsTabView : View {
                 Tab(value: docQuery.id) {
                     if let resultContainer = docQuery.query.resultContainer {
                         if resultContainer.isTimeseries {
-                            TimeseriesChart(resultsContainer: resultContainer)
+                            TimeseriesChart(config: ChartConfiguration(resultContainer: resultContainer))
                         } else {
                             PieChart(resultsContainer: resultContainer)
                             BarChart(resultsContainer: resultContainer)

@@ -9,18 +9,21 @@ import SwiftUI
 import Charts
 
 struct TimeseriesChart: View {
-    var resultsContainer: NrdbResultContainer
-    var config: ChartConfiguration = ChartConfiguration()
+    let config: ChartConfiguration
+    
+    var resultContainer: NrdbResultContainer {
+        config.resultContainer
+    }
 
-    var data: [NrdbResults.Datum] { resultsContainer.results.data }
-    var metadata: NrdbMetadata { resultsContainer.metadata }
+    var data: [NrdbResults.Datum] { config.resultContainer.results.data }
+    var metadata: NrdbMetadata { config.resultContainer.metadata }
     
     var selectedFacets: [String] { config.selectedFacets }
     var selectedFields: [String] { config.selectedFields }
 
     @State var selectedDate: Date?
     @State var selectedDateRange: ClosedRange<Date>?
-
+    
     func seriesNames(for field: String, in datum: NrdbResults.Datum ) -> (String,String) {
         let prefix = datum.isComparable ? "\(datum.comparison): " : ""
         let facetPrefix = datum.isFaceted ? "Facet" : "Data"
@@ -44,8 +47,8 @@ struct TimeseriesChart: View {
         }
     }
     func dateFor(_ datum: NrdbResults.Datum) -> Date {
-        if resultsContainer.isComparable && datum.comparison == .previous{
-             return resultsContainer.adjustedTime(datum.beginTime!)
+        if config.resultContainer.isComparable && datum.comparison == .previous{
+            return config.resultContainer.adjustedTime(datum.beginTime!)
         } else {
             return datum.beginTime!
         }
@@ -113,16 +116,7 @@ struct TimeseriesChart: View {
 
 #Preview("Timeseries comparable (small)") {
     if let single = ChartSamples.sampleData(comparable: true, size: .small) {
-        TimeseriesChart(
-            resultsContainer: single,
-            config: ChartConfiguration(
-                isStacked: false,
-                isSmoothed: true,
-                showDataPoints: true,
-                fields: ChartConfiguration.fieldsAndFacets(from: single).0,
-                facets: ChartConfiguration.fieldsAndFacets(from: single).1
-            )
-        )
+        TimeseriesChart(config: ChartConfiguration(resultContainer: single))
     
     } else {
         Text("No sample data")
@@ -131,7 +125,7 @@ struct TimeseriesChart: View {
 
 #Preview("Timeseries (medium)") {
     if let single = ChartSamples.sampleData() {
-        ConfigurableChartView(resultsContainer: single)
+        TimeseriesChart(config: ChartConfiguration(resultContainer: single))
     } else {
         Text("No sample data")
     }

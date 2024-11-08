@@ -16,26 +16,14 @@ struct ConfigurableChartView: View {
     init(resultsContainer: NrdbResultContainer) {
         self.resultsContainer = resultsContainer
         
-        var fields: [SelectableField] = []
-        var facets: [SelectableField] = []
-        
-        if let first = resultsContainer.results.data.first {
-            fields = SelectableField.wrap( first.numberFields.keys.sorted() )
-        }
-        facets = SelectableField.wrap( resultsContainer.allFacets.sorted() )
-        
         self.config = .init(
-            isStacked: false,
-            isSmoothed: true,
-            showDataPoints: false,
-            fields: fields,
-            facets: facets
+            resultContainer: resultsContainer
         )
     }
     
     var body: some View {
         TimeseriesChartConfigView(config: $config)
-        TimeseriesChart(resultsContainer: resultsContainer, config: config)
+        TimeseriesChart(config: config)
     }
 }
 

@@ -14,7 +14,6 @@
 		3FA635082CD7D4E30050F813 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B29F2CBB3CBD00CCB8DD /* WidgetKit.framework */; };
 		3FA635092CD7D4E30050F813 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B2A12CBB3CBD00CCB8DD /* SwiftUI.framework */; };
 		3FA635172CD7D4E40050F813 /* NRQL WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3FA635072CD7D4E30050F813 /* NRQL WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		3FA6354B2CD86E760050F813 /* LanguageSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 3FA6354A2CD86E760050F813 /* LanguageSupport */; };
 		3FFDAEBE2CBCE7B200B26893 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B29F2CBB3CBD00CCB8DD /* WidgetKit.framework */; };
 		3FFDAEBF2CBCE7B200B26893 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B2A12CBB3CBD00CCB8DD /* SwiftUI.framework */; };
 /* End PBXBuildFile section */
@@ -130,13 +129,6 @@
 			);
 			target = 3F28B3642CBB996200CCB8DD /* NR Models */;
 		};
-		3FFDAECE2CBCE7B300B26893 /* Exceptions for "NRQL Viewer Widget" folder in "NRQL Viewer WidgetExtension" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 3FFDAEBC2CBCE7B200B26893 /* NRQL Viewer WidgetExtension */;
-		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -225,7 +217,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				3FA635092CD7D4E30050F813 /* SwiftUI.framework in Frameworks */,
-				3FA6354B2CD86E760050F813 /* LanguageSupport in Frameworks */,
 				3FA635082CD7D4E30050F813 /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -428,7 +419,6 @@
 			);
 			name = "NRQL WidgetExtension";
 			packageProductDependencies = (
-				3FA6354A2CD86E760050F813 /* LanguageSupport */,
 			);
 			productName = "NRQL WidgetExtension";
 			productReference = 3FA635072CD7D4E30050F813 /* NRQL WidgetExtension.appex */;
@@ -1227,11 +1217,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 3F7896472CA7CE1100A03646 /* XCRemoteSwiftPackageReference "HexGrid" */;
 			productName = HexGrid;
-		};
-		3FA6354A2CD86E760050F813 /* LanguageSupport */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 3F01FD7A2CBF718600D9E068 /* XCRemoteSwiftPackageReference "CodeEditorView" */;
-			productName = LanguageSupport;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

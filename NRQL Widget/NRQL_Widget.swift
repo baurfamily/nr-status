@@ -72,11 +72,6 @@ struct NRQL_ViewerEntryView : View {
         Text("-----")
         if let resultContainer = entry.resultContainer {
             Text(entry.configuration.title)
-            TimeseriesChart(
-                config: ChartConfiguration(
-                    resultContainer: resultContainer
-                )
-            ).chartLegend(.hidden)
             ChartSelectionView(resultsContainer: resultContainer).chartLegend(.hidden)
         } else {
             Text("Error loading data")

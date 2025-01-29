@@ -118,6 +118,13 @@
 			);
 			target = 3F28B3642CBB996200CCB8DD /* NR Models */;
 		};
+		3F5501902D49F05500950FE2 /* Exceptions for "NRQL Widget" folder in "NRQL WidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 3FA635062CD7D4E30050F813 /* NRQL WidgetExtension */;
+		};
 		3FA636312CDDDFD20050F813 /* Exceptions for "NR Status" folder in "NR Models" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -164,6 +171,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				3F19A9C12CDDEADD008FEA5A /* Exceptions for "NRQL Widget" folder in "NR Status" target */,
+				3F5501902D49F05500950FE2 /* Exceptions for "NRQL Widget" folder in "NRQL WidgetExtension" target */,
 			);
 			path = "NRQL Widget";
 			sourceTree = "<group>";
@@ -420,7 +428,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1610;
-				LastUpgradeCheck = 1610;
+				LastUpgradeCheck = 1620;
 				TargetAttributes = {
 					3F01FD242CBDFADF00D9E068 = {
 						CreatedOnToolsVersion = 16.0;

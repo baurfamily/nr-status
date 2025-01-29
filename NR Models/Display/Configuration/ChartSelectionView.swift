@@ -11,11 +11,13 @@ import Charts
 struct ChartSelectionView: View {
     let resultsContainer: NrdbResultContainer
     let availableChartTypes: [ChartType]
+    let hideConfiguration: Bool
     
     @State var config: ChartConfiguration
     
-    init(resultsContainer: NrdbResultContainer) {
+    init(resultsContainer: NrdbResultContainer, hideConfiguration: Bool = false) {
         self.resultsContainer = resultsContainer
+        self.hideConfiguration = hideConfiguration
         
         var config = ChartConfiguration.init(
             resultContainer: resultsContainer
@@ -46,7 +48,7 @@ struct ChartSelectionView: View {
        .padding(.horizontal)
         
         if config.chartType == .line {
-            ConfigurableChartView(resultsContainer: resultsContainer)
+            ConfigurableChartView(resultsContainer: resultsContainer, hideConfiguration: hideConfiguration)
         } else if config.chartType == .pie {
             PieChart(resultsContainer: resultsContainer)
         } else if config.chartType == .bar {

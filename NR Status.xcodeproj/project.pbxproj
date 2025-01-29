@@ -9,9 +9,6 @@
 /* Begin PBXBuildFile section */
 		3F01FD7C2CBF718600D9E068 /* CodeEditorView in Frameworks */ = {isa = PBXBuildFile; productRef = 3F01FD7B2CBF718600D9E068 /* CodeEditorView */; };
 		3F01FD7E2CBF718600D9E068 /* LanguageSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 3F01FD7D2CBF718600D9E068 /* LanguageSupport */; };
-		3F19A9C72CE01285008FEA5A /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B29F2CBB3CBD00CCB8DD /* WidgetKit.framework */; };
-		3F19A9C82CE01285008FEA5A /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B2A12CBB3CBD00CCB8DD /* SwiftUI.framework */; };
-		3F19A9D62CE01286008FEA5A /* Test WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3F19A9C62CE01285008FEA5A /* Test WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		3F28B36F2CBB996200CCB8DD /* NR_Models.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B3652CBB996200CCB8DD /* NR_Models.framework */; };
 		3FA5BADA2CC22C5400B75771 /* HexGrid in Frameworks */ = {isa = PBXBuildFile; productRef = 3FA5BAD92CC22C5400B75771 /* HexGrid */; };
 		3FA635082CD7D4E30050F813 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B29F2CBB3CBD00CCB8DD /* WidgetKit.framework */; };
@@ -20,13 +17,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		3F19A9D42CE01286008FEA5A /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 3F57146B2C9EA7BC00685FEA /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 3F19A9C52CE01285008FEA5A;
-			remoteInfo = "Test WidgetExtension";
-		};
 		3F28B3702CBB996200CCB8DD /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 3F57146B2C9EA7BC00685FEA /* Project object */;
@@ -51,7 +41,6 @@
 			dstSubfolderSpec = 13;
 			files = (
 				3FA635172CD7D4E40050F813 /* NRQL WidgetExtension.appex in Embed Foundation Extensions */,
-				3F19A9D62CE01286008FEA5A /* Test WidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -60,7 +49,6 @@
 
 /* Begin PBXFileReference section */
 		3F01FD252CBDFADF00D9E068 /* NR Status.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NR Status.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		3F19A9C62CE01285008FEA5A /* Test WidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Test WidgetExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3F28B29F2CBB3CBD00CCB8DD /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		3F28B2A12CBB3CBD00CCB8DD /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		3F28B3652CBB996200CCB8DD /* NR_Models.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = NR_Models.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -84,13 +72,6 @@
 				ConfigurationAppIntent.swift,
 			);
 			target = 3F01FD242CBDFADF00D9E068 /* NR Status */;
-		};
-		3F19A9DA2CE01286008FEA5A /* Exceptions for "Test Widget" folder in "Test WidgetExtension" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 3F19A9C52CE01285008FEA5A /* Test WidgetExtension */;
 		};
 		3F28B37C2CBB996200CCB8DD /* Exceptions for "NR Models" folder in "NR Models" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
@@ -156,14 +137,6 @@
 			path = "NR Status";
 			sourceTree = "<group>";
 		};
-		3F19A9C92CE01285008FEA5A /* Test Widget */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				3F19A9DA2CE01286008FEA5A /* Exceptions for "Test Widget" folder in "Test WidgetExtension" target */,
-			);
-			path = "Test Widget";
-			sourceTree = "<group>";
-		};
 		3F28B3662CBB996200CCB8DD /* NR Models */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -205,15 +178,6 @@
 				3FA5BADA2CC22C5400B75771 /* HexGrid in Frameworks */,
 				3F01FD7E2CBF718600D9E068 /* LanguageSupport in Frameworks */,
 				3F01FD7C2CBF718600D9E068 /* CodeEditorView in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		3F19A9C32CE01285008FEA5A /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				3F19A9C82CE01285008FEA5A /* SwiftUI.framework in Frameworks */,
-				3F19A9C72CE01285008FEA5A /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -276,7 +240,6 @@
 				3F28B3662CBB996200CCB8DD /* NR Models */,
 				3F28B3742CBB996200CCB8DD /* NR ModelsTests */,
 				3FA6350A2CD7D4E30050F813 /* NRQL Widget */,
-				3F19A9C92CE01285008FEA5A /* Test Widget */,
 				3F5714742C9EA7BC00685FEA /* Products */,
 				3F28B29E2CBB3CBD00CCB8DD /* Frameworks */,
 			);
@@ -291,7 +254,6 @@
 				3F28B36E2CBB996200CCB8DD /* NR ModelsTests.xctest */,
 				3F01FD252CBDFADF00D9E068 /* NR Status.app */,
 				3FA635072CD7D4E30050F813 /* NRQL WidgetExtension.appex */,
-				3F19A9C62CE01285008FEA5A /* Test WidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -322,7 +284,6 @@
 			);
 			dependencies = (
 				3FA635162CD7D4E40050F813 /* PBXTargetDependency */,
-				3F19A9D52CE01286008FEA5A /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				3F01FD262CBDFADF00D9E068 /* NR Status */,
@@ -337,28 +298,6 @@
 			productName = "NRQL Editor";
 			productReference = 3F01FD252CBDFADF00D9E068 /* NR Status.app */;
 			productType = "com.apple.product-type.application";
-		};
-		3F19A9C52CE01285008FEA5A /* Test WidgetExtension */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 3F19A9D72CE01286008FEA5A /* Build configuration list for PBXNativeTarget "Test WidgetExtension" */;
-			buildPhases = (
-				3F19A9C22CE01285008FEA5A /* Sources */,
-				3F19A9C32CE01285008FEA5A /* Frameworks */,
-				3F19A9C42CE01285008FEA5A /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				3F19A9C92CE01285008FEA5A /* Test Widget */,
-			);
-			name = "Test WidgetExtension";
-			packageProductDependencies = (
-			);
-			productName = "Test WidgetExtension";
-			productReference = 3F19A9C62CE01285008FEA5A /* Test WidgetExtension.appex */;
-			productType = "com.apple.product-type.app-extension";
 		};
 		3F28B3642CBB996200CCB8DD /* NR Models */ = {
 			isa = PBXNativeTarget;
@@ -486,9 +425,6 @@
 					3F01FD242CBDFADF00D9E068 = {
 						CreatedOnToolsVersion = 16.0;
 					};
-					3F19A9C52CE01285008FEA5A = {
-						CreatedOnToolsVersion = 16.1;
-					};
 					3F28B3642CBB996200CCB8DD = {
 						CreatedOnToolsVersion = 16.0;
 					};
@@ -533,20 +469,12 @@
 				3F28B3642CBB996200CCB8DD /* NR Models */,
 				3F28B36D2CBB996200CCB8DD /* NR ModelsTests */,
 				3FA635062CD7D4E30050F813 /* NRQL WidgetExtension */,
-				3F19A9C52CE01285008FEA5A /* Test WidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		3F01FD232CBDFADF00D9E068 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		3F19A9C42CE01285008FEA5A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -598,13 +526,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		3F19A9C22CE01285008FEA5A /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		3F28B3612CBB996200CCB8DD /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -643,11 +564,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		3F19A9D52CE01286008FEA5A /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 3F19A9C52CE01285008FEA5A /* Test WidgetExtension */;
-			targetProxy = 3F19A9D42CE01286008FEA5A /* PBXContainerItemProxy */;
-		};
 		3F28B3712CBB996200CCB8DD /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 3F28B3642CBB996200CCB8DD /* NR Models */;
@@ -721,64 +637,6 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
-		3F19A9D82CE01286008FEA5A /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = "Test Widget/Test_Widget.entitlements";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = EHM929N34N;
-				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Test Widget/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Test Widget";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 15.1;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status.Test-Widget";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		3F19A9D92CE01286008FEA5A /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = "Test Widget/Test_Widget.entitlements";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = EHM929N34N;
-				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Test Widget/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Test Widget";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 15.1;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status.Test-Widget";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -1152,15 +1010,6 @@
 			buildConfigurations = (
 				3F01FD4C2CBDFAE100D9E068 /* Debug */,
 				3F01FD4D2CBDFAE100D9E068 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		3F19A9D72CE01286008FEA5A /* Build configuration list for PBXNativeTarget "Test WidgetExtension" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				3F19A9D82CE01286008FEA5A /* Debug */,
-				3F19A9D92CE01286008FEA5A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

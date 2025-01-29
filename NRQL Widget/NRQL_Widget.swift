@@ -69,10 +69,9 @@ struct NRQL_ViewerEntryView : View {
     @State var resultContainer: NrdbResultContainer?
     
     var body: some View {
-        Text("-----")
         if let resultContainer = entry.resultContainer {
             Text(entry.configuration.title)
-            ChartSelectionView(resultsContainer: resultContainer).chartLegend(.hidden)
+            ChartSelectionView(resultsContainer: resultContainer, hideConfiguration: true).chartLegend(.hidden)
         } else {
             Text("Error loading data")
         }

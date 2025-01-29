@@ -28,24 +28,26 @@ struct ChartSelectionView: View {
     }
     
     var body: some View {
-        Menu {
-            ForEach(ChartType.allCases, id: \.self) { option in
-                if availableChartTypes.contains(option) {
-                    Button(action: { config.chartType = option }) {
-                        Text(option.rawValue)
+        if !hideConfiguration {
+            Menu {
+                ForEach(ChartType.allCases, id: \.self) { option in
+                    if availableChartTypes.contains(option) {
+                        Button(action: { config.chartType = option }) {
+                            Text(option.rawValue)
+                        }
+                    } else {
+                        Button(action: {}) {
+                            Text(option.rawValue).foregroundColor(.gray)
+                        }.disabled(true)
                     }
-                } else {
-                    Button(action: {}) {
-                        Text(option.rawValue).foregroundColor(.gray)
-                    }.disabled(true)
                 }
+            } label: {
+                Text(config.chartType?.rawValue ?? "Select chart style...")
+                    .foregroundColor(.primary)
+                    .padding(.horizontal)
             }
-        } label: {
-            Text(config.chartType?.rawValue ?? "Select chart style...")
-                .foregroundColor(.primary)
-                .padding(.horizontal)
+            .padding(.horizontal)
         }
-       .padding(.horizontal)
         
         if config.chartType == .line {
             ConfigurableChartView(resultsContainer: resultsContainer, hideConfiguration: hideConfiguration)

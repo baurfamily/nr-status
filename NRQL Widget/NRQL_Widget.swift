@@ -68,10 +68,21 @@ struct NRQL_ViewerEntryView : View {
     
     @State var resultContainer: NrdbResultContainer?
     
+    func configuration() -> ChartConfiguration {
+        // cheating a little here, we don't plan to call this w/out resultContainer being defined
+        // but in theory this would blow up if you did
+        var config = ChartConfiguration.init(resultContainer: resultContainer!)
+        
+        config.isSmoothed = entry.configuration.isSmoothed
+        config.isStacked = entry.configuration.isStacked
+        
+        return config
+    }
+    
     var body: some View {
         if let resultContainer = entry.resultContainer {
             Text(entry.configuration.title)
-            ChartSelectionView(resultsContainer: resultContainer, hideConfiguration: true).chartLegend(.hidden)
+            ChartSelectionView(resultsContainer: resultContainer, configuration: configuration(), hideConfiguration: true).chartLegend(.hidden)
         } else {
             Text("Error loading data")
         }

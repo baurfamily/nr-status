@@ -15,13 +15,18 @@ struct ChartSelectionView: View {
     
     @State var config: ChartConfiguration
     
-    init(resultsContainer: NrdbResultContainer, hideConfiguration: Bool = false) {
+    init(resultsContainer: NrdbResultContainer, configuration: ChartConfiguration? = nil, hideConfiguration: Bool = false) {
         self.resultsContainer = resultsContainer
         self.hideConfiguration = hideConfiguration
         
-        var config = ChartConfiguration.init(
-            resultContainer: resultsContainer
-        )
+        var config: ChartConfiguration
+        if let c = configuration {
+            config = c
+        } else {
+            config = ChartConfiguration.init(
+                resultContainer: resultsContainer
+            )
+        }
         availableChartTypes = config.chartTypes
         config.chartType = availableChartTypes.first
         self.config = config

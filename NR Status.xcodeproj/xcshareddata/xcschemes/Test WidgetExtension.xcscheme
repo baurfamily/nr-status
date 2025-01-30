@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1610"
+   LastUpgradeVersion = "1620"
    wasCreatedForAppExtension = "YES"
    version = "2.0">
    <BuildAction
@@ -16,9 +16,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "3FFDAEBC2CBCE7B200B26893"
-               BuildableName = "NRQL Viewer WidgetExtension.appex"
-               BlueprintName = "NRQL Viewer WidgetExtension"
+               BlueprintIdentifier = "3F19A9C52CE01285008FEA5A"
+               BuildableName = "Test WidgetExtension.appex"
+               BlueprintName = "Test WidgetExtension"
                ReferencedContainer = "container:NR Status.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>

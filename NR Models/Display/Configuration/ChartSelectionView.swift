@@ -11,42 +11,51 @@ import Charts
 struct ChartSelectionView: View {
     let resultsContainer: NrdbResultContainer
     let availableChartTypes: [ChartType]
+    let hideConfiguration: Bool
     
     @State var config: ChartConfiguration
     
-    init(resultsContainer: NrdbResultContainer) {
+    init(resultsContainer: NrdbResultContainer, configuration: ChartConfiguration? = nil, hideConfiguration: Bool = false) {
         self.resultsContainer = resultsContainer
+        self.hideConfiguration = hideConfiguration
         
-        var config = ChartConfiguration.init(
-            resultContainer: resultsContainer
-        )
+        var config: ChartConfiguration
+        if let c = configuration {
+            config = c
+        } else {
+            config = ChartConfiguration.init(
+                resultContainer: resultsContainer
+            )
+        }
         availableChartTypes = config.chartTypes
         config.chartType = availableChartTypes.first
         self.config = config
     }
     
     var body: some View {
-        Menu {
-            ForEach(ChartType.allCases, id: \.self) { option in
-                if availableChartTypes.contains(option) {
-                    Button(action: { config.chartType = option }) {
-                        Text(option.rawValue)
+        if !hideConfiguration {
+            Menu {
+                ForEach(ChartType.allCases, id: \.self) { option in
+                    if availableChartTypes.contains(option) {
+                        Button(action: { config.chartType = option }) {
+                            Text(option.rawValue)
+                        }
+                    } else {
+                        Button(action: {}) {
+                            Text(option.rawValue).foregroundColor(.gray)
+                        }.disabled(true)
                     }
-                } else {
-                    Button(action: {}) {
-                        Text(option.rawValue).foregroundColor(.gray)
-                    }.disabled(true)
                 }
+            } label: {
+                Text(config.chartType?.rawValue ?? "Select chart style...")
+                    .foregroundColor(.primary)
+                    .padding(.horizontal)
             }
-        } label: {
-            Text(config.chartType?.rawValue ?? "Select chart style...")
-                .foregroundColor(.primary)
-                .padding(.horizontal)
+            .padding(.horizontal)
         }
-       .padding(.horizontal)
         
         if config.chartType == .line {
-            ConfigurableChartView(resultsContainer: resultsContainer)
+            ConfigurableChartView(resultsContainer: resultsContainer, hideConfiguration: hideConfiguration)
         } else if config.chartType == .pie {
             PieChart(resultsContainer: resultsContainer)
         } else if config.chartType == .bar {

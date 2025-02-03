@@ -1,4 +1,7 @@
 {
+  "charTypes": [
+    "billboard", "json", "table"
+  ],
   "data": {
     "actor": {
       "nrql": {

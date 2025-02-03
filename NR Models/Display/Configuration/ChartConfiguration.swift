@@ -63,3 +63,67 @@ struct ChartConfiguration {
         self.facets = SelectableField.wrap( resultContainer.allFacets.sorted() )
     }
 }
+
+struct BasicConfiguration {
+    let resultContainer: NrdbResultContainer
+    
+    var fields: [SelectableField] = []
+    var selectedFields: [String] {
+        fields.filter(\.isSelected).map(\.id)
+    }
+    
+    init?(resultContainer: NrdbResultContainer) {
+        self.resultContainer = resultContainer
+        
+        if let first = resultContainer.results.data.first {
+            self.fields = SelectableField.wrap( first.numberFields.keys.sorted() )
+        }
+    }
+}
+
+struct FacetedConfiguration {
+    var facets: [SelectableField] = []
+    var selectedFacets: [String] {
+        facets.filter(\.isSelected).map(\.id)
+    }
+    
+    init(resultContainer: NrdbResultContainer) {
+        self.facets = SelectableField.wrap( resultContainer.allFacets.sorted() )
+    }
+}
+
+struct TimeseriesConfiguration {
+    var showDataPoints: Bool = false
+}
+
+struct AreaChartConfiguration {
+    var basicConfiguration: BasicConfiguration
+    var facetedConfiguration: FacetedConfiguration?
+    var timeseriesConfiguration: TimeseriesConfiguration?
+}
+
+struct BarChartConfiguration {
+    var basicConfiguration: BasicConfiguration
+    var facetedConfiguration: FacetedConfiguration
+}
+
+struct BillBoardConfiguration {
+    var basicConfiguration: BasicConfiguration
+    var facetConfiguration: FacetedConfiguration?
+}
+    
+struct LineChartConfiguration {
+    var basicConfiguratin: BasicConfiguration
+    var timeseriesConfiguration: TimeseriesConfiguration
+}
+
+struct PieChartConfiguration {
+    var basicConfiguration: BasicConfiguration
+    var facetedConfiguration: FacetedConfiguration
+}
+
+struct TableConfiguration {
+    var basicConfiguration: BasicConfiguration
+}
+
+//TODO: Stacked Bar, Bullet, Heatmap, Histogram

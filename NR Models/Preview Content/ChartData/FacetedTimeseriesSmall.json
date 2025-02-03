@@ -1,4 +1,7 @@
 {
+  "chartTypes": [
+    "area", "json", "line", "stackedBar"
+  ],
   "data": {
     "actor": {
       "nrql": {

@@ -1,4 +1,7 @@
 {
+  "chartTypes": [
+      "json", "line"
+  ]
   "data": {
     "actor": {
       "nrql": {

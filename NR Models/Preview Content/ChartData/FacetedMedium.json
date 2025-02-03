@@ -1,4 +1,7 @@
 {
+  "chartTypes": [
+    "bar", "billboard", "json", "pie", "table"
+  ],
   "data": {
     "actor": {
       "nrql": {

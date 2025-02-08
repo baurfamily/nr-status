@@ -9,23 +9,18 @@ import SwiftUI
 import Charts
 
 struct PieChart: View {
-    var resultsContainer: NrdbResultContainer
-    @State var config: ChartConfiguration
-
-    var data: [NrdbResults.Datum] { resultsContainer.results.data }
-    var metadata: NrdbMetadata { resultsContainer.metadata }
+    var config: ChartConfiguration
+    
+    var resultContainer: NrdbResultContainer {
+        config.resultContainer
+    }
+    
+    var data: [NrdbResults.Datum] { config.resultContainer.results.data }
+    var metadata: NrdbMetadata { config.resultContainer.metadata }
     
     var selectedFacets: [String] { config.selectedFacets }
     var selectedFields: [String] { config.selectedFields }
 
-    init(resultsContainer: NrdbResultContainer) {
-        self.resultsContainer = resultsContainer
-        
-        self.config = .init(
-            resultContainer: resultsContainer
-        )
-    }
-    
     /*
      0 => 0, 0.5
      1 => 0.5, 1
@@ -58,7 +53,7 @@ struct PieChart: View {
     }
 
     var body: some View {
-        ConfigView(config: $config)
+//        ConfigView(config: $config)
         
         HStack {
             Chart(data.filter { $0.facet == nil || selectedFacets.contains($0.facet!)}) { datum in
@@ -104,7 +99,7 @@ struct ConfigView : View {
 #Preview("Single facet (small)") {
     if let single = ChartSamples.sampleData(facet: .single, timeseries: false, comparable: false, size: .small) {
         Text("data \(single.results.data.count)")
-        PieChart(resultsContainer: single)
+        PieChart(config: .init(resultContainer: single))
     } else {
         Text("No sample data")
         Text(ChartSamples.sampleFilename(facet: .single, timeseries: false, comparable: false, size: .small))
@@ -114,7 +109,7 @@ struct ConfigView : View {
 #Preview("Single facet (medium)") {
     if let single = ChartSamples.sampleData(facet: .single, timeseries: false, comparable: false, size: .medium) {
         Text("data \(single.results.data.count)")
-        PieChart(resultsContainer: single)
+        PieChart(config: .init(resultContainer: single))
     } else {
         Text("No sample data")
         Text(ChartSamples.sampleFilename(facet: .single, timeseries: false, comparable: false, size: .medium))
@@ -123,7 +118,7 @@ struct ConfigView : View {
 
 #Preview("Double facet (small)") {
     if let double = ChartSamples.sampleData(facet: .multi, timeseries: false, comparable: false, size: .small) {
-        PieChart(resultsContainer: double)
+        PieChart(config: .init(resultContainer: double))
     } else {
         Text("No sample data")
         Text(ChartSamples.sampleFilename(facet: .multi, timeseries: false, comparable: false, size: .small))

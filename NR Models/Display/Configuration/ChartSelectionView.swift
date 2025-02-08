@@ -57,7 +57,7 @@ struct ChartSelectionView: View {
         if config.chartType == .line {
             ConfigurableChartView(resultsContainer: resultsContainer, hideConfiguration: hideConfiguration)
         } else if config.chartType == .pie {
-            PieChart(resultsContainer: resultsContainer)
+            PieChart(config: .init(resultContainer: resultsContainer))
         } else if config.chartType == .bar {
             BarChart(resultsContainer: resultsContainer)
         } else if config.chartType == .table {

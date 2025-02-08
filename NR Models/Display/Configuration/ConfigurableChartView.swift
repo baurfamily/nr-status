@@ -10,8 +10,9 @@ import Charts
 
 struct ConfigurableChartView: View {
     let resultsContainer: NrdbResultContainer
-    let hideConfiguration: Bool 
+    let hideConfiguration: Bool
     
+    @State var configShowing: Bool = true
     @State var config: ChartConfiguration
     
     init(resultsContainer: NrdbResultContainer, hideConfiguration: Bool = false) {
@@ -24,10 +25,11 @@ struct ConfigurableChartView: View {
     }
     
     var body: some View {
-        if !hideConfiguration {
-            TimeseriesChartConfigView(config: $config)
-        }
         TimeseriesChart(config: config)
+            .inspectorColumnWidth(100)
+            .inspector(isPresented: $configShowing) {
+                TimeseriesChartConfigView(config: $config)
+            }
     }
 }
 

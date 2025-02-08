@@ -39,9 +39,9 @@ struct ConfigurableChartView: View {
                     TimeseriesChartConfigView(config: $config)
                 } else if config.chartType == .pie {
                     PieChart(config: .init(resultContainer: resultsContainer))
-                } /*else if config.chartType == .bar {
-                    BarChart(resultsContainer: resultsContainer)
-                } else if config.chartType == .table {
+                } else if config.chartType == .bar {
+                    BarChart(config: .init(resultContainer: resultsContainer))
+                } /*else if config.chartType == .table {
                     TableChart(resultsContainer: resultsContainer)
                 }*/
             }

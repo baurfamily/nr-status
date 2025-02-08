@@ -9,12 +9,16 @@ import SwiftUI
 import Charts
 
 struct BarChart: View {
-    var resultsContainer: NrdbResultContainer
-    @State var config: ChartConfiguration
+    var config: ChartConfiguration
+    
+    var resultContainer: NrdbResultContainer {
+        config.resultContainer
+    }
+    
     @State var switchFieldsAndFacets: Bool = false
 
-    var data: [NrdbResults.Datum] { resultsContainer.results.data }
-    var metadata: NrdbMetadata { resultsContainer.metadata }
+    var data: [NrdbResults.Datum] { resultContainer.results.data }
+    var metadata: NrdbMetadata { resultContainer.metadata }
     
     var selectedFacets: [String] { config.selectedFacets }
     var selectedFields: [String] { config.selectedFields }
@@ -55,35 +59,28 @@ struct BarChart: View {
         }
     }
     func dateFor(_ datum: NrdbResults.Datum) -> Date {
-        if resultsContainer.isComparable && datum.comparison == .previous{
-             return resultsContainer.adjustedTime(datum.beginTime!)
+        if self.resultContainer.isComparable && datum.comparison == .previous{
+            return self.resultContainer.adjustedTime(datum.beginTime!)
         } else {
             return datum.beginTime!
         }
     }
     
-    init(resultsContainer: NrdbResultContainer) {
-        self.resultsContainer = resultsContainer
-                
-        // refactor later to make config the only struct passed
-        self.config = .init(resultContainer: resultsContainer)
-    }
-    
     var body: some View {
-        GroupBox {
-            HStack {
-                Toggle("Pivot Data", isOn: $switchFieldsAndFacets)
-                if config.fields.count > 1 {
-                    SeriesSelectionView(title: "Select fields...", fields: $config.fields)
-                } else { Text("fields?") }
-                if config.facets.count > 1 {
-                    SeriesSelectionView(title: "Select facets...", fields: $config.facets)
-                } else { Text("facets?") }
-            }
-            if !switchFieldsAndFacets && selectedFields.count != 1 {
-                Text("It is recomended that you eaither select a single field for display or pivot the data.")
-            }
-        }
+//        GroupBox {
+//            HStack {
+//                Toggle("Pivot Data", isOn: $switchFieldsAndFacets)
+//                if config.fields.count > 1 {
+//                    SeriesSelectionView(title: "Select fields...", fields: $config.fields)
+//                } else { Text("fields?") }
+//                if config.facets.count > 1 {
+//                    SeriesSelectionView(title: "Select facets...", fields: $config.facets)
+//                } else { Text("facets?") }
+//            }
+//            if !switchFieldsAndFacets && selectedFields.count != 1 {
+//                Text("It is recomended that you eaither select a single field for display or pivot the data.")
+//            }
+//        }
         Chart(filteredData) { datum in
             if switchFieldsAndFacets {
                 ForEach(selectedFields, id:\.self) { fieldName in
@@ -103,7 +100,7 @@ struct BarChart: View {
                 }
             } else {
                 ForEach(selectedFields, id:\.self) { fieldName in
-                    if resultsContainer.isFaceted {
+                    if resultContainer.isFaceted {
                         BarMark(
                             x: .value("Facet", datum.facet!),
                             y: .value(fieldName, datum.numberFields[fieldName]!)
@@ -114,7 +111,7 @@ struct BarChart: View {
                                 datum.facet!
                             )
                         )
-                    } else if resultsContainer.isMultiFaceted {
+                    } else if resultContainer.isMultiFaceted {
                         BarMark(
                             x: .value("Facet", datum.facets![1]),
                             y: .value(fieldName, datum.numberFields[fieldName]!)
@@ -132,7 +129,7 @@ struct BarChart: View {
 #Preview("Single facet (small)") {
     if let single = ChartSamples.sampleData(facet: .single, timeseries: false, comparable: false, size: .small) {
         Text("data \(single.results.data.count)")
-        BarChart(resultsContainer: single)
+        BarChart(config: .init(resultContainer: single))
     } else {
         Text("No sample data")
         Text(ChartSamples.sampleFilename(facet: .single, timeseries: false, comparable: false, size: .small))
@@ -141,7 +138,7 @@ struct BarChart: View {
 
 #Preview("Double facet (small)") {
     if let double = ChartSamples.sampleData(facet: .multi, timeseries: false, comparable: false, size: .small) {
-        BarChart(resultsContainer: double)
+        BarChart(config: .init(resultContainer: double))
     } else {
         Text("No sample data")
         Text(ChartSamples.sampleFilename(facet: .multi, timeseries: false, comparable: false, size: .small))

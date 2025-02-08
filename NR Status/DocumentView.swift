@@ -51,7 +51,7 @@ struct ResultsList : View {
                             .chartYAxis(.hidden)
                     } else {
                         PieChart(config: .init(resultContainer: resultContainer))
-                        BarChart(resultsContainer: resultContainer)
+                        BarChart(config: .init(resultContainer: resultContainer))
                     }
                 }
             } else {
@@ -83,7 +83,7 @@ struct ResultsTabView : View {
                             TimeseriesChart(config: ChartConfiguration(resultContainer: resultContainer))
                         } else {
                             PieChart(config: .init(resultContainer: resultContainer))
-                            BarChart(resultsContainer: resultContainer)
+                            BarChart(config: .init(resultContainer: resultContainer))
                         }
                     } else {
                         if docQuery.focused {

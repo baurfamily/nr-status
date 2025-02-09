@@ -98,4 +98,6 @@ struct TimeseriesConfiguration {
 struct PieCharConfiguration {
     var isDonut: Bool = true
     var isSeparated: Bool = true
+    var showOther: Bool = true
+    var otherThreshold: Int = 10
 }

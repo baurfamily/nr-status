@@ -15,6 +15,7 @@ struct PieChartConfigView: View {
             Form {
                 Toggle("Donut", isOn: $config.pie.isDonut)
                 Toggle("Separated", isOn: $config.pie.isSeparated)
+                Stepper("Show \(config.pie.otherThreshold) facets", value: $config.pie.otherThreshold, in: 2...15)
                 
                 if config.fields.count > 1 {
                     SeriesSelectionView(title: "Select fields...", fields: $config.fields, singleValue: true)

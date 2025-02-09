@@ -82,6 +82,22 @@ struct TimeWindow: Decodable {
 struct NrdbResults: Decodable {
     var data: [Datum]
     
+    var groupedByFacet: [String:[Datum]] {
+        Dictionary(grouping: data, by: { $0.facet ?? "" })
+    }
+    func valuesByFacet(of field: String) -> [MiniDatum] {
+        groupedByFacet.mapValues { values in
+            values.reduce(0) { $0 + ($1.numberFields[field] ?? 0) }
+        }.map { key, value in MiniDatum(facet: key, value: value) }
+    }
+    
+    struct MiniDatum: Identifiable {
+        var id: String { facet }
+        
+        let facet: String
+        let value: Double
+    }
+    
     struct Datum : Decodable, Identifiable {
         enum CodingKeys : String, CodingKey, CaseIterable {
             case beginTimeSeconds, endTimeSeconds, facet, comparison

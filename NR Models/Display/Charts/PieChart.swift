@@ -15,42 +15,66 @@ struct PieChart: View {
         config.resultContainer
     }
     
-    var data: [NrdbResults.Datum] { config.resultContainer.results.data }
+    // this will filter out the unselected facets, they won't be displayed at all
+    // the remainder will be filtered into shown/other
+    var data: [NrdbResults.MiniDatum] {
+        let sortedData = config.resultContainer.results.valuesByFacet(of: selectedField).sorted(using: KeyPathComparator(\.value, order: .reverse))
+        var filteredData = sortedData.filter { selectedFacets.contains($0.facet) }
+        var otherData: [NrdbResults.MiniDatum] = []
+        
+        if filteredData.count > config.pie.otherThreshold {
+            otherData = Array(
+                sortedData[(config.pie.otherThreshold-1)..<filteredData.count]
+            )
+            filteredData = Array(
+                sortedData[0..<(config.pie.otherThreshold-1)]
+            )
+        }
+        
+        filteredData.append(
+            NrdbResults.MiniDatum(
+                facet: "other",
+                value: otherData.map{ $0.value }.reduce(0.0, +)
+            )
+        )
+        
+        return filteredData
+    }
     var metadata: NrdbMetadata { config.resultContainer.metadata }
     
     var selectedFacets: [String] { config.facets.selected }
     var selectedFields: [String] { config.selectedFields }
-
-    func facet(for datum: NrdbResults.Datum) -> String {
-        if let facet = datum.facet {
-            return facet
-        } else if let facets = datum.facets {
-            return facets.joined(separator:", ")
-        } else {
-            return ""
-        }
+    
+    var selectedField : String {
+        guard !selectedFields.isEmpty else { return "" }
+        return selectedFields.first!
     }
 
     var body: some View {
         HStack {
-            Chart(data.filter { $0.facet == nil || selectedFacets.contains($0.facet!)}) { datum in
-                
-                ForEach(selectedFields.indices, id: \.self) { index in
+            Chart(data) { datum in
+                if selectedFacets.contains(datum.facet) {
                     SectorMark(
-                        angle: .value(
-                            facet(for: datum),
-                            datum.numberFields[selectedFields[index]]!
-                        ),
+                        angle: .value( datum.facet, datum.value ),
                         innerRadius: .ratio(config.pie.isDonut ? 0.5 : 0),
                         angularInset: (config.pie.isSeparated ? 1.5 : 0)
                     )
-                    .opacity(0.5)
                     .cornerRadius(2)
-                    .foregroundStyle(by: .value(facet(for: datum), facet(for: datum)))
+                    .foregroundStyle(by: .value(datum.facet, datum.facet))
+                } else {
+                    SectorMark(
+                        angle: .value( "other", datum.value ),
+                        innerRadius: .ratio(config.pie.isDonut ? 0.5 : 0),
+                        angularInset: (config.pie.isSeparated ? 1.5 : 0)
+                    )
+                    .cornerRadius(2)
+                    .foregroundStyle(by: .value("other", "other"))
                 }
+                
             }
         }
     }
+    
 }
 
 struct ConfigView : View {
@@ -69,8 +93,6 @@ struct ConfigView : View {
         }
     }
 }
-
-
 
 #Preview("Single facet (small)") {
     if let single = ChartSamples.sampleData(facet: .single, timeseries: false, comparable: false, size: .small) {

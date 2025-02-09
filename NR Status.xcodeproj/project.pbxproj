@@ -85,6 +85,7 @@
 				Display/ChartSampleView.swift,
 				Display/Configuration/ChartConfiguration.swift,
 				Display/Configuration/ConfigurableChartView.swift,
+				Display/Configuration/PieChartConfigView.swift,
 				Display/Configuration/SeriesSelectionView.swift,
 				Display/Configuration/TimeseriesChartConfigView.swift,
 				Models/Application.swift,

@@ -71,8 +71,8 @@ struct NRQL_ViewerEntryView : View {
         var config = ChartConfiguration.init(resultContainer: results)
         
         config.chartType = entry.configuration.chartType
-        config.isSmoothed = entry.configuration.isSmoothed
-        config.isStacked = entry.configuration.isStacked
+        config.timeseries.isSmoothed = entry.configuration.isSmoothed
+        config.timeseries.isStacked = entry.configuration.isStacked
         
         return config
     }

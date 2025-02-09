@@ -20,7 +20,7 @@ struct BarChart: View {
     var data: [NrdbResults.Datum] { resultContainer.results.data }
     var metadata: NrdbMetadata { resultContainer.metadata }
     
-    var selectedFacets: [String] { config.selectedFacets }
+    var selectedFacets: [String] { config.facets.selected }
     var selectedFields: [String] { config.selectedFields }
     
     var dimensionOne: [String] { switchFieldsAndFacets ? selectedFacets : selectedFields }
@@ -67,20 +67,6 @@ struct BarChart: View {
     }
     
     var body: some View {
-//        GroupBox {
-//            HStack {
-//                Toggle("Pivot Data", isOn: $switchFieldsAndFacets)
-//                if config.fields.count > 1 {
-//                    SeriesSelectionView(title: "Select fields...", fields: $config.fields)
-//                } else { Text("fields?") }
-//                if config.facets.count > 1 {
-//                    SeriesSelectionView(title: "Select facets...", fields: $config.facets)
-//                } else { Text("facets?") }
-//            }
-//            if !switchFieldsAndFacets && selectedFields.count != 1 {
-//                Text("It is recomended that you eaither select a single field for display or pivot the data.")
-//            }
-//        }
         Chart(filteredData) { datum in
             if switchFieldsAndFacets {
                 ForEach(selectedFields, id:\.self) { fieldName in

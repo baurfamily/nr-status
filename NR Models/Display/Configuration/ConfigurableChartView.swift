@@ -53,7 +53,7 @@ struct ConfigurableChartView: View {
             if config.chartType == .line {
                 TimeseriesChartConfigView(config: $config)
             } else if config.chartType == .pie {
-                Text("Pie config goes here")
+                PieChartConfigView(config: $config)
             } else if config.chartType == .bar {
                 Text("Bar config goes here")
             } else if config.chartType == .table {

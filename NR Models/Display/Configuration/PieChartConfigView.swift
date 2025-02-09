@@ -7,21 +7,17 @@
 
 import SwiftUI
 
-struct TimeseriesChartConfigView: View {
-    let isComparable: Bool = false
-
+struct PieChartConfigView: View {
     @Binding var config: ChartConfiguration
     
     var body: some View {
         GroupBox {
             Form {
-                if !isComparable && config.selectedFields.count == 1 && config.facets.selected.count > 1 {
-                    Toggle("Stacked", isOn: $config.timeseries.isStacked)
-                }
-                Toggle("Smoothed", isOn: $config.timeseries.isSmoothed)
-                Toggle("Points", isOn: $config.timeseries.showDataPoints)
+                Toggle("Donut", isOn: $config.pie.isDonut)
+                Toggle("Separated", isOn: $config.pie.isSeparated)
+                
                 if config.fields.count > 1 {
-                    SeriesSelectionView(title: "Select fields...", fields: $config.fields)
+                    SeriesSelectionView(title: "Select fields...", fields: $config.fields, singleValue: true)
                 }
                 if config.facets.all.count > 1 {
                     SeriesSelectionView(title: "Select facets...", fields: $config.facets.all)
@@ -35,7 +31,7 @@ struct TimeseriesChartConfigView: View {
 #Preview {
     @Previewable @State var isPresented = true
     @Previewable @State var config: ChartConfiguration = .init(
-        resultContainer: ChartSamples.sampleData(facet: .single, timeseries: true)!
+        resultContainer: ChartSamples.sampleData(facet: .single, timeseries: false)!
         
     )
     GroupBox {
@@ -49,6 +45,6 @@ struct TimeseriesChartConfigView: View {
             }
         }
     }.inspector(isPresented: $isPresented) {
-        TimeseriesChartConfigView(config: $config)
+        PieChartConfigView(config: $config)
     }
 }

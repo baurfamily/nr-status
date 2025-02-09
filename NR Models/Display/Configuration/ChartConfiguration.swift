@@ -45,20 +45,17 @@ struct SelectableField: Identifiable, Hashable {
 
 struct ChartConfiguration {
     let resultContainer: NrdbResultContainer
-    
-    var isStacked: Bool = false
-    var isSmoothed: Bool = true
-    var showDataPoints: Bool = false
     var chartType: ChartType?
     
+    var timeseries: TimeseriesConfiguration
+    var facets: FacetsConfiguration
+    
+    var pie: PieCharConfiguration
+    
     var fields: [SelectableField] = []
-    var facets: [SelectableField] = []
     
     var selectedFields: [String] {
         fields.filter(\.isSelected).map(\.id)
-    }
-    var selectedFacets: [String] {
-        facets.filter(\.isSelected).map(\.id)
     }
     
     var chartTypes: [ChartType] {
@@ -68,74 +65,37 @@ struct ChartConfiguration {
     init(resultContainer: NrdbResultContainer) {
         self.resultContainer = resultContainer
         
-        if let first = resultContainer.results.data.first {
-            self.fields = SelectableField.wrap( first.numberFields.keys.sorted() )
-        }
-        self.facets = SelectableField.wrap( resultContainer.allFacets.sorted() )
-        self.chartType = chartTypes.first
-    }
-}
-
-struct BasicConfiguration {
-    let resultContainer: NrdbResultContainer
-    
-    var fields: [SelectableField] = []
-    var selectedFields: [String] {
-        fields.filter(\.isSelected).map(\.id)
-    }
-    
-    init?(resultContainer: NrdbResultContainer) {
-        self.resultContainer = resultContainer
         
         if let first = resultContainer.results.data.first {
             self.fields = SelectableField.wrap( first.numberFields.keys.sorted() )
         }
+        self.timeseries = TimeseriesConfiguration()
+        self.facets = FacetsConfiguration(resultContainer: resultContainer)
+        self.pie = PieCharConfiguration()
+        
+        // must be last property set
+        self.chartType = chartTypes.first
     }
 }
 
-struct FacetedConfiguration {
-    var facets: [SelectableField] = []
-    var selectedFacets: [String] {
-        facets.filter(\.isSelected).map(\.id)
+struct FacetsConfiguration {
+    var all: [SelectableField] = []
+    var selected: [String] {
+        all.filter(\.isSelected).map(\.id)
     }
     
     init(resultContainer: NrdbResultContainer) {
-        self.facets = SelectableField.wrap( resultContainer.allFacets.sorted() )
+        self.all = SelectableField.wrap( resultContainer.allFacets.sorted() )
     }
 }
 
 struct TimeseriesConfiguration {
     var showDataPoints: Bool = false
+    var isStacked: Bool = false
+    var isSmoothed: Bool = true
 }
 
-struct AreaChartConfiguration {
-    var basicConfiguration: BasicConfiguration
-    var facetedConfiguration: FacetedConfiguration?
-    var timeseriesConfiguration: TimeseriesConfiguration?
+struct PieCharConfiguration {
+    var isDonut: Bool = true
+    var isSeparated: Bool = true
 }
-
-struct BarChartConfiguration {
-    var basicConfiguration: BasicConfiguration
-    var facetedConfiguration: FacetedConfiguration
-}
-
-struct BillBoardConfiguration {
-    var basicConfiguration: BasicConfiguration
-    var facetConfiguration: FacetedConfiguration?
-}
-    
-struct LineChartConfiguration {
-    var basicConfiguratin: BasicConfiguration
-    var timeseriesConfiguration: TimeseriesConfiguration
-}
-
-struct PieChartConfiguration {
-    var basicConfiguration: BasicConfiguration
-    var facetedConfiguration: FacetedConfiguration
-}
-
-struct TableConfiguration {
-    var basicConfiguration: BasicConfiguration
-}
-
-//TODO: Stacked Bar, Bullet, Heatmap, Histogram

@@ -18,30 +18,9 @@ struct PieChart: View {
     var data: [NrdbResults.Datum] { config.resultContainer.results.data }
     var metadata: NrdbMetadata { config.resultContainer.metadata }
     
-    var selectedFacets: [String] { config.selectedFacets }
+    var selectedFacets: [String] { config.facets.selected }
     var selectedFields: [String] { config.selectedFields }
 
-    /*
-     0 => 0, 0.5
-     1 => 0.5, 1
-     
-     section size: 1/count
-     inner = 0 + index * 1/count
-     outer = 1 - (count-index) * 1/count
-     
-     0 => 0, .33
-     1 => .33, .66
-     2 => .66, 1
-    */
-    // this was all a feeble attempt to support coencentric donut charts
-    // but that isn't actually supported by swift charts :(
-    // leaving this here for now in case I want to return to it...
-    func innerRadius(_ index: Int) -> CGFloat {
-        return Double(index) * 1.0/Double(selectedFields.count)
-    }
-    func outerRadius(_ index: Int) -> CGFloat {
-        return Double(index+1) * 1.0/Double(selectedFields.count)
-    }
     func facet(for datum: NrdbResults.Datum) -> String {
         if let facet = datum.facet {
             return facet
@@ -53,8 +32,6 @@ struct PieChart: View {
     }
 
     var body: some View {
-//        ConfigView(config: $config)
-        
         HStack {
             Chart(data.filter { $0.facet == nil || selectedFacets.contains($0.facet!)}) { datum in
                 
@@ -64,9 +41,8 @@ struct PieChart: View {
                             facet(for: datum),
                             datum.numberFields[selectedFields[index]]!
                         ),
-//                        innerRadius: .ratio(innerRadius(index)),
-//                        outerRadius: .ratio(outerRadius(index)),
-                        angularInset: 1.5
+                        innerRadius: .ratio(config.pie.isDonut ? 0.5 : 0),
+                        angularInset: (config.pie.isSeparated ? 1.5 : 0)
                     )
                     .opacity(0.5)
                     .cornerRadius(2)
@@ -84,10 +60,10 @@ struct ConfigView : View {
         GroupBox {
             HStack {
                 if config.fields.count > 1 {
-                    SeriesSelectionView(title: "Select fields...", fields: $config.fields, singleValue: true)
+                    SeriesSelectionView(title: "Select field...", fields: $config.fields, singleValue: true)
                 } else { Text("fields?") }
-                if config.facets.count > 1 {
-                    SeriesSelectionView(title: "Select facets...", fields: $config.facets)
+                if config.facets.all.count > 1 {
+                    SeriesSelectionView(title: "Select facets...", fields: $config.facets.all)
                 } else { Text("facets?") }
             }
         }

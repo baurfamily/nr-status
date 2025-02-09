@@ -57,7 +57,7 @@ struct ChartSampleView : View {
         
         if let results = resultContainer {
             Text(results.nrql).textSelection(.enabled)
-            ChartSelectionView(resultsContainer: results)
+            ConfigurableChartView(resultsContainer: results)
         }
     }
 }

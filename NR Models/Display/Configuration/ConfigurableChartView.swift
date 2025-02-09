@@ -30,21 +30,31 @@ struct ConfigurableChartView: View {
     }
     
     var body: some View {
-        TimeseriesChart(config: config)
-            .inspectorColumnWidth(100)
-            .inspector(isPresented: $configShowing) {
-                ChartSelector(availableChartTypes: availableChartTypes, selectedChartType: $config.chartType)
-                
-                if config.chartType == .line {
-                    TimeseriesChartConfigView(config: $config)
-                } else if config.chartType == .pie {
-                    PieChart(config: .init(resultContainer: resultsContainer))
-                } else if config.chartType == .bar {
-                    BarChart(config: .init(resultContainer: resultsContainer))
-                } else if config.chartType == .table {
-                    TableChart(config: .init(resultContainer: resultsContainer))
-                }
+        Section {
+            if config.chartType == .line {
+                TimeseriesChart(config: config)
+            } else if config.chartType == .pie {
+                PieChart(config: config)
+            } else if config.chartType == .bar {
+                BarChart(config: config)
+            } else if config.chartType == .table {
+                TableChart(config: config)
             }
+        }
+        .inspectorColumnWidth(100)
+        .inspector(isPresented: $configShowing) {
+            ChartSelector(availableChartTypes: availableChartTypes, selectedChartType: $config.chartType)
+            
+            if config.chartType == .line {
+                TimeseriesChartConfigView(config: $config)
+            } else if config.chartType == .pie {
+                Text("Pie config goes here")
+            } else if config.chartType == .bar {
+                Text("Bar config goes here")
+            } else if config.chartType == .table {
+                Text("Table config goes here")
+            }
+        }
     }
 }
 

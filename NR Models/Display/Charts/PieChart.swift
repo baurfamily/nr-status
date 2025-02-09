@@ -24,19 +24,21 @@ struct PieChart: View {
         
         if filteredData.count > config.pie.otherThreshold {
             otherData = Array(
-                sortedData[(config.pie.otherThreshold-1)..<filteredData.count]
+                filteredData[(config.pie.otherThreshold-1)..<filteredData.count]
             )
             filteredData = Array(
-                sortedData[0..<(config.pie.otherThreshold-1)]
+                filteredData[0..<(config.pie.otherThreshold-1)]
             )
         }
-        
-        filteredData.append(
-            NrdbResults.MiniDatum(
-                facet: "other",
-                value: otherData.map{ $0.value }.reduce(0.0, +)
+       
+        if otherData.count > 0 {
+            filteredData.append(
+                NrdbResults.MiniDatum(
+                    facet: "other",
+                    value: otherData.map{ $0.value }.reduce(0.0, +)
+                )
             )
-        )
+        }
         
         return filteredData
     }
@@ -53,45 +55,17 @@ struct PieChart: View {
     var body: some View {
         HStack {
             Chart(data) { datum in
-                if selectedFacets.contains(datum.facet) {
-                    SectorMark(
-                        angle: .value( datum.facet, datum.value ),
-                        innerRadius: .ratio(config.pie.isDonut ? 0.5 : 0),
-                        angularInset: (config.pie.isSeparated ? 1.5 : 0)
-                    )
-                    .cornerRadius(2)
-                    .foregroundStyle(by: .value(datum.facet, datum.facet))
-                } else {
-                    SectorMark(
-                        angle: .value( "other", datum.value ),
-                        innerRadius: .ratio(config.pie.isDonut ? 0.5 : 0),
-                        angularInset: (config.pie.isSeparated ? 1.5 : 0)
-                    )
-                    .cornerRadius(2)
-                    .foregroundStyle(by: .value("other", "other"))
-                }
-                
+                SectorMark(
+                    angle: .value( datum.facet, datum.value ),
+                    innerRadius: .ratio(config.pie.isDonut ? 0.5 : 0),
+                    angularInset: (config.pie.isSeparated ? 1.5 : 0)
+                )
+                .cornerRadius(2)
+                .foregroundStyle(by: .value(datum.facet, datum.facet))
             }
         }
     }
     
-}
-
-struct ConfigView : View {
-    @Binding var config: ChartConfiguration
-    
-    var body : some View {
-        GroupBox {
-            HStack {
-                if config.fields.count > 1 {
-                    SeriesSelectionView(title: "Select field...", fields: $config.fields, singleValue: true)
-                } else { Text("fields?") }
-                if config.facets.all.count > 1 {
-                    SeriesSelectionView(title: "Select facets...", fields: $config.facets.all)
-                } else { Text("facets?") }
-            }
-        }
-    }
 }
 
 #Preview("Single facet (small)") {

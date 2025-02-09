@@ -98,17 +98,17 @@ struct ChartSelector: View {
         Text("No sample data")
     }
 }
-//
-//#Preview("Basic (small)") {
-//    if let single = ChartSamples.sampleData(timeseries: false) {
-//        ConfigurableChartView(resultsContainer: single)
-//    } else {
-//        Text("No sample data")
-//    }
-//}
+
+#Preview("Faceted (medium)") {
+    if let single = ChartSamples.sampleData(facet: .single, timeseries: false, size: .medium) {
+        ConfigurableChartView(resultsContainer: single)
+    } else {
+        Text("No sample data")
+    }
+}
 
 #Preview("Faceted (small)") {
-    if let single = ChartSamples.sampleData(facet: .single, timeseries: false) {
+    if let single = ChartSamples.sampleData(facet: .single, timeseries: false, size: .small) {
         ConfigurableChartView(resultsContainer: single)
     } else {
         Text("No sample data")

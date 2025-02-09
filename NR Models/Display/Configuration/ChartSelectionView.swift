@@ -61,7 +61,7 @@ struct ChartSelectionView: View {
         } else if config.chartType == .bar {
             BarChart(config: .init(resultContainer: resultsContainer))
         } else if config.chartType == .table {
-            TableChart(resultsContainer: resultsContainer)
+            TableChart(config: .init(resultContainer: resultsContainer))
         }
     }
 }

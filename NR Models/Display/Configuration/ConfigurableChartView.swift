@@ -41,9 +41,9 @@ struct ConfigurableChartView: View {
                     PieChart(config: .init(resultContainer: resultsContainer))
                 } else if config.chartType == .bar {
                     BarChart(config: .init(resultContainer: resultsContainer))
-                } /*else if config.chartType == .table {
-                    TableChart(resultsContainer: resultsContainer)
-                }*/
+                } else if config.chartType == .table {
+                    TableChart(config: .init(resultContainer: resultsContainer))
+                }
             }
     }
 }

@@ -5,7 +5,18 @@
 //  Created by Eric Baur on 10/13/24.
 //
 
-enum ChartType : String, CaseIterable {
+import AppIntents
+
+enum ChartType : String, CaseIterable, AppEnum {
+    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Chart Type"
+    
+    static var caseDisplayRepresentations: [ChartType : DisplayRepresentation]  = [
+        .bar: .init(stringLiteral: "Bar"),
+        .line: .init(stringLiteral: "Line"),
+        .pie: .init(stringLiteral: "Pie"),
+        .table: .init(stringLiteral: "Table")
+    ]
+    
     case line, pie, bar, table
     
     static func cases(for resultContainer: NrdbResultContainer) -> [ChartType] {
@@ -61,6 +72,7 @@ struct ChartConfiguration {
             self.fields = SelectableField.wrap( first.numberFields.keys.sorted() )
         }
         self.facets = SelectableField.wrap( resultContainer.allFacets.sorted() )
+        self.chartType = chartTypes.first
     }
 }
 

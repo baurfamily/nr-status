@@ -9,24 +9,27 @@ import SwiftUI
 import Charts
 
 struct ConfigurableChartView: View {
-    let resultsContainer: NrdbResultContainer
-    let availableChartTypes: [ChartType]
+    var resultsContainer: NrdbResultContainer {
+        config.resultContainer
+    }
+    var availableChartTypes: [ChartType] {
+        config.chartTypes
+    }
 
-    let hideConfiguration: Bool
+    var hideConfiguration: Bool = false
     
     @State var configShowing: Bool = true
     @State var config: ChartConfiguration
     
-    init(resultsContainer: NrdbResultContainer, hideConfiguration: Bool = false) {
-        self.resultsContainer = resultsContainer
-        self.hideConfiguration = hideConfiguration
-        
+    init(config: ChartConfiguration) {
+        self.config = config
+    }
+   
+    init(resultsContainer: NrdbResultContainer) {
         let config = ChartConfiguration.init(
             resultContainer: resultsContainer
         )
         self.config = config
-        self.availableChartTypes = config.chartTypes
-        self.config.chartType = availableChartTypes.first
     }
     
     var body: some View {
@@ -39,6 +42,8 @@ struct ConfigurableChartView: View {
                 BarChart(config: config)
             } else if config.chartType == .table {
                 TableChart(config: config)
+            } else {
+                TimeseriesChart(config: config)
             }
         }
         .inspectorColumnWidth(100)
@@ -53,6 +58,8 @@ struct ConfigurableChartView: View {
                 Text("Bar config goes here")
             } else if config.chartType == .table {
                 Text("Table config goes here")
+            } else {
+                Text("No additional config")
             }
         }
     }

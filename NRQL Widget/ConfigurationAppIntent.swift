@@ -35,4 +35,7 @@ struct ConfigurationAppIntent: WidgetConfigurationIntent {
     
     @Parameter(title: "Show Data Points", default: false)
     var showDataPoints: Bool
+    
+    @Parameter(title: "Chart Type", default: ChartType.line)
+    var chartType: ChartType
 }

@@ -49,9 +49,8 @@ struct ChartConfiguration {
     
     var timeseries: TimeseriesConfiguration
     var facets: FacetsConfiguration
-    
     var pie: PieCharConfiguration
-    
+    var bar: BarChartConfiguration
     var fields: [SelectableField] = []
     
     var selectedFields: [String] {
@@ -72,6 +71,7 @@ struct ChartConfiguration {
         self.timeseries = TimeseriesConfiguration()
         self.facets = FacetsConfiguration(resultContainer: resultContainer)
         self.pie = PieCharConfiguration()
+        self.bar = BarChartConfiguration()
         
         // must be last property set
         self.chartType = chartTypes.first
@@ -98,6 +98,10 @@ struct TimeseriesConfiguration {
 struct PieCharConfiguration {
     var isDonut: Bool = true
     var isSeparated: Bool = true
-    var showOther: Bool = true
+    var otherThreshold: Int = 10
+}
+
+struct BarChartConfiguration {
+    var pivotData: Bool = false
     var otherThreshold: Int = 10
 }

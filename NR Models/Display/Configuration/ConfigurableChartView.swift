@@ -55,7 +55,7 @@ struct ConfigurableChartView: View {
             } else if config.chartType == .pie {
                 PieChartConfigView(config: $config)
             } else if config.chartType == .bar {
-                Text("Bar config goes here")
+                BarChartConfigView(config: $config)
             } else if config.chartType == .table {
                 Text("Table config goes here")
             } else {
@@ -107,8 +107,8 @@ struct ChartSelector: View {
     }
 }
 
-#Preview("Faceted (small)") {
-    if let single = ChartSamples.sampleData(facet: .single, timeseries: false, size: .small) {
+#Preview("Faceted (multi/small)") {
+    if let single = ChartSamples.sampleData(facet: .multi, timeseries: false, size: .small) {
         ConfigurableChartView(resultsContainer: single)
     } else {
         Text("No sample data")

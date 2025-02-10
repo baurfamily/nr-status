@@ -1,5 +1,5 @@
 //
-//  ChartViews.swift
+//  PieChartConfigView.swift
 //  NR Status
 //
 //  Created by Eric Baur on 10/13/24.

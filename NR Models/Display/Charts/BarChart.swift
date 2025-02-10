@@ -15,7 +15,7 @@ struct BarChart: View {
         config.resultContainer
     }
     
-    @State var switchFieldsAndFacets: Bool = false
+    var switchFieldsAndFacets: Bool { config.bar.pivotData }
 
     var data: [NrdbResults.Datum] { resultContainer.results.data }
     var metadata: NrdbMetadata { resultContainer.metadata }
@@ -49,21 +49,6 @@ struct BarChart: View {
         }
         
         return (groupName, fieldName)
-    }
-    
-    func lineStyle(for comparison: NrdbResults.Datum.Comparison) -> StrokeStyle {
-        if comparison == .current {
-            return .init()
-        } else {
-            return .init( dash: [ 10, 5, 2, 5 ] )
-        }
-    }
-    func dateFor(_ datum: NrdbResults.Datum) -> Date {
-        if self.resultContainer.isComparable && datum.comparison == .previous{
-            return self.resultContainer.adjustedTime(datum.beginTime!)
-        } else {
-            return datum.beginTime!
-        }
     }
     
     var body: some View {

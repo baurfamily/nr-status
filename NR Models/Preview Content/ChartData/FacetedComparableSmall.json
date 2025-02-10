@@ -1,4 +1,7 @@
 {
+  "chartTypes": [
+      "billbaord", "json", "table"
+  ],
   "data": {
     "actor": {
       "nrql": {

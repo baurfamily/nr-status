@@ -16,21 +16,15 @@ struct SeriesSelectionView : View {
     @State private var isShowingPopover = false
     
     var body: some View {
-        Button(title) {
-            self.isShowingPopover = true
-        }
-        .popover(
-            isPresented: $isShowingPopover
-        ) {
-            GroupBox {
+        DisclosureGroup(title) {
+            VStack {
                 if singleValue {
                     RadioSelectionView(fields: $fields)
                 } else {
                     CheckboxSelectionView(fields: $fields)
                 }
-            }.padding(10)
-        }
-                    
+            }
+        }.padding()
     }
 }
 

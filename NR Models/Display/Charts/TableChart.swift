@@ -8,16 +8,19 @@
 import SwiftUI
 
 struct TableChart : View {
-    let resultsContainer: NrdbResultContainer
-
+    var config: ChartConfiguration
+    
+    var resultContainer: NrdbResultContainer {
+        config.resultContainer
+    }
     var body: some View {
-        Table(resultsContainer.data) {
-            if resultsContainer.isTimeseries {
+        Table(resultContainer.data) {
+            if resultContainer.isTimeseries {
                 TableColumn("Timestamp") { datum in
                     Text(datum.beginTime!, format: .dateTime)
                 }
             }
-            TableColumnForEach(resultsContainer.fieldNames, id:\.self) { field in
+            TableColumnForEach(resultContainer.fieldNames, id:\.self) { field in
                 TableColumn(field) { datum in
                     if datum.numberFields.keys.contains(field) {
                         Text(datum.numberFields[field] ?? 0, format: .number)
@@ -33,7 +36,7 @@ struct TableChart : View {
 #Preview {
     if let single = ChartSamples.sampleData(facet: .single, timeseries: false, comparable: false, size: .small) {
         Text("data \(single.results.data.count)")
-        TableChart(resultsContainer: single)
+        TableChart(config: .init(resultContainer: single))
     } else {
         Text("No sample data")
         Text(ChartSamples.sampleFilename(facet: .single, timeseries: false, comparable: false, size: .small))

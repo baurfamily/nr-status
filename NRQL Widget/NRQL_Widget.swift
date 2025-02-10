@@ -66,23 +66,30 @@ struct NrdbResultEntry: TimelineEntry {
 struct NRQL_ViewerEntryView : View {
     var entry: Provider.Entry
     
-    @State var resultContainer: NrdbResultContainer?
-    
-    func configuration() -> ChartConfiguration {
-        // cheating a little here, we don't plan to call this w/out resultContainer being defined
-        // but in theory this would blow up if you did
-        var config = ChartConfiguration.init(resultContainer: resultContainer!)
+    func configuration() -> ChartConfiguration? {
+        guard let results = entry.resultContainer else { return nil }
+        var config = ChartConfiguration.init(resultContainer: results)
         
-        config.isSmoothed = entry.configuration.isSmoothed
-        config.isStacked = entry.configuration.isStacked
+        config.chartType = entry.configuration.chartType
+        config.timeseries.isSmoothed = entry.configuration.isSmoothed
+        config.timeseries.isStacked = entry.configuration.isStacked
         
         return config
     }
     
     var body: some View {
-        if let resultContainer = entry.resultContainer {
+        if let config = configuration() {
             Text(entry.configuration.title)
-            ChartSelectionView(resultsContainer: resultContainer, configuration: configuration(), hideConfiguration: true).chartLegend(.hidden)
+
+            if entry.configuration.chartType == .line {
+                TimeseriesChart(config: config).chartLegend(.hidden)
+            } else if entry.configuration.chartType == .bar {
+                BarChart(config: config).chartLegend(.hidden)
+            } else if entry.configuration.chartType == .pie {
+                PieChart(config: config).chartLegend(.hidden)
+            } else if entry.configuration.chartType == .table {
+                TableChart(config: config)
+            }
         } else {
             Text("Error loading data")
         }

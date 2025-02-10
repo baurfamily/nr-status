@@ -18,7 +18,7 @@ struct TimeseriesChart: View {
     var data: [NrdbResults.Datum] { config.resultContainer.results.data }
     var metadata: NrdbMetadata { config.resultContainer.metadata }
     
-    var selectedFacets: [String] { config.selectedFacets }
+    var selectedFacets: [String] { config.facets.selected }
     var selectedFields: [String] { config.selectedFields }
 
     @State var selectedDate: Date?
@@ -88,13 +88,13 @@ struct TimeseriesChart: View {
             ForEach(selectedFields.sorted(), id: \.self) { field in
                 let seriesNames = seriesNames(for: field, in: datum)
 
-                if config.isStacked {
+                if config.timeseries.isStacked {
                     AreaMark(
                         x: .value("Timestamp", dateFor(datum)),
                         y: .value(field, datum.numberFields[field]!)
                     )
                     .foregroundStyle(by: .value(seriesNames.0, seriesNames.1))
-                    .interpolationMethod((config.isSmoothed ? .catmullRom : .linear))
+                    .interpolationMethod((config.timeseries.isSmoothed ? .catmullRom : .linear))
                     
                 } else {
                     LineMark(
@@ -104,8 +104,8 @@ struct TimeseriesChart: View {
                     .lineStyle(lineStyle(for: datum.comparison))
                     .foregroundStyle(by: .value(seriesNames.0, seriesNames.1))
                     .symbol(by: .value(seriesNames.0, seriesNames.1))
-                    .symbolSize(config.showDataPoints ? 50 : 0)
-                    .interpolationMethod((config.isSmoothed ? .catmullRom : .linear))
+                    .symbolSize(config.timeseries.showDataPoints ? 50 : 0)
+                    .interpolationMethod((config.timeseries.isSmoothed ? .catmullRom : .linear))
                 }
             }
         }

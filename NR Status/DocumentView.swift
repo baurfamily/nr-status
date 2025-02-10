@@ -50,8 +50,8 @@ struct ResultsList : View {
                             .chartXAxis(.hidden)
                             .chartYAxis(.hidden)
                     } else {
-                        PieChart(resultsContainer: resultContainer)
-                        BarChart(resultsContainer: resultContainer)
+                        PieChart(config: .init(resultContainer: resultContainer))
+                        BarChart(config: .init(resultContainer: resultContainer))
                     }
                 }
             } else {
@@ -82,8 +82,8 @@ struct ResultsTabView : View {
                         if resultContainer.isTimeseries {
                             TimeseriesChart(config: ChartConfiguration(resultContainer: resultContainer))
                         } else {
-                            PieChart(resultsContainer: resultContainer)
-                            BarChart(resultsContainer: resultContainer)
+                            PieChart(config: .init(resultContainer: resultContainer))
+                            BarChart(config: .init(resultContainer: resultContainer))
                         }
                     } else {
                         if docQuery.focused {

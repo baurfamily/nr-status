@@ -9,102 +9,69 @@ import SwiftUI
 import Charts
 
 struct PieChart: View {
-    var resultsContainer: NrdbResultContainer
-    @State var config: ChartConfiguration
-
-    var data: [NrdbResults.Datum] { resultsContainer.results.data }
-    var metadata: NrdbMetadata { resultsContainer.metadata }
+    var config: ChartConfiguration
     
-    var selectedFacets: [String] { config.selectedFacets }
-    var selectedFields: [String] { config.selectedFields }
-
-    init(resultsContainer: NrdbResultContainer) {
-        self.resultsContainer = resultsContainer
+    var resultContainer: NrdbResultContainer {
+        config.resultContainer
+    }
+    
+    // this will filter out the unselected facets, they won't be displayed at all
+    // the remainder will be filtered into shown/other
+    var data: [NrdbResults.MiniDatum] {
+        let sortedData = config.resultContainer.results.valuesByFacet(of: selectedField).sorted(using: KeyPathComparator(\.value, order: .reverse))
+        var filteredData = sortedData.filter { selectedFacets.contains($0.facet) }
+        var otherData: [NrdbResults.MiniDatum] = []
         
-        self.config = .init(
-            resultContainer: resultsContainer
-        )
-    }
-    
-    /*
-     0 => 0, 0.5
-     1 => 0.5, 1
-     
-     section size: 1/count
-     inner = 0 + index * 1/count
-     outer = 1 - (count-index) * 1/count
-     
-     0 => 0, .33
-     1 => .33, .66
-     2 => .66, 1
-    */
-    // this was all a feeble attempt to support coencentric donut charts
-    // but that isn't actually supported by swift charts :(
-    // leaving this here for now in case I want to return to it...
-    func innerRadius(_ index: Int) -> CGFloat {
-        return Double(index) * 1.0/Double(selectedFields.count)
-    }
-    func outerRadius(_ index: Int) -> CGFloat {
-        return Double(index+1) * 1.0/Double(selectedFields.count)
-    }
-    func facet(for datum: NrdbResults.Datum) -> String {
-        if let facet = datum.facet {
-            return facet
-        } else if let facets = datum.facets {
-            return facets.joined(separator:", ")
-        } else {
-            return ""
+        if filteredData.count > config.pie.otherThreshold {
+            otherData = Array(
+                filteredData[(config.pie.otherThreshold-1)..<filteredData.count]
+            )
+            filteredData = Array(
+                filteredData[0..<(config.pie.otherThreshold-1)]
+            )
         }
+       
+        if otherData.count > 0 {
+            filteredData.append(
+                NrdbResults.MiniDatum(
+                    facet: "other",
+                    value: otherData.map{ $0.value }.reduce(0.0, +)
+                )
+            )
+        }
+        
+        return filteredData
+    }
+    var metadata: NrdbMetadata { config.resultContainer.metadata }
+    
+    var selectedFacets: [String] { config.facets.selected }
+    var selectedFields: [String] { config.selectedFields }
+    
+    var selectedField : String {
+        guard !selectedFields.isEmpty else { return "" }
+        return selectedFields.first!
     }
 
     var body: some View {
-        ConfigView(config: $config)
-        
         HStack {
-            Chart(data.filter { $0.facet == nil || selectedFacets.contains($0.facet!)}) { datum in
-                
-                ForEach(selectedFields.indices, id: \.self) { index in
-                    SectorMark(
-                        angle: .value(
-                            facet(for: datum),
-                            datum.numberFields[selectedFields[index]]!
-                        ),
-//                        innerRadius: .ratio(innerRadius(index)),
-//                        outerRadius: .ratio(outerRadius(index)),
-                        angularInset: 1.5
-                    )
-                    .opacity(0.5)
-                    .cornerRadius(2)
-                    .foregroundStyle(by: .value(facet(for: datum), facet(for: datum)))
-                }
+            Chart(data) { datum in
+                SectorMark(
+                    angle: .value( datum.facet, datum.value ),
+                    innerRadius: .ratio(config.pie.isDonut ? 0.5 : 0),
+                    angularInset: (config.pie.isSeparated ? 1.5 : 0)
+                )
+                .cornerRadius(2)
+                .foregroundStyle(by: .value(datum.facet, datum.facet))
             }
         }
     }
-}
-
-struct ConfigView : View {
-    @Binding var config: ChartConfiguration
     
-    var body : some View {
-        GroupBox {
-            HStack {
-                if config.fields.count > 1 {
-                    SeriesSelectionView(title: "Select fields...", fields: $config.fields, singleValue: true)
-                } else { Text("fields?") }
-                if config.facets.count > 1 {
-                    SeriesSelectionView(title: "Select facets...", fields: $config.facets)
-                } else { Text("facets?") }
-            }
-        }
-    }
 }
-
-
 
 #Preview("Single facet (small)") {
     if let single = ChartSamples.sampleData(facet: .single, timeseries: false, comparable: false, size: .small) {
         Text("data \(single.results.data.count)")
-        PieChart(resultsContainer: single)
+        PieChart(config: .init(resultContainer: single))
     } else {
         Text("No sample data")
         Text(ChartSamples.sampleFilename(facet: .single, timeseries: false, comparable: false, size: .small))
@@ -114,7 +81,7 @@ struct ConfigView : View {
 #Preview("Single facet (medium)") {
     if let single = ChartSamples.sampleData(facet: .single, timeseries: false, comparable: false, size: .medium) {
         Text("data \(single.results.data.count)")
-        PieChart(resultsContainer: single)
+        PieChart(config: .init(resultContainer: single))
     } else {
         Text("No sample data")
         Text(ChartSamples.sampleFilename(facet: .single, timeseries: false, comparable: false, size: .medium))
@@ -123,7 +90,7 @@ struct ConfigView : View {
 
 #Preview("Double facet (small)") {
     if let double = ChartSamples.sampleData(facet: .multi, timeseries: false, comparable: false, size: .small) {
-        PieChart(resultsContainer: double)
+        PieChart(config: .init(resultContainer: double))
     } else {
         Text("No sample data")
         Text(ChartSamples.sampleFilename(facet: .multi, timeseries: false, comparable: false, size: .small))

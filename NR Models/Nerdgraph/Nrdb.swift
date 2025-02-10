@@ -30,7 +30,19 @@ struct NrdbResultContainer : Decodable {
     var isMultiFaceted: Bool { results.data.first?.isMultiFaceted ?? false }
     var isComparable: Bool { results.data.first?.isComparable ?? false }
     
-    var fieldNames: [String] { results.data.first?.fieldNames ?? [] }
+    var fieldNames: [String] {
+        var names: Set<String> = []
+        results.data.forEach { names.formUnion($0.fieldNames) }
+        
+        return Array(names)
+    }
+    
+    var numberFieldNames: [String] {
+        var names: Set<String> = []
+        results.data.forEach { names.formUnion($0.numberFields.keys) }
+        
+        return Array(names)
+    }
     
     var allFacets: Set<String> {
         // does not deal with array facet

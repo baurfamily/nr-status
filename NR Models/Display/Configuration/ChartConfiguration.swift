@@ -13,19 +13,22 @@ enum ChartType : String, CaseIterable, AppEnum {
     static var caseDisplayRepresentations: [ChartType : DisplayRepresentation]  = [
         .bar: .init(stringLiteral: "Bar"),
         .line: .init(stringLiteral: "Line"),
+        .plot: .init(stringLiteral: "Plot"),
         .pie: .init(stringLiteral: "Pie"),
         .table: .init(stringLiteral: "Table")
     ]
     
-    case line, pie, bar, table
+    case line, plot, pie, bar, table
     
+    // want to refactor this to look at chart properties more deeply
+    // for example, plot should only be used if there are at least two numeric fields
     static func cases(for resultContainer: NrdbResultContainer) -> [ChartType] {
         if resultContainer.isTimeseries {
-            return [ .line, .table ]
+            return [ .line, .table, .plot ]
         } else if resultContainer.isComparable {
             return [ .line, .table ]
         } else {
-            return [ .bar, .pie, .table ]
+            return [ .plot, .bar, .pie, .table ]
         }
     }
     
@@ -47,10 +50,12 @@ struct ChartConfiguration {
     let resultContainer: NrdbResultContainer
     var chartType: ChartType?
     
-    var timeseries: TimeseriesConfiguration
     var facets: FacetsConfiguration
-    var pie: PieCharConfiguration
-    var bar: BarChartConfiguration
+    
+    var timeseries: TimeseriesConfiguration = .init()
+    var pie: PieCharConfiguration = .init()
+    var bar: BarChartConfiguration = .init()
+    var plot: ScatterPlotConfig = .init()
     var fields: [SelectableField] = []
     
     var selectedFields: [String] {
@@ -64,17 +69,15 @@ struct ChartConfiguration {
     init(resultContainer: NrdbResultContainer) {
         self.resultContainer = resultContainer
         
-        
-        if let first = resultContainer.results.data.first {
-            self.fields = SelectableField.wrap( first.numberFields.keys.sorted() )
-        }
-        self.timeseries = TimeseriesConfiguration()
+        self.fields = SelectableField.wrap( resultContainer.numberFieldNames.sorted() )
         self.facets = FacetsConfiguration(resultContainer: resultContainer)
-        self.pie = PieCharConfiguration()
-        self.bar = BarChartConfiguration()
         
-        // must be last property set
+        // must be last properties set
         self.chartType = chartTypes.first
+        if self.fields.count > 1 {
+            self.plot.xField = self.fields[0].id
+            self.plot.yField = self.fields[1].id
+        }
     }
 }
 
@@ -104,4 +107,14 @@ struct PieCharConfiguration {
 struct BarChartConfiguration {
     var pivotData: Bool = false
     var otherThreshold: Int = 10
+}
+
+struct ScatterPlotConfig {
+    var colorFacets: Bool = true
+    var logScale: Bool = false
+    
+    var xField: String?
+    var yField: String?
+    
+    var sizeField: String?
 }

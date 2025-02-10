@@ -11,7 +11,7 @@ struct ChartSamples {
     enum DataSize : String, CaseIterable {
         case small = "Small"
         case medium = "Medium"
-//        case large = "Large"
+        case large = "Large"
     }
     enum FacetType : String, CaseIterable {
         case none = ""
@@ -49,18 +49,20 @@ struct ChartSamples {
         }
     }
     
-    static func sampleFilename(facet: FacetType = .none, timeseries: Bool = true, comparable: Bool = false, size: DataSize = .medium) -> String {
+    static func sampleFilename(facet: FacetType = .none, timeseries: Bool = true, comparable: Bool = false, size: DataSize = .medium, statistics: Bool = false) -> String {
         let timeseriesType = timeseries ? "Timeseries" : ""
         let comparableType = comparable ? "Comparable" : ""
+        let statsType = statistics ? "Stats" : ""
         
-        return "\(facet.rawValue)\(timeseriesType)\(comparableType)\(size.rawValue)"
+        return "\(facet.rawValue)\(timeseriesType)\(comparableType)\(statsType)\(size.rawValue)"
     }
     
-    static func sampleData(facet: FacetType = .none, timeseries: Bool = true, comparable: Bool = false, size: DataSize = .medium) -> NrdbResultContainer? {
+    static func sampleData(facet: FacetType = .none, timeseries: Bool = true, comparable: Bool = false, size: DataSize = .medium, statistics: Bool = false) -> NrdbResultContainer? {
         let timeseriesType = timeseries ? "Timeseries" : ""
         let comparableType = comparable ? "Comparable" : ""
+        let statsType = statistics ? "Stats" : ""
         
-        return loadFrom(filename: "\(facet.rawValue)\(timeseriesType)\(comparableType)\(size.rawValue)")
+        return loadFrom(filename: "\(facet.rawValue)\(timeseriesType)\(comparableType)\(statsType)\(size.rawValue)")
     }
     
 }

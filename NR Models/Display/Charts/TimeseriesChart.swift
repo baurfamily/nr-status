@@ -124,7 +124,15 @@ struct TimeseriesChart: View {
 }
 
 #Preview("Timeseries (medium)") {
-    if let single = ChartSamples.sampleData() {
+    if let single = ChartSamples.sampleData(size: .medium) {
+        TimeseriesChart(config: ChartConfiguration(resultContainer: single))
+    } else {
+        Text("No sample data")
+    }
+}
+
+#Preview("Timeseries (large)") {
+    if let single = ChartSamples.sampleData(size: .large) {
         TimeseriesChart(config: ChartConfiguration(resultContainer: single))
     } else {
         Text("No sample data")

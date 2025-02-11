@@ -80,6 +80,7 @@
 				Display/Accessories/AnnotationView.swift,
 				Display/Charts/BarChart.swift,
 				Display/Charts/PieChart.swift,
+				Display/Charts/ScatterPlot.swift,
 				Display/Charts/TableChart.swift,
 				Display/Charts/TimeseriesChart.swift,
 				Display/ChartSampleView.swift,
@@ -87,6 +88,8 @@
 				Display/Configuration/ChartConfiguration.swift,
 				Display/Configuration/ConfigurableChartView.swift,
 				Display/Configuration/PieChartConfigView.swift,
+				Display/Configuration/ScatterPlotConfigView.swift,
+				Display/Configuration/SeriesDropdownView.swift,
 				Display/Configuration/SeriesSelectionView.swift,
 				Display/Configuration/TimeseriesChartConfigView.swift,
 				Models/Application.swift,
@@ -101,8 +104,11 @@
 				"Preview Content/ChartData/FacetedComparableSmall.json",
 				"Preview Content/ChartData/FacetedMedium.json",
 				"Preview Content/ChartData/FacetedSmall.json",
+				"Preview Content/ChartData/FacetedTimeseriesLarge.json",
 				"Preview Content/ChartData/FacetedTimeseriesMedium.json",
 				"Preview Content/ChartData/FacetedTimeseriesSmall.json",
+				"Preview Content/ChartData/FacetedTimeseriesStatsLarge.json",
+				"Preview Content/ChartData/FacetedTimeseriesStatsMedium.json",
 				"Preview Content/ChartData/MultiFacetedComparableSmall.json",
 				"Preview Content/ChartData/MultiFacetedSmall.json",
 				"Preview Content/ChartData/MultiFacetedTimeseriesMedium.json",
@@ -602,6 +608,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "NR Status/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "NR Status";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_NSDesktopFolderUsageDescription = "access to open files";
 				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = "access to open files";
 				INFOPLIST_KEY_NSDownloadsFolderUsageDescription = "access to open files";
@@ -610,7 +618,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -635,6 +643,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "NR Status/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "NR Status";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_NSDesktopFolderUsageDescription = "access to open files";
 				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = "access to open files";
 				INFOPLIST_KEY_NSDownloadsFolderUsageDescription = "access to open files";
@@ -643,7 +653,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -971,7 +981,7 @@
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.6;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status.NRQL-Widget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1001,7 +1011,7 @@
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.6;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status.NRQL-Widget";
 				PRODUCT_NAME = "$(TARGET_NAME)";

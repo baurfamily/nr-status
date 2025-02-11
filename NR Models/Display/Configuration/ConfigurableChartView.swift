@@ -36,6 +36,8 @@ struct ConfigurableChartView: View {
         Section {
             if config.chartType == .line {
                 TimeseriesChart(config: config)
+            } else if config.chartType == .plot {
+                ScatterPlot(config: config)
             } else if config.chartType == .pie {
                 PieChart(config: config)
             } else if config.chartType == .bar {
@@ -52,6 +54,8 @@ struct ConfigurableChartView: View {
             
             if config.chartType == .line {
                 TimeseriesChartConfigView(config: $config)
+            } else if config.chartType == .plot {
+                ScatterPlotConfigView(config: $config)
             } else if config.chartType == .pie {
                 PieChartConfigView(config: $config)
             } else if config.chartType == .bar {
@@ -133,6 +137,14 @@ struct ChartSelector: View {
 
 #Preview("Faceted Timeseries (medium)") {
     if let faceted = ChartSamples.sampleData(facet: .single) {
+        ConfigurableChartView(resultsContainer: faceted)
+    } else {
+        Text("No sample data")
+    }
+}
+
+#Preview("Faceted Timeseries (large/stats)") {
+    if let faceted = ChartSamples.sampleData(facet: .single, timeseries: true, size: .large, statistics: true) {
         ConfigurableChartView(resultsContainer: faceted)
     } else {
         Text("No sample data")

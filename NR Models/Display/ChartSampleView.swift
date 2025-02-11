@@ -11,6 +11,7 @@ struct ChartSampleView : View {
     @State var facetType: ChartSamples.FacetType = .none
     @State var isTimeseries: Bool = false
     @State var isComparable: Bool = false
+    @State var isStats: Bool = false
     @State var size: ChartSamples.DataSize = .small
     
     var resultContainer: NrdbResultContainer? {
@@ -18,7 +19,8 @@ struct ChartSampleView : View {
             facet: facetType,
             timeseries: isTimeseries,
             comparable: isComparable,
-            size: size
+            size: size,
+            statistics: isStats
         ) ?? nil
     }
     var filename: String {
@@ -26,7 +28,8 @@ struct ChartSampleView : View {
             facet: facetType,
             timeseries: isTimeseries,
             comparable: isComparable,
-            size: size
+            size: size,
+            statistics: isStats
         )
     }
     
@@ -38,6 +41,9 @@ struct ChartSampleView : View {
                 }
                 Toggle(isOn: $isComparable) {
                     Text("Comparable")
+                }
+                Toggle(isOn: $isStats) {
+                    Text("Stats")
                 }
                 Picker("Facet Type", selection: $facetType) {
                     ForEach(ChartSamples.FacetType.allCases, id: \.rawValue) { encoding in

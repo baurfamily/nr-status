@@ -55,7 +55,7 @@ struct ChartConfiguration {
     var timeseries: TimeseriesConfiguration = .init()
     var pie: PieCharConfiguration = .init()
     var bar: BarChartConfiguration = .init()
-    var plot: ScatterPlotConfig = .init()
+    var plot: ScatterPlotConfig
     var fields: [SelectableField] = []
     
     var selectedFields: [String] {
@@ -73,11 +73,12 @@ struct ChartConfiguration {
         self.facets = FacetsConfiguration(resultContainer: resultContainer)
         
         // must be last properties set
+        self.plot = .init(fields: resultContainer.numberFieldNames)
         self.chartType = chartTypes.first
-        if self.fields.count > 1 {
-            self.plot.xField = self.fields[0].id
-            self.plot.yField = self.fields[1].id
-        }
+//        if self.fields.count > 1 {
+//            self.plot.xField = self.fields[0].id
+//            self.plot.yField = self.fields[1].id
+//        }
     }
 }
 
@@ -117,4 +118,17 @@ struct ScatterPlotConfig {
     var yField: String?
     
     var sizeField: String?
+    
+    init(fields: [String]) {
+        // this can't be used if there are less than 2 fields
+        // it's probably somewhat unpredictable what order these end up in
+        if fields.count >= 3 {
+            xField = fields[0]
+            yField = fields[1]
+            sizeField = fields[2]
+        } else if fields.count == 2 {
+            xField = fields[0]
+            yField = fields[1]
+        }
+    }
 }

@@ -32,13 +32,16 @@ struct NrdbResultContainer : Decodable {
     
     var fieldNames: [String] {
         var names: Set<String> = []
-        results.data.forEach { names.formUnion($0.fieldNames) }
+        let sampleSize = [ 10, results.data.count ].max() ?? 0
+        results.data[0..<sampleSize].forEach { names.formUnion($0.fieldNames) }
         
         return Array(names)
     }
     
     var numberFieldNames: [String] {
+        guard !results.data.isEmpty else { return [] }
         var names: Set<String> = []
+        
         results.data.forEach { names.formUnion($0.numberFields.keys) }
         
         return Array(names)
@@ -104,10 +107,18 @@ struct NrdbResults: Decodable {
     }
     
     struct MiniDatum: Identifiable {
-        var id: String { facet }
+        var id: String { "\(facet)" }
         
         let facet: String
         let value: Double
+    }
+    struct StatDatum: Identifiable {
+        var id: String { "\(facet)(\(x),\(y),\(z))" }
+        
+        let facet: String
+        let x: Double
+        let y: Double
+        let z: Double
     }
     
     struct Datum : Decodable, Identifiable {

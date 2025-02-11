@@ -14,8 +14,27 @@ struct ScatterPlot: View {
     var resultContainer: NrdbResultContainer {
         config.resultContainer
     }
-
-    var data: [NrdbResults.Datum] { config.resultContainer.results.data }
+    
+    var data: [NrdbResults.StatDatum] = []
+    var filteredData: [NrdbResults.StatDatum] {
+        data.filter { selectedFacets.contains($0.facet) }
+    }
+    
+    init(config: ChartConfiguration) {
+        self.config = config
+        
+        let allData = config.resultContainer.results.data
+        
+        self.data = allData.map { datum in
+            NrdbResults.StatDatum(
+                facet: (datum.facet ?? ""),
+                x: datum.numberFields[xField] ?? 0,
+                y: datum.numberFields[yField] ?? 0,
+                z: size(for: datum)
+            )
+        }
+    }
+    
     var metadata: NrdbMetadata { config.resultContainer.metadata }
     
     var selectedFacets: [String] { config.facets.selected }
@@ -24,7 +43,11 @@ struct ScatterPlot: View {
     var xField: String { config.plot.xField ?? ""}
     var yField: String { config.plot.yField ?? ""}
     var sizeField: String? { config.plot.sizeField }
-
+    func size(for datum: NrdbResults.Datum) -> Double {
+        guard let sizeField else { return 100 }
+        return datum.numberFields[sizeField] ?? 100
+    }
+    
     func seriesNames(for field: String, in datum: NrdbResults.Datum ) -> (String,String) {
         let prefix = datum.isComparable ? "\(datum.comparison): " : ""
         let facetPrefix = datum.isFaceted ? "Facet" : "Data"
@@ -41,29 +64,18 @@ struct ScatterPlot: View {
     }
     
     var body: some View {
-        Chart(data.filter { $0.facet == nil || selectedFacets.contains($0.facet!)}) { datum in
-            let seriesNames = seriesNames(for: xField, in: datum)
-
-            PointMark(
-                x: .value(xField, datum.numberFields[xField] ?? 0),
-                y: .value(yField, datum.numberFields[yField] ?? 0)
+        Chart() {
+            PointPlot(
+                filteredData,
+                x: .value( xField, \.x ),
+                y: .value( yField, \.y )
             )
-//            .symbol(by: .value(seriesNames.0, seriesNames.1))
-            .foregroundStyle(by: .value(seriesNames.0, seriesNames.1))
-            .symbolSize(config.timeseries.showDataPoints ? 50 : 50)
+            .symbolSize(by: .value((sizeField ?? ""), \.z))
+            .foregroundStyle(by: .value("Facet", \.facet))
+            
         }
     }
 }
-
-// got some thinking to do on how to support comparables
-//#Preview("Timeseries comparable (small)") {
-//    if let single = ChartSamples.sampleData(comparable: true, size: .small) {
-//        ScatterPlot(config: ChartConfiguration(resultContainer: single))
-//    
-//    } else {
-//        Text("No sample data")
-//    }
-//}
 
 #Preview("Timeseries (medium)") {
     if let single = ChartSamples.sampleData(facet: .single, size: .medium) {

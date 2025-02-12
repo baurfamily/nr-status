@@ -41,17 +41,12 @@ struct BillboardChart: View {
     ]
 
     var body: some View {
-        Text("???")
-        Text("data \(data.count)")
-        ScrollView {
-            LazyVGrid(columns: columns, spacing: 50) {
-                ForEach(data, id: \.facet) { item in
-                    BillboardTile(datum: item)
-                }
+        LazyVGrid(columns: columns, spacing: 50) {
+            ForEach(data, id: \.facet) { item in
+                BillboardTile(datum: item)
             }
-            .padding(.horizontal)
         }
-        .frame(maxHeight: 300)
+        .padding(.horizontal)
     }
 }
 
@@ -62,11 +57,8 @@ struct BillboardTile : View {
         VStack {
             Text(datum.value, format: .number.notation(.compactName).precision(.significantDigits(2)))
                 .fontWidth(.expanded)
-//                .font(.largeTitle)
-//                .fontWeight(.bold)
                 .font(.system(size: 60, weight: .bold))
             Text(datum.facet)
-//                .font(.body)
                 .font(.system(size: 20))
                 .fontWidth(.condensed)
         }

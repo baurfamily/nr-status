@@ -32,6 +32,9 @@ struct ConfigurationAppIntent: WidgetConfigurationIntent {
     
     @Parameter(title: "Smoothed", default: true)
     var isSmoothed: Bool
+
+    @Parameter(title: "Show Legend", default: false)
+    var showLegend: Bool
     
     @Parameter(title: "Show Data Points", default: false)
     var showDataPoints: Bool

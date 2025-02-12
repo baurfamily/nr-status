@@ -82,11 +82,17 @@ struct NRQL_ViewerEntryView : View {
             Text(entry.configuration.title)
 
             if entry.configuration.chartType == .line {
-                TimeseriesChart(config: config).chartLegend(.hidden)
+                TimeseriesChart(config: config)
+                    .chartLegend(entry.configuration.showLegend ? .visible : .hidden)
+            } else if entry.configuration.chartType == .billboard {
+                BillboardChart(config: config)
+                    .chartLegend(entry.configuration.showLegend ? .visible : .hidden)
             } else if entry.configuration.chartType == .bar {
-                BarChart(config: config).chartLegend(.hidden)
+                BarChart(config: config)
+                    .chartLegend(entry.configuration.showLegend ? .visible : .hidden)
             } else if entry.configuration.chartType == .pie {
-                PieChart(config: config).chartLegend(.hidden)
+                PieChart(config: config)
+                    .chartLegend(entry.configuration.showLegend ? .visible : .hidden)
             } else if entry.configuration.chartType == .table {
                 TableChart(config: config)
             }

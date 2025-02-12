@@ -104,13 +104,14 @@ struct NrdbResults: Decodable {
     func valuesByFacet(of field: String) -> [MiniDatum] {
         groupedByFacet.mapValues { values in
             values.reduce(0) { $0 + ($1.numberFields[field] ?? 0) }
-        }.map { key, value in MiniDatum(facet: key, value: value) }
+        }.map { key, value in MiniDatum(field: field, facet: key, value: value) }
     }
     
     struct MiniDatum: Identifiable {
-        var id: String { "\(facet)" }
+        var id: String { "\(field)-\(facet ?? "")" }
         
-        let facet: String
+        let field: String
+        let facet: String?
         let value: Double
     }
     struct StatDatum: Identifiable {

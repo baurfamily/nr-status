@@ -19,7 +19,8 @@ struct BillboardChart: View {
         config.resultContainer.results.data.flatMap { datum in
             config.selectedFields.map { field in
                 NrdbResults.MiniDatum(
-                    facet: (datum.isFaceted ? "\(datum.facet!) (\(field))" : field),
+                    field: field,
+                    facet: datum.facet,
                     value: datum.numberFields[field] ?? 0
                 )
             }
@@ -42,7 +43,7 @@ struct BillboardChart: View {
 
     var body: some View {
         LazyVGrid(columns: columns, spacing: 50) {
-            ForEach(data, id: \.facet) { item in
+            ForEach(data, id: \.id) { item in
                 BillboardTile(datum: item)
             }
         }
@@ -55,11 +56,16 @@ struct BillboardTile : View {
     
     var body: some View {
         VStack {
+            if let facet  = datum.facet {
+                Text(facet)
+                    .font(.system(size: 15, weight: .light))
+                    .fontWidth(.condensed)
+            }
             Text(datum.value, format: .number.notation(.compactName).precision(.significantDigits(2)))
                 .fontWidth(.expanded)
                 .font(.system(size: 60, weight: .bold))
-            Text(datum.facet)
-                .font(.system(size: 20))
+            Text(datum.field)
+                .font(.system(size: 25))
                 .fontWidth(.condensed)
         }
         .minimumScaleFactor(0.01)

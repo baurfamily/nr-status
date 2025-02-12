@@ -79,6 +79,7 @@
 				CustomModels/NrqlQuery.swift,
 				Display/Accessories/AnnotationView.swift,
 				Display/Charts/BarChart.swift,
+				Display/Charts/BillboardChart.swift,
 				Display/Charts/PieChart.swift,
 				Display/Charts/ScatterPlot.swift,
 				Display/Charts/TableChart.swift,
@@ -112,6 +113,7 @@
 				"Preview Content/ChartData/MultiFacetedComparableSmall.json",
 				"Preview Content/ChartData/MultiFacetedSmall.json",
 				"Preview Content/ChartData/MultiFacetedTimeseriesMedium.json",
+				"Preview Content/ChartData/StatsTiny.json",
 				"Preview Content/ChartData/TimeseriesComparableMedium.json",
 				"Preview Content/ChartData/TimeseriesComparableSmall.json",
 				"Preview Content/ChartData/TimeseriesMedium.json",
@@ -618,7 +620,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.0.1;
+				MARKETING_VERSION = 0.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -653,7 +655,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.0.1;
+				MARKETING_VERSION = 0.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -982,7 +984,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status.NRQL-Widget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1012,7 +1014,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status.NRQL-Widget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

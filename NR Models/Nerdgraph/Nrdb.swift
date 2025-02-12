@@ -32,7 +32,8 @@ struct NrdbResultContainer : Decodable {
     
     var fieldNames: [String] {
         var names: Set<String> = []
-        let sampleSize = [ 10, results.data.count ].max() ?? 0
+        let sampleSize = results.data.count
+        
         results.data[0..<sampleSize].forEach { names.formUnion($0.fieldNames) }
         
         return Array(names)

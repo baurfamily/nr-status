@@ -12,13 +12,14 @@ enum ChartType : String, CaseIterable, AppEnum {
     
     static var caseDisplayRepresentations: [ChartType : DisplayRepresentation]  = [
         .bar: .init(stringLiteral: "Bar"),
+        .billboard: .init(stringLiteral: "Billboard"),
         .line: .init(stringLiteral: "Line"),
         .plot: .init(stringLiteral: "Plot"),
         .pie: .init(stringLiteral: "Pie"),
         .table: .init(stringLiteral: "Table")
     ]
     
-    case line, plot, pie, bar, table
+    case line, billboard, plot, pie, bar, table
     
     // want to refactor this to look at chart properties more deeply
     // for example, plot should only be used if there are at least two numeric fields
@@ -26,9 +27,9 @@ enum ChartType : String, CaseIterable, AppEnum {
         if resultContainer.isTimeseries {
             return [ .line, .table, .plot ]
         } else if resultContainer.isComparable {
-            return [ .line, .table ]
+            return [ .billboard, .line, .table ]
         } else {
-            return [ .plot, .bar, .pie, .table ]
+            return [ .billboard, .plot, .bar, .pie, .table ]
         }
     }
     

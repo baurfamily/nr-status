@@ -1,0 +1,31 @@
+{
+  "data": {
+    "actor": {
+      "nrql": {
+        "metadata": {
+          "eventTypes": [
+            "Transaction"
+          ],
+          "facets": null,
+          "timeWindow": {
+            "begin": 1738720540736,
+            "end": 1739325340736,
+            "since": "1 WEEKS AGO",
+            "until": "NOW"
+          }
+        },
+        "nrql": "SELECT count(*), uniqueCount(request.headers.userAgent), average(duration), max(duration), min(duration), stdDev(duration) FROM Transaction SINCE 1 week ago WHERE name NOT IN ( 'Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call', 'Controller/users/login' )",
+        "results": [
+          {
+            "average.duration": 0.3722174255089971,
+            "count": 3026,
+            "max.duration": 14.059540748596191,
+            "min.duration": 0.00020694732666015625,
+            "stddev.duration": 0.8528566146053009,
+            "uniqueCount.request.headers.userAgent": 62
+          }
+        ]
+      }
+    }
+  }
+}

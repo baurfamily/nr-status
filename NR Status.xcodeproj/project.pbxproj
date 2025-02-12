@@ -86,6 +86,7 @@
 				Display/Charts/TimeseriesChart.swift,
 				Display/ChartSampleView.swift,
 				Display/Configuration/BarChartConfigView.swift,
+				Display/Configuration/BillboardChartConfigView.swift,
 				Display/Configuration/ChartConfiguration.swift,
 				Display/Configuration/ConfigurableChartView.swift,
 				Display/Configuration/PieChartConfigView.swift,

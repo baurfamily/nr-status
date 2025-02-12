@@ -19,7 +19,7 @@ struct BillboardChart: View {
         config.resultContainer.results.data.flatMap { datum in
             config.selectedFields.map { field in
                 NrdbResults.MiniDatum(
-                    facet: field,
+                    facet: (datum.isFaceted ? "\(datum.facet!) (\(field))" : field),
                     value: datum.numberFields[field] ?? 0
                 )
             }
@@ -69,8 +69,8 @@ struct BillboardTile : View {
 #Preview("Single facet (tiny)", traits: .fixedLayout(width: 300, height: 300)) {
     Group {
         if let single = ChartSamples.sampleData(timeseries: false, size: .tiny, statistics: true) {
-            Text(".................. poor mans width ...................")
             BillboardChart(config: .init(resultContainer: single))
+                .frame(width: 400, height: 400)
         } else {
             Text("No sample data")
         }
@@ -81,6 +81,7 @@ struct BillboardTile : View {
     if let single = ChartSamples.sampleData(facet: .single, timeseries: false, comparable: false, size: .medium) {
         Text("data \(single.results.data.count)")
         BillboardChart(config: .init(resultContainer: single))
+            .frame(width: 400, height: 400)
     } else {
         Text("No sample data")
         Text(ChartSamples.sampleFilename(facet: .single, timeseries: false, comparable: false, size: .medium))

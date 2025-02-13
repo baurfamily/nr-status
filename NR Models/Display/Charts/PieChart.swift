@@ -19,7 +19,7 @@ struct PieChart: View {
     // the remainder will be filtered into shown/other
     var data: [NrdbResults.MiniDatum] {
         let sortedData = config.resultContainer.results.valuesByFacet(of: selectedField).sorted(using: KeyPathComparator(\.value, order: .reverse))
-        var filteredData = sortedData.filter { selectedFacets.contains($0.facet) }
+        var filteredData = sortedData.filter { selectedFacets.contains($0.facet ?? "") }
         var otherData: [NrdbResults.MiniDatum] = []
         
         if filteredData.count > config.pie.otherThreshold {
@@ -34,6 +34,7 @@ struct PieChart: View {
         if otherData.count > 0 {
             filteredData.append(
                 NrdbResults.MiniDatum(
+                    field: selectedField,
                     facet: "other",
                     value: otherData.map{ $0.value }.reduce(0.0, +)
                 )
@@ -56,12 +57,12 @@ struct PieChart: View {
         HStack {
             Chart(data) { datum in
                 SectorMark(
-                    angle: .value( datum.facet, datum.value ),
+                    angle: .value( datum.facet!, datum.value ),
                     innerRadius: .ratio(config.pie.isDonut ? 0.5 : 0),
                     angularInset: (config.pie.isSeparated ? 1.5 : 0)
                 )
                 .cornerRadius(2)
-                .foregroundStyle(by: .value(datum.facet, datum.facet))
+                .foregroundStyle(by: .value(datum.facet!, datum.facet!))
             }
         }
     }

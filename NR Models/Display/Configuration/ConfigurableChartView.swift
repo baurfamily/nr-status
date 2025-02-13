@@ -36,6 +36,8 @@ struct ConfigurableChartView: View {
         Section {
             if config.chartType == .line {
                 TimeseriesChart(config: config)
+            } else if config.chartType == .billboard {
+                BillboardChart(config: config)
             } else if config.chartType == .plot {
                 ScatterPlot(config: config)
             } else if config.chartType == .pie {
@@ -54,6 +56,8 @@ struct ConfigurableChartView: View {
             
             if config.chartType == .line {
                 TimeseriesChartConfigView(config: $config)
+            } else if config.chartType == .billboard {
+                BillboardChartConfigView(config: $config)
             } else if config.chartType == .plot {
                 ScatterPlotConfigView(config: $config)
             } else if config.chartType == .pie {
@@ -92,6 +96,14 @@ struct ChartSelector: View {
                 .padding(.horizontal)
         }
         .padding(.horizontal)
+    }
+}
+
+#Preview("Stats Tiny") {
+    if let single = ChartSamples.sampleData(timeseries: false, size: .tiny, statistics: true) {
+        ConfigurableChartView(resultsContainer: single)
+    } else {
+        Text("No sample data")
     }
 }
 

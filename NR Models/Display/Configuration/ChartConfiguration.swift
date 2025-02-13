@@ -12,13 +12,14 @@ enum ChartType : String, CaseIterable, AppEnum {
     
     static var caseDisplayRepresentations: [ChartType : DisplayRepresentation]  = [
         .bar: .init(stringLiteral: "Bar"),
+        .billboard: .init(stringLiteral: "Billboard"),
         .line: .init(stringLiteral: "Line"),
         .plot: .init(stringLiteral: "Plot"),
         .pie: .init(stringLiteral: "Pie"),
         .table: .init(stringLiteral: "Table")
     ]
     
-    case line, plot, pie, bar, table
+    case line, billboard, plot, pie, bar, table
     
     // want to refactor this to look at chart properties more deeply
     // for example, plot should only be used if there are at least two numeric fields
@@ -26,9 +27,9 @@ enum ChartType : String, CaseIterable, AppEnum {
         if resultContainer.isTimeseries {
             return [ .line, .table, .plot ]
         } else if resultContainer.isComparable {
-            return [ .line, .table ]
+            return [ .billboard, .line, .table ]
         } else {
-            return [ .plot, .bar, .pie, .table ]
+            return [ .billboard, .plot, .bar, .pie, .table ]
         }
     }
     
@@ -53,6 +54,7 @@ struct ChartConfiguration {
     var facets: FacetsConfiguration
     
     var timeseries: TimeseriesConfiguration = .init()
+    var billboard: BillboardConfiguration = .init()
     var pie: PieCharConfiguration = .init()
     var bar: BarChartConfiguration = .init()
     var plot: ScatterPlotConfig
@@ -75,10 +77,6 @@ struct ChartConfiguration {
         // must be last properties set
         self.plot = .init(fields: resultContainer.numberFieldNames)
         self.chartType = chartTypes.first
-//        if self.fields.count > 1 {
-//            self.plot.xField = self.fields[0].id
-//            self.plot.yField = self.fields[1].id
-//        }
     }
 }
 
@@ -131,4 +129,23 @@ struct ScatterPlotConfig {
             yField = fields[1]
         }
     }
+}
+
+struct BillboardConfiguration {
+    enum GaugeStyle : String, CaseIterable, AppEnum {
+        static var typeDisplayRepresentation: TypeDisplayRepresentation = "Gauge Style"
+        
+        static var caseDisplayRepresentations: [GaugeStyle : DisplayRepresentation]  = [
+            .linear: .init(stringLiteral: "Linear"),
+            .compactLinear: .init(stringLiteral: "Compact Linear"),
+            .linearCapacity: .init(stringLiteral: "Linear Capacity"),
+            .circular: .init(stringLiteral: "Speedometer"),
+            .circularCapacity: .init(stringLiteral: "Circular")
+        ]
+        
+        case linear, compactLinear, linearCapacity, circular, circularCapacity
+    }
+    var showGauge: Bool = false
+    var gaugeMax: Double = 100
+    var gaugeStyle: BillboardConfiguration.GaugeStyle = .linear
 }

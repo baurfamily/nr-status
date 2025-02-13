@@ -9,6 +9,7 @@ import Foundation
 
 struct ChartSamples {
     enum DataSize : String, CaseIterable {
+        case tiny = "Tiny"
         case small = "Small"
         case medium = "Medium"
         case large = "Large"

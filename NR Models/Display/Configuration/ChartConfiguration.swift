@@ -132,16 +132,20 @@ struct ScatterPlotConfig {
 }
 
 struct BillboardConfiguration {
-    enum GaugeStyle : String {
+    enum GaugeStyle : String, CaseIterable, AppEnum {
+        static var typeDisplayRepresentation: TypeDisplayRepresentation = "Gauge Style"
+        
+        static var caseDisplayRepresentations: [GaugeStyle : DisplayRepresentation]  = [
+            .linear: .init(stringLiteral: "Linear"),
+            .compactLinear: .init(stringLiteral: "Compact Linear"),
+            .linearCapacity: .init(stringLiteral: "Linear Capacity"),
+            .circular: .init(stringLiteral: "Speedometer"),
+            .circularCapacity: .init(stringLiteral: "Circular")
+        ]
+        
         case linear, compactLinear, linearCapacity, circular, circularCapacity
     }
     var showGauge: Bool = false
     var gaugeMax: Double = 100
     var gaugeStyle: BillboardConfiguration.GaugeStyle = .linear
 }
-
-//struct BillboardConfiguration {
-//    var showGauge: Bool = false
-//    var gaugeMax: Double = 100
-//    var gaugeStyle: any GaugeStyle = .linearCapacity
-//}

@@ -41,4 +41,13 @@ struct ConfigurationAppIntent: WidgetConfigurationIntent {
     
     @Parameter(title: "Chart Type", default: ChartType.line)
     var chartType: ChartType
+    
+    @Parameter(title: "Show gauge", default: false)
+    var showGauge: Bool
+    
+    @Parameter(title: "Gauge Style", default: BillboardConfiguration.GaugeStyle.linear)
+    var gaugeStyle: BillboardConfiguration.GaugeStyle
+    
+    @Parameter(title: "Gauge Max", default: 100)
+    var gaugeMax: Double
 }

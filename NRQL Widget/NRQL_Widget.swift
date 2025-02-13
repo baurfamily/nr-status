@@ -74,6 +74,10 @@ struct NRQL_ViewerEntryView : View {
         config.timeseries.isSmoothed = entry.configuration.isSmoothed
         config.timeseries.isStacked = entry.configuration.isStacked
         
+        config.billboard.showGauge = entry.configuration.showGauge
+        config.billboard.gaugeStyle = entry.configuration.gaugeStyle
+        config.billboard.gaugeMax = entry.configuration.gaugeMax
+        
         return config
     }
     

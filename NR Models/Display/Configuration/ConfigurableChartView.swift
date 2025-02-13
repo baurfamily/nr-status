@@ -56,6 +56,8 @@ struct ConfigurableChartView: View {
             
             if config.chartType == .line {
                 TimeseriesChartConfigView(config: $config)
+            } else if config.chartType == .billboard {
+                BillboardChartConfigView(config: $config)
             } else if config.chartType == .plot {
                 ScatterPlotConfigView(config: $config)
             } else if config.chartType == .pie {

@@ -54,6 +54,7 @@ struct ChartConfiguration {
     var facets: FacetsConfiguration
     
     var timeseries: TimeseriesConfiguration = .init()
+    var billboard: BillboardConfiguration = .init()
     var pie: PieCharConfiguration = .init()
     var bar: BarChartConfiguration = .init()
     var plot: ScatterPlotConfig
@@ -76,10 +77,6 @@ struct ChartConfiguration {
         // must be last properties set
         self.plot = .init(fields: resultContainer.numberFieldNames)
         self.chartType = chartTypes.first
-//        if self.fields.count > 1 {
-//            self.plot.xField = self.fields[0].id
-//            self.plot.yField = self.fields[1].id
-//        }
     }
 }
 
@@ -133,3 +130,18 @@ struct ScatterPlotConfig {
         }
     }
 }
+
+struct BillboardConfiguration {
+    enum GaugeStyle : String {
+        case linear, compactLinear, linearCapacity, circular, circularCapacity
+    }
+    var showGauge: Bool = false
+    var gaugeMax: Double = 100
+    var gaugeStyle: BillboardConfiguration.GaugeStyle = .linear
+}
+
+//struct BillboardConfiguration {
+//    var showGauge: Bool = false
+//    var gaugeMax: Double = 100
+//    var gaugeStyle: any GaugeStyle = .linearCapacity
+//}

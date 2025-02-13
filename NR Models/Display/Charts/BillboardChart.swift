@@ -44,10 +44,82 @@ struct BillboardChart: View {
     var body: some View {
         LazyVGrid(columns: columns, spacing: 50) {
             ForEach(data, id: \.id) { item in
-                BillboardTile(datum: item)
+                if config.billboard.showGauge {
+                    // I couldn't get generics working here...
+                    if config.billboard.gaugeStyle == .linear {
+                        GaugeTile(
+                            datum: item,
+                            max: config.billboard.gaugeMax,
+                            gaugeStyle: .linearCapacity
+                        )
+                    } else if config.billboard.gaugeStyle == .compactLinear {
+                        GaugeTile(
+                            datum: item,
+                            max: config.billboard.gaugeMax,
+                            gaugeStyle: .accessoryLinear
+                        )
+                    } else if config.billboard.gaugeStyle == .linearCapacity {
+                        GaugeTile(
+                            datum: item,
+                            max: config.billboard.gaugeMax,
+                            gaugeStyle: .accessoryLinearCapacity
+                        )
+                    } else if config.billboard.gaugeStyle == .circular {
+                        GaugeTile(
+                            datum: item,
+                            max: config.billboard.gaugeMax,
+                            gaugeStyle: .accessoryCircular
+                        )
+                    } else if config.billboard.gaugeStyle == .circularCapacity {
+                        GaugeTile(
+                            datum: item,
+                            max: config.billboard.gaugeMax,
+                            gaugeStyle: .accessoryCircularCapacity
+                        )
+                    } else {
+                        GaugeTile(
+                            datum: item,
+                            max: config.billboard.gaugeMax,
+                            gaugeStyle: .linearCapacity
+                        );
+                    }
+                } else {
+                    BillboardTile(datum: item)
+                }
             }
         }
         .padding(.horizontal)
+    }
+}
+
+struct GaugeTile<G>: View where G : GaugeStyle {
+    let datum: NrdbResults.MiniDatum
+    let min: Double = 0
+    let max: Double
+    var gaugeStyle: G
+    
+    let numberFormat = FloatingPointFormatStyle<Double>().notation(.compactName).precision(.significantDigits(2))
+    let gradient = Gradient(colors: [.green, .yellow, .red])
+
+    var body: some View {
+        Gauge(value: datum.value, in: min...max) {
+            Text(datum.field)
+                .font(.system(size: 25))
+                .fontWidth(.condensed)
+            if let facet  = datum.facet {
+                Text("(\(facet))")
+                    .font(.system(size: 15, weight: .light))
+                    .fontWidth(.condensed)
+            }
+        } currentValueLabel: {
+            Text(datum.value, format: numberFormat)
+        } minimumValueLabel: {
+            Text(min, format: numberFormat)
+        } maximumValueLabel: {
+            Text(max, format: numberFormat)
+        }
+        .gaugeStyle(gaugeStyle)
+//        .tint(gradient)
     }
 }
 
@@ -56,7 +128,7 @@ struct BillboardTile : View {
     
     var body: some View {
         VStack {
-            if let facet  = datum.facet {
+            if let facet = datum.facet {
                 Text(facet)
                     .font(.system(size: 15, weight: .light))
                     .fontWidth(.condensed)

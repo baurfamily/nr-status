@@ -1,5 +1,5 @@
 //
-//  BillboardConfigView.swift
+//  BillboardChartConfigView.swift
 //  NR Status
 //
 //  Created by Eric Baur on 02/11/25.
@@ -7,14 +7,49 @@
 
 import SwiftUI
 
-struct BillboardConfigView: View {
+struct BillboardChartConfigView: View {
     @Binding var config: ChartConfiguration
+    @State var title: String = "...select"
     
     var body: some View {
         GroupBox {
             Form {
-                Toggle("Pivot Fields & Facets", isOn: $config.bar.pivotData)
-                Stepper("Show \(config.bar.otherThreshold) facets", value: $config.bar.otherThreshold, in: 2...15)
+                Toggle("Show guage", isOn: $config.billboard.showGauge)
+                if config.billboard.showGauge {
+                    Menu("Style: \(title)") {
+                        Button(action: {
+                            config.billboard.gaugeStyle = .circular
+                            title = "Speedometer"
+                        }) {
+                            Text("Speedometer")
+                        }
+                        Button(action: {
+                            config.billboard.gaugeStyle = .circularCapacity
+                            title = "Circular Capacity"
+                        }) {
+                            Text("Circular Capacity")
+                        }
+                        Button(action: {
+                            config.billboard.gaugeStyle = .linear
+                            title = "Linear"
+                        }) {
+                            Text("Linear")
+                        }
+                        Button(action: {
+                            config.billboard.gaugeStyle = .compactLinear
+                            title = "Compact Linear"
+                        }) {
+                            Text("Compact Linear")
+                        }
+                        Button(action: {
+                            config.billboard.gaugeStyle = .linearCapacity
+                            title = "Linear Capacity"
+                        }) {
+                            Text("Linear Capacity")
+                        }
+                    }
+                    TextField("Max value", value: $config.billboard.gaugeMax, format: .number)
+                }
                 
                 if config.fields.count > 1 {
                     SeriesSelectionView(title: "Select fields...", fields: $config.fields)
@@ -44,6 +79,6 @@ struct BillboardConfigView: View {
             }
         }
     }.inspector(isPresented: $isPresented) {
-        BillboardConfigView(config: $config)
+        BillboardChartConfigView(config: $config)
     }
 }

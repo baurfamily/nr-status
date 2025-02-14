@@ -16,8 +16,9 @@ struct ScatterPlotConfigView: View {
         GroupBox {
             Form {
                 Toggle("Color facets", isOn: $config.plot.colorFacets)
-                Toggle("Log scale", isOn: $config.plot.colorFacets)
-                
+                Toggle("X Log scale", isOn: $config.plot.xLogScale)
+                Toggle("Y Log scale", isOn: $config.plot.yLogScale)
+
                 SeriesDropdownView(
                     title: "X-Axis",
                     fields: config.fields.map(\.id),

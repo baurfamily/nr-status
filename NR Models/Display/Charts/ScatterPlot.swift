@@ -17,7 +17,7 @@ struct ScatterPlot: View {
     
     var data: [NrdbResults.StatDatum] = []
     var filteredData: [NrdbResults.StatDatum] {
-        data.filter { selectedFacets.contains($0.facet) }
+        data.filter { selectedFacets.isEmpty || selectedFacets.contains($0.facet) }
     }
     
     init(config: ChartConfiguration) {
@@ -27,7 +27,7 @@ struct ScatterPlot: View {
         
         self.data = allData.map { datum in
             NrdbResults.StatDatum(
-                facet: (datum.facet ?? ""),
+                facet: (datum.facet ?? "??"),
                 x: datum.numberFields[xField] ?? 0,
                 y: datum.numberFields[yField] ?? 0,
                 z: size(for: datum)
@@ -48,21 +48,6 @@ struct ScatterPlot: View {
         return datum.numberFields[sizeField] ?? 100
     }
     
-    func seriesNames(for field: String, in datum: NrdbResults.Datum ) -> (String,String) {
-        let prefix = datum.isComparable ? "\(datum.comparison): " : ""
-        let facetPrefix = datum.isFaceted ? "Facet" : "Data"
-        
-        let groupName = facetPrefix
-        let fieldName: String
-        if let facet = datum.facet {
-            fieldName = "\(prefix)\(facet)(\(field))"
-        } else {
-            fieldName = "\(prefix)\(field)"
-        }
-        
-        return (groupName, fieldName)
-    }
-    
     var body: some View {
         Chart() {
             PointPlot(
@@ -72,12 +57,21 @@ struct ScatterPlot: View {
             )
             .symbolSize(by: .value((sizeField ?? ""), \.z))
             .foregroundStyle(by: .value("Facet", \.facet))
-            
         }
+        .chartXScale(type: (config.plot.xLogScale ? .symmetricLog : .linear))
+        .chartYScale(type: (config.plot.yLogScale ? .symmetricLog : .linear))
     }
 }
 
-#Preview("Timeseries (medium)") {
+#Preview("Timeseries (stats/tiny)") {
+    if let single = ChartSamples.sampleData(size: .tiny, statistics: true) {
+        ConfigurableChartView(config: ChartConfiguration(resultContainer: single))
+    } else {
+        Text("No sample data")
+    }
+}
+
+#Preview("Timeseries (faceted/medium)") {
     if let single = ChartSamples.sampleData(facet: .single, size: .medium) {
         ScatterPlot(config: ChartConfiguration(resultContainer: single))
     } else {
@@ -85,7 +79,7 @@ struct ScatterPlot: View {
     }
 }
 
-#Preview("Timeseries (large)") {
+#Preview("Timeseries (faceted/large)") {
     if let single = ChartSamples.sampleData(facet: .single, size: .large) {
         ScatterPlot(config: ChartConfiguration(resultContainer: single))
     } else {

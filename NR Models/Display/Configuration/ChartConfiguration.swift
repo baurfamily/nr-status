@@ -25,6 +25,8 @@ enum ChartType : String, CaseIterable, AppEnum {
     // for example, plot should only be used if there are at least two numeric fields
     static func cases(for resultContainer: NrdbResultContainer) -> [ChartType] {
         if resultContainer.isTimeseries {
+            return [ .line, .table, .plot, .bar ]
+        } else if resultContainer.isEvents {
             return [ .line, .table, .plot ]
         } else if resultContainer.isComparable {
             return [ .billboard, .line, .table ]
@@ -93,6 +95,7 @@ struct FacetsConfiguration {
 
 struct TimeseriesConfiguration {
     var showDataPoints: Bool = false
+    var showLines: Bool = true
     var isStacked: Bool = false
     var isSmoothed: Bool = true
 }
@@ -110,7 +113,8 @@ struct BarChartConfiguration {
 
 struct ScatterPlotConfig {
     var colorFacets: Bool = true
-    var logScale: Bool = false
+    var xLogScale: Bool = false
+    var yLogScale: Bool = false
     
     var xField: String?
     var yField: String?

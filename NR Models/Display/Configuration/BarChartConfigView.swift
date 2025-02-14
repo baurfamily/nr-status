@@ -13,11 +13,13 @@ struct BarChartConfigView: View {
     var body: some View {
         GroupBox {
             Form {
-                Toggle("Pivot Fields & Facets", isOn: $config.bar.pivotData)
+                if !config.resultContainer.isTimeseries {
+                    Toggle("Pivot Fields & Facets", isOn: $config.bar.pivotData)
+                }
                 Stepper("Show \(config.bar.otherThreshold) facets", value: $config.bar.otherThreshold, in: 2...15)
                 
                 if config.fields.count > 1 {
-                    SeriesSelectionView(title: "Select fields...", fields: $config.fields)
+                    SeriesSelectionView(title: "Select fields...", fields: $config.fields, singleValue: true)
                 }
                 if config.facets.all.count > 1 {
                     SeriesSelectionView(title: "Select facets...", fields: $config.facets.all)

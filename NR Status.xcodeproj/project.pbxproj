@@ -66,13 +66,6 @@
 			);
 			target = 3F01FD242CBDFADF00D9E068 /* NR Status */;
 		};
-		3F19A9C12CDDEADD008FEA5A /* Exceptions for "NRQL Widget" folder in "NR Status" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				ConfigurationAppIntent.swift,
-			);
-			target = 3F01FD242CBDFADF00D9E068 /* NR Status */;
-		};
 		3F28B37C2CBB996200CCB8DD /* Exceptions for "NR Models" folder in "NR Models" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -119,6 +112,8 @@
 				"Preview Content/ChartData/TimeseriesComparableSmall.json",
 				"Preview Content/ChartData/TimeseriesMedium.json",
 				"Preview Content/ChartData/TimeseriesSmall.json",
+				"Preview Content/ChartData/TimeseriesStatsTiny.json",
+				"Preview Content/ChartData/Tiny.json",
 				"Preview Content/ChartSamples.swift",
 				"Preview Content/Preview Assets.xcassets",
 				"Preview Content/samples.nrql",
@@ -180,7 +175,6 @@
 		3FA6350A2CD7D4E30050F813 /* NRQL Widget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				3F19A9C12CDDEADD008FEA5A /* Exceptions for "NRQL Widget" folder in "NR Status" target */,
 				3F5501902D49F05500950FE2 /* Exceptions for "NRQL Widget" folder in "NRQL WidgetExtension" target */,
 			);
 			path = "NRQL Widget";
@@ -603,7 +597,7 @@
 				CODE_SIGN_ENTITLEMENTS = "NR Status/NR_Status.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"NR Status/Preview Content\"";
 				DEVELOPMENT_TEAM = EHM929N34N;
@@ -621,7 +615,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 0.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -638,7 +632,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"NR Status/Preview Content\"";
 				DEVELOPMENT_TEAM = EHM929N34N;
@@ -656,7 +650,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 0.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -971,7 +965,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = "NRQL Widget/NRQL_Widget.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = EHM929N34N;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -985,7 +979,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 0.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status.NRQL-Widget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1001,7 +995,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = "NRQL Widget/NRQL_Widget.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = EHM929N34N;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1015,7 +1009,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 0.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status.NRQL-Widget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

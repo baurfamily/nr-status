@@ -11,6 +11,10 @@ import SwiftUI
 @main
 struct NRQL_WidgetBundle: WidgetBundle {
     var body: some Widget {
-        NRQL_Widget()
+        LineWidget()
+        BarWidget()
+        BillboardWidget()
+        PieWidget()
+        PlotWidget()
     }
 }

@@ -1,0 +1,26 @@
+{
+  "data": {
+    "actor": {
+      "nrql": {
+        "metadata": {
+          "eventTypes": [
+            "Transaction"
+          ],
+          "facets": null,
+          "timeWindow": {
+            "begin": 1738720540736,
+            "end": 1739325340736,
+            "since": "1 WEEKS AGO",
+            "until": "NOW"
+          }
+        },
+        "nrql": "SELECT count(*) FROM Transaction SINCE 1 week ago WHERE name NOT IN ( 'Controller/Middleware/Rack/ActionDispatch::Routing::RouteSet/call', 'Controller/users/login' )",
+        "results": [
+          {
+            "count": 3026,
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "data": {
+    "actor": {
+      "nrql": {
+        "metadata": {
+          "eventTypes": [
+            "Transaction"
+          ],
+          "facets": null,
+          "timeWindow": {
+            "begin": 1736896839816,
+            "end": 1739488839816,
+            "since": "1 MONTHS AGO",
+            "until": "NOW"
+          }
+        },
+        "nrql": "FROM Transaction SELECT 1000*databaseDuration AS 'database_ms', 1000*duration AS 'duration_ms', databaseCallCount WHERE databaseCallCount is NOT NULL SINCE 1 month ago",
+        "results": [
+          {
+            "databaseCallCount": 1,
+            "database_ms": 0.8687973022460938,
+            "duration_ms": 7.114648818969727,
+            "timestamp": 1739488091235
+          },
+          {
+            "databaseCallCount": 3,
+            "database_ms": 1.8000602722167969,
+            "duration_ms": 12.071371078491211,
+            "timestamp": 1739488091173
+          },
+          {
+            "databaseCallCount": 1,
+            "database_ms": 1.1146068572998047,
+            "duration_ms": 9.759902954101562,
+            "timestamp": 1739487704374
+          },
+          {
+            "databaseCallCount": 1,
+            "database_ms": 0.9198188781738281,
+            "duration_ms": 8.264303207397461,
+            "timestamp": 1739487617141
+          },
+          {
+            "databaseCallCount": 1,
+            "database_ms": 1.3306140899658203,
+            "duration_ms": 7.987737655639648,
+            "timestamp": 1739487519889
+          },
+          {
+            "databaseCallCount": 12,
+            "database_ms": 12.314558029174805,
+            "duration_ms": 31.184911727905273,
+            "timestamp": 1739487466227
+          },
+          {
+            "databaseCallCount": 2,
+            "database_ms": 1.9955635070800781,
+            "duration_ms": 13.381242752075195,
+            "timestamp": 1739487413541
+          },
+          {
+            "databaseCallCount": 1,
+            "database_ms": 1.2822151184082031,
+            "duration_ms": 8.946657180786133,
+            "timestamp": 1739487081546
+          },
+          {
+            "databaseCallCount": 12,
+            "database_ms": 11.182546615600586,
+            "duration_ms": 43.831825256347656,
+            "timestamp": 1739486998126
+          },
+          {
+            "databaseCallCount": 35,
+            "database_ms": 60.90712547302246,
+            "duration_ms": 56.9446563720703,
+            "timestamp": 1739486993963
+          }
+        ]
+      }
+    }
+  }
+}

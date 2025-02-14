@@ -19,7 +19,18 @@ struct TimeseriesChartConfigView: View {
                     Toggle("Stacked", isOn: $config.timeseries.isStacked)
                 }
                 Toggle("Smoothed", isOn: $config.timeseries.isSmoothed)
+                Toggle("Lines", isOn: $config.timeseries.showLines)
+                    .onChange(of: config.timeseries.showLines) { _, newValue in
+                        if !newValue {
+                            config.timeseries.showDataPoints = true
+                        }
+                    }
                 Toggle("Points", isOn: $config.timeseries.showDataPoints)
+                    .onChange(of: config.timeseries.showDataPoints) { _, newValue in
+                        if !newValue {
+                            config.timeseries.showLines = true
+                        }
+                    }
                 if config.fields.count > 1 {
                     SeriesSelectionView(title: "Select fields...", fields: $config.fields)
                 }

@@ -25,6 +25,7 @@ struct NrdbResultContainer : Decodable {
         return results.data
     }
     
+    var isEvents: Bool { results.data.first?.isEvent ?? false }
     var isTimeseries: Bool { results.data.first?.isTimeseries ?? false }
     var isFaceted: Bool { results.data.first?.isFaceted ?? false }
     var isMultiFaceted: Bool { results.data.first?.isMultiFaceted ?? false }
@@ -125,7 +126,7 @@ struct NrdbResults: Decodable {
     
     struct Datum : Decodable, Identifiable {
         enum CodingKeys : String, CodingKey, CaseIterable {
-            case beginTimeSeconds, endTimeSeconds, facet, comparison
+            case beginTimeSeconds, endTimeSeconds, timestamp, facet, comparison
         }
         // this responds to any key passed and claims it
         // which allows us to decode "unknwon" keys
@@ -144,17 +145,14 @@ struct NrdbResults: Decodable {
         
         var isFaceted: Bool { facet != nil }
         var isMultiFaceted: Bool { facets != nil }
-        var isTimeseries: Bool {
-            if beginTime != nil && endTime != nil {
-                return true
-            } else {
-                return false
-            }
-        }
+        var isTimeseries: Bool { beginTime != nil && endTime != nil }
+        var isEvent: Bool { timestamp != nil }
         
         // these will only show up if the data is a TIMESERIES
         var beginTime: Date?
         var endTime: Date?
+        // this shows up if we're looking at event data
+        var timestamp: Date?
         
         // if COMPARE WITH was used in the query, this will be populated
         var comparison: Comparison = .current
@@ -180,6 +178,9 @@ struct NrdbResults: Decodable {
         init(from decoder : Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             
+            if let timestamp = try container.decodeIfPresent(Double.self, forKey: .timestamp) {
+                self.timestamp = Date(timeIntervalSince1970: timestamp)
+            }
             if let beginTimeSeconds = try container.decodeIfPresent(Double.self, forKey: .beginTimeSeconds) {
                 self.beginTime = Date(timeIntervalSince1970: beginTimeSeconds)
             }

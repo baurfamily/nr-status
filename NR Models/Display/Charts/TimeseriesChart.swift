@@ -49,6 +49,8 @@ struct TimeseriesChart: View {
     func dateFor(_ datum: NrdbResults.Datum) -> Date {
         if config.resultContainer.isComparable && datum.comparison == .previous{
             return config.resultContainer.adjustedTime(datum.beginTime!)
+        } else if config.resultContainer.isEvents {
+            return datum.timestamp!
         } else {
             return datum.beginTime!
         }
@@ -96,7 +98,7 @@ struct TimeseriesChart: View {
                     .foregroundStyle(by: .value(seriesNames.0, seriesNames.1))
                     .interpolationMethod((config.timeseries.isSmoothed ? .catmullRom : .linear))
                     
-                } else {
+                } else if config.timeseries.showLines {
                     LineMark(
                         x: .value("Timestamp", dateFor(datum)),
                         y: .value(field, datum.numberFields[field] ?? 0)
@@ -106,11 +108,27 @@ struct TimeseriesChart: View {
                     .symbol(by: .value(seriesNames.0, seriesNames.1))
                     .symbolSize(config.timeseries.showDataPoints ? 50 : 0)
                     .interpolationMethod((config.timeseries.isSmoothed ? .catmullRom : .linear))
+                } else {
+                    PointMark(
+                        x: .value("Timestamp", dateFor(datum)),
+                        y: .value(field, datum.numberFields[field] ?? 0)
+                    )
+                    .foregroundStyle(by: .value(seriesNames.0, seriesNames.1))
+                    .symbol(by: .value(seriesNames.0, seriesNames.1))
+                    .symbolSize(config.timeseries.showDataPoints ? 50 : 0)
                 }
             }
         }
         .chartXSelection(value: $selectedDate)
         .chartXSelection(range: $selectedDateRange)
+    }
+}
+
+#Preview("Timeseries (medium)") {
+    if let single = ChartSamples.sampleData(size: .tiny, statistics: true) {
+        ConfigurableChartView(config: ChartConfiguration(resultContainer: single))
+    } else {
+        Text("No sample data")
     }
 }
 

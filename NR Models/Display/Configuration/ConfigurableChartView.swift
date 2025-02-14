@@ -65,7 +65,7 @@ struct ConfigurableChartView: View {
             } else if config.chartType == .bar {
                 BarChartConfigView(config: $config)
             } else if config.chartType == .table {
-                Text("Table config goes here")
+                Text("No additonal configuration for tables")
             } else {
                 Text("No additional config")
             }
@@ -96,6 +96,14 @@ struct ChartSelector: View {
                 .padding(.horizontal)
         }
         .padding(.horizontal)
+    }
+}
+
+#Preview("Timeseries (medium)") {
+    if let single = ChartSamples.sampleData(size: .tiny, statistics: true) {
+        ConfigurableChartView(config: ChartConfiguration(resultContainer: single))
+    } else {
+        Text("No sample data")
     }
 }
 

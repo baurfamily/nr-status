@@ -53,7 +53,26 @@ struct BarChart: View {
     
     var body: some View {
         Chart(filteredData) { datum in
-            if switchFieldsAndFacets {
+            if datum.isTimeseries {
+                ForEach(selectedFields, id: \.self) { fieldName in
+                    let seriesNames = seriesNames(for: fieldName, in: datum)
+                    if let facet = datum.facet {
+                        BarMark(
+                            x: .value( "Timestamp", datum.beginTime!),
+                            y: .value( "\(facet) (\(fieldName))", datum.numberFields[fieldName]!)
+                        ).foregroundStyle(
+                            by: .value( seriesNames.0, seriesNames.1 )
+                        )
+                    } else {
+                        BarMark(
+                            x: .value( "Timestamp", datum.beginTime!),
+                            y: .value( "Foo: \(fieldName)", datum.numberFields[fieldName]!)
+                        ).foregroundStyle(
+                            by: .value( seriesNames.0, seriesNames.1 )
+                        )
+                    }
+                }
+            } else if switchFieldsAndFacets {
                 ForEach(selectedFields, id:\.self) { fieldName in
                     if let facet = datum.facet {
                         if selectedFacets.contains(facet) {
@@ -94,6 +113,17 @@ struct BarChart: View {
                 }
             }
         }
+    }
+}
+
+#Preview("Timeseries (faceted)") {
+    // not really a good example of a *useful* bar chart, but the data is shaped the way I want
+    if let single = ChartSamples.sampleData(facet: .single, size: .medium, statistics: false) {
+//        ConfigurableChartView(config: ChartConfiguration(resultContainer: single))
+        BarChart(config: ChartConfiguration(resultContainer: single))
+            .chartLegend(.hidden)
+    } else {
+        Text("No sample data")
     }
 }
 

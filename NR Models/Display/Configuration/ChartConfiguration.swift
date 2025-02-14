@@ -113,7 +113,8 @@ struct BarChartConfiguration {
 
 struct ScatterPlotConfig {
     var colorFacets: Bool = true
-    var logScale: Bool = false
+    var xLogScale: Bool = false
+    var yLogScale: Bool = false
     
     var xField: String?
     var yField: String?

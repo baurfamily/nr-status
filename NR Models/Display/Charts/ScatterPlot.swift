@@ -17,7 +17,7 @@ struct ScatterPlot: View {
     
     var data: [NrdbResults.StatDatum] = []
     var filteredData: [NrdbResults.StatDatum] {
-        data.filter { selectedFacets.contains($0.facet) }
+        data.filter { selectedFacets.isEmpty || selectedFacets.contains($0.facet) }
     }
     
     init(config: ChartConfiguration) {
@@ -57,8 +57,9 @@ struct ScatterPlot: View {
             )
             .symbolSize(by: .value((sizeField ?? ""), \.z))
             .foregroundStyle(by: .value("Facet", \.facet))
-            
         }
+        .chartXScale(type: (config.plot.xLogScale ? .symmetricLog : .linear))
+        .chartYScale(type: (config.plot.yLogScale ? .symmetricLog : .linear))
     }
 }
 

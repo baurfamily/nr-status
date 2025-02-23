@@ -29,6 +29,8 @@ struct NRQL_EditorApp: App {
     
     var body: some Scene {
         WindowGroup(id: "summary-view") { SummaryView() }
+        WindowGroup(id: "sample-charts") { ChartSampleView() }
+        WindowGroup(id: "nrql-viewer") { NrqlViewer() }
         .commands {
             CommandMenu("Features") {
                 Button(action: {
@@ -36,19 +38,19 @@ struct NRQL_EditorApp: App {
                 }, label: {
                     Text("Summary View")
                 })
-            }
-        }
-        WindowGroup(id: "sample-charts") { ChartSampleView() }
-        .commands {
-            CommandMenu("Features") {
                 Button(action: {
                     openWindow(id: "sample-charts")
                 }, label: {
                     Text("Sample Charts")
                 })
+                Button(action: {
+                    openWindow(id: "nrql-viewer")
+                }, label: {
+                    Text("NRQL Viewer")
+                })
             }
         }
-        
+            
         // the NRQL viewer document stuff
         DocumentGroup(newDocument: NRQL_EditorDocument()) { file in
             DocumentView(document: file.$document).focusedSceneValue(\.document, file.$document)

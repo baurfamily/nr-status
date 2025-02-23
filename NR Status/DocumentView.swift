@@ -18,18 +18,18 @@ struct DocumentView: View {
     
     var body: some View {
         NavigationSplitView {
-            ResultsList(document: $document)
-        } content: {
             CodeEditor(
                 text: $document.text,
                 position: $document.position,
                 messages: $document.messages,
                 language: .nrql(),
                 layout: CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true)
-            ).environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight)).navigationSplitViewColumnWidth(min: 200, ideal: 500, max: 1000)
+            ).environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight)).navigationSplitViewColumnWidth(min: 200, ideal: 500, max: 1000)        } content: {
+
         } detail: {
             HStack {
                 ResultsTabView(document: $document)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
     }
@@ -79,28 +79,11 @@ struct ResultsTabView : View {
             ForEach(document.queries) { docQuery in
                 Tab(value: docQuery.id) {
                     if let resultContainer = docQuery.query.resultContainer {
-                        if resultContainer.isTimeseries {
-                            TimeseriesChart(config: ChartConfiguration(resultContainer: resultContainer))
-                        } else {
-                            PieChart(config: .init(resultContainer: resultContainer))
-                            BarChart(config: .init(resultContainer: resultContainer))
-                        }
-                    } else {
-                        if docQuery.focused {
-                            HStack {
-                                Text(docQuery.query.title)
-                                Image(systemName: "exclamationmark.triangle.fill")
-                            }
-                        } else {
-                            HStack {
-                                Text(docQuery.query.title)
-                                Image(systemName: "questionmark.circle.fill")
-                            }
-                        }
+                        ConfigurableChartView(resultsContainer: resultContainer)
                     }
                 }
             }
-        }.animation(.easeInOut(duration: 10), value:($document.wrappedValue.focusedQueryId ?? "0"))
+        }
     }
 }
 

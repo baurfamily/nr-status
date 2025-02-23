@@ -24,13 +24,11 @@ struct DocumentView: View {
                 messages: $document.messages,
                 language: .nrql(),
                 layout: CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true)
-            ).environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight)).navigationSplitViewColumnWidth(min: 200, ideal: 500, max: 1000)        } content: {
-
+            )
+            .environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight))
+            .navigationSplitViewColumnWidth(min: 200, ideal: 500, max: 1000)
         } detail: {
-            HStack {
                 ResultsTabView(document: $document)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
         }
     }
 }
@@ -84,6 +82,7 @@ struct ResultsTabView : View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

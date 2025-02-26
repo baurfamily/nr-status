@@ -18,6 +18,7 @@ struct EditorMenuView : View {
         Group {
             Button("Run query...") {
                 if var document {
+                    print("text: \(document.text)")
                     document.runQuery()
                     
                     document.messages.insert(

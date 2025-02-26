@@ -26,11 +26,13 @@ extension FocusedValues {
 @main
 struct NRQL_EditorApp: App {
     @Environment(\.openWindow) var openWindow
-    
+
     var body: some Scene {
         WindowGroup(id: "summary-view") { SummaryView() }
         WindowGroup(id: "sample-charts") { ChartSampleView() }
-        WindowGroup(id: "nrql-viewer") { NrqlViewer() }
+        WindowGroup(id: "nrql-viewer") {
+            NrqlViewer()
+        }
         .commands {
             CommandMenu("Features") {
                 Button(action: {
@@ -49,13 +51,12 @@ struct NRQL_EditorApp: App {
                     Text("NRQL Viewer")
                 })
             }
+            CommandMenu("Editor") { EditorMenuView() }
         }
             
         // the NRQL viewer document stuff
         DocumentGroup(newDocument: NRQL_EditorDocument()) { file in
             DocumentView(document: file.$document).focusedSceneValue(\.document, file.$document)
-        }.commands {
-            CommandMenu("Editor") { EditorMenuView() }
         }
         
         Settings {

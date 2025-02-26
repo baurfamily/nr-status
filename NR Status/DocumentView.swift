@@ -33,42 +33,6 @@ struct DocumentView: View {
     }
 }
 
-struct ResultsList : View {
-    @Binding var document: NRQL_EditorDocument
-    
-    var body: some View {
-        List(document.queries) { docQuery in
-            if let resultContainer = docQuery.query.resultContainer {
-                VStack {
-                    Text(docQuery.query.title)
-                    if resultContainer.isTimeseries {
-                        TimeseriesChart(config: ChartConfiguration(resultContainer: resultContainer))
-                            .frame(minHeight: 25)
-                            .chartLegend(.hidden)
-                            .chartXAxis(.hidden)
-                            .chartYAxis(.hidden)
-                    } else {
-                        PieChart(config: .init(resultContainer: resultContainer))
-                        BarChart(config: .init(resultContainer: resultContainer))
-                    }
-                }
-            } else {
-                if docQuery.focused {
-                    HStack {
-                        Text(docQuery.query.title)
-                        Image(systemName: "exclamationmark.triangle.fill")
-                    }
-                } else {
-                    HStack {
-                        Text(docQuery.query.title)
-                        Image(systemName: "questionmark.circle.fill")
-                    }
-                }
-            }
-        }
-    }
-}
-
 struct ResultsTabView : View {
     @Binding var document: NRQL_EditorDocument
     

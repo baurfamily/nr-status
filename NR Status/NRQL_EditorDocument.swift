@@ -52,7 +52,6 @@ struct NRQL_EditorDocument: FileDocument {
             focusedQueryId = docQuery.id
         }
     }
-//    var results: [Int:NrdbResultContainer] = [:]
     var focusedResult: NrdbResultContainer?
     var focusedQueryId: String?
     
@@ -153,9 +152,12 @@ struct NRQL_EditorDocument: FileDocument {
     }
     
     mutating func runQuery() {
+        print("run query")
         guard let range = position.selections.first else { return }
+        print("\t=> \(range)")
         guard let docQuery = queries.first( where:{ NSLocationInRange(range.lowerBound, $0.position.selections.first!) }) else { return }
         
+        print("\t=> \(docQuery.id)")
         docQuery.query.runQuery()
         self.position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
 //        self.position = docQuery.position

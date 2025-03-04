@@ -13,13 +13,27 @@ import LanguageSupport
 
 struct EditorMenuView : View {
     @FocusedBinding(\.document) var document: NRQL_EditorDocument?
-
+    @FocusedBinding(\.query) var query: NrqlQuery?
+    
     var body: some View {
         Group {
             Button("Run query...") {
+                if var query {
+                    print("query text: \(query.text)")
+                    query.runQuery() { result in
+                        // same issue noted below about ecapsulation
+                        print("... got result back.")
+                        query.resultContainer = result
+                    }
+                }
                 if var document {
-                    print("text: \(document.text)")
-                    document.runQuery()
+                    print("document text: \(document.text)")
+                    document.runQuery() { result in
+                        // ug, I don't like (breaks encapsulation), but I'm strugging to deal with an async
+                        // callback that mutates the hosting struct... maybe my object architecture is just weird
+                        print("... got result back.")
+                        document.focusedResult = result
+                    }
                     
                     document.messages.insert(
                         TextLocated(

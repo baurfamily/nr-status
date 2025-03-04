@@ -61,6 +61,7 @@ struct NRQL_EditorDocument: FileDocument {
 
     init(text: String = "// Title of query\nSELECT count(*) FROM Transactions FACET name SINCE 1 day ago TIMESERIES 15 minutes") {
         self.text = text
+        parseQueries()
     }
 
     static var readableContentTypes: [UTType] { [.exampleText] }
@@ -151,14 +152,15 @@ struct NRQL_EditorDocument: FileDocument {
         return docQuery
     }
     
-    mutating func runQuery() {
+    mutating func runQuery(callback: @escaping (NrdbResultContainer?) -> ()) {
         print("run query")
         guard let range = position.selections.first else { return }
         print("\t=> \(range)")
         guard let docQuery = queries.first( where:{ NSLocationInRange(range.lowerBound, $0.position.selections.first!) }) else { return }
         
         print("\t=> \(docQuery.id)")
-        docQuery.query.runQuery()
+        docQuery.query.runQuery(callback)
+        
         self.position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
 //        self.position = docQuery.position
         

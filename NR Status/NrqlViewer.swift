@@ -8,34 +8,37 @@
 import SwiftUI
 import CodeEditorView
 
+//protocol QueryView : View {
+//    var query: NrqlQuery { get }
+//    mutating func updateQuery(_ query: NrqlQuery)
+//    mutating func runQuery()
+//}
+
 struct NrqlViewer : View {
-    @State var document: NRQL_EditorDocument = NRQL_EditorDocument(text:"SELECT COUNT(*) FROM Transaction FACET name")
+    @State var query = NrqlQuery(from: "SELECT COUNT(*) FROM Transaction FACET name")
     @Environment(\.colorScheme) private var colorScheme: ColorScheme
 
     var body: some View {
         NavigationSplitView {
             CodeEditor(
-                text: $document.text,
-                position: $document.position,
-                messages: $document.messages,
+                text: $query.text,
+                position: $query.position,
+                messages: $query.messages,
                 language: .nrql(),
                 layout: CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true)
             )
             .environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight))
             .frame(minWidth: 300)
         } detail: {
-            if let resultContainer = document.focusedResult {
+            if let resultContainer = query.resultContainer {
                 ConfigurableChartView(resultsContainer: resultContainer)
             } else {
                 Text("Hit Command-return to run the focused query...")
-                Text("Query count: \(document.queries.count)")
-                Text("Focused query: \(document.focusedQueryId ?? "None")")
-                Text("Focused results: \(document.focusedResult?.results.data.count ?? -1)")
-                Text(document.text)
+                Text(query.text)
+//                Text("resolved: \(query.resultContainer != nil)")
             }
         }
         .navigationSplitViewStyle(.balanced)
-        .focusedSceneValue(\.document, $document)
-
+        .focusedSceneValue(\.query, $query)
     }
 }

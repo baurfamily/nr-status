@@ -69,7 +69,6 @@
 		3F28B37C2CBB996200CCB8DD /* Exceptions for "NR Models" folder in "NR Models" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				CustomModels/NrqlQuery.swift,
 				Display/Accessories/AnnotationView.swift,
 				Display/Charts/BarChart.swift,
 				Display/Charts/BillboardChart.swift,

@@ -6,12 +6,14 @@
 //
 
 import Foundation
+import CodeEditorView
 import CryptoKit
+import LanguageSupport
 
 class NrqlQuery : Identifiable, ObservableObject {
     // this is the full text, including comments
     var text: String = "" {
-        willSet { textWillUpdate(to: newValue) }
+        willSet { print("."); textWillUpdate(to: newValue) }
     }
     
     // this is just the functional part, minus comments
@@ -20,6 +22,11 @@ class NrqlQuery : Identifiable, ObservableObject {
             self.invalidated = true
         }
     }
+    
+    // so we can be embeded in a code editor, we need a position and messages... I guess?
+    // not sure if I really need these, or if they need/should be here.
+    var position: CodeEditor.Position
+    var messages: Set<TextLocated<Message>> = Set()
     
     // we set this when the query changes
     var invalidated: Bool = false
@@ -44,6 +51,9 @@ class NrqlQuery : Identifiable, ObservableObject {
     init(from text: String, run: Bool = false) {
         self.nrql = ""
         self.text = text
+        self.position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
+        self.messages = Set<TextLocated<Message>>()
+        
         textWillUpdate(to: text)
         
         if run {
@@ -68,6 +78,7 @@ class NrqlQuery : Identifiable, ObservableObject {
     }
     
     private func textWillUpdate(to newValue: String) {
+        print("-")
         var lines: [Substring] = []
         for line in newValue.split(separator: "\n") {
             guard !line.starts(with: "//") else { continue }

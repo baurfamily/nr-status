@@ -10,7 +10,11 @@ import SwiftUI
 struct DocumentFocusedValueKey: FocusedValueKey {
   typealias Value = Binding<NRQL_EditorDocument>
 }
-    
+
+struct QueryFocusedValueKey: FocusedValueKey {
+    typealias Value = Binding<NrqlQuery>
+}
+
 extension FocusedValues {
   var document: DocumentFocusedValueKey.Value? {
     get {
@@ -21,6 +25,16 @@ extension FocusedValues {
         self[DocumentFocusedValueKey.self] = newValue
     }
   }
+    
+  var query: QueryFocusedValueKey.Value? {
+        get {
+            return self[QueryFocusedValueKey.self]
+        }
+        
+        set {
+            self[QueryFocusedValueKey.self] = newValue
+        }
+    }
 }
 
 @main
@@ -56,7 +70,8 @@ struct NRQL_EditorApp: App {
             
         // the NRQL viewer document stuff
         DocumentGroup(newDocument: NRQL_EditorDocument()) { file in
-            DocumentView(document: file.$document).focusedSceneValue(\.document, file.$document)
+            DocumentView(document: file.$document)
+                .focusedSceneValue(\.document, file.$document)
         }
         
         Settings {

@@ -63,7 +63,7 @@ struct NRQL_EditorApp: App {
                     openWindow(id: "nrql-viewer")
                 }, label: {
                     Text("NRQL Viewer")
-                })
+                }).keyboardShortcut("n", modifiers: [ .command, .shift ])
             }
             CommandMenu("Editor") { EditorMenuView() }
         }

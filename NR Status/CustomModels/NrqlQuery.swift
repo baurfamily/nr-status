@@ -10,7 +10,7 @@ import CodeEditorView
 import CryptoKit
 import LanguageSupport
 
-class NrqlQuery : Identifiable, ObservableObject {
+@Observable class NrqlQuery : Identifiable {
     // this is the full text, including comments
     var text: String = "" {
         willSet { print("."); textWillUpdate(to: newValue) }
@@ -33,7 +33,7 @@ class NrqlQuery : Identifiable, ObservableObject {
     
     // the data behind the NRQL, but not trustworthy if invalidated == true
     // this attribute should work with observableobject, but I'm not sure it's working as I expected
-    @Published var resultContainer: NrdbResultContainer?
+    var resultContainer: NrdbResultContainer?
     
     var id: String { hash(nrql: self.nrql) }
     
@@ -78,7 +78,6 @@ class NrqlQuery : Identifiable, ObservableObject {
     }
     
     private func textWillUpdate(to newValue: String) {
-        print("-")
         var lines: [Substring] = []
         for line in newValue.split(separator: "\n") {
             guard !line.starts(with: "//") else { continue }

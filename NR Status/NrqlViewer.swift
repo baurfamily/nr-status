@@ -30,6 +30,15 @@ struct NrqlViewer : View {
             .environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight))
             .frame(minWidth: 300)
         } detail: {
+            Button("Run query...") {
+//                query.resultContainer = nil
+                Task.detached {
+                    await query.getData()
+                }
+                //                query.runQuery() { result in
+//                    query.resultContainer = result
+//                }
+            }
             if let resultContainer = query.resultContainer {
                 ConfigurableChartView(resultsContainer: resultContainer)
             } else {

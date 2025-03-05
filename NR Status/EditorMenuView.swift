@@ -18,37 +18,14 @@ struct EditorMenuView : View {
     var body: some View {
         Group {
             Button("Run query...") {
-                if var query {
+                if let query {
                     print("query text: \(query.text)")
-                    query.runQuery() { result in
-                        // same issue noted below about ecapsulation
-                        print("... got result back.")
-                        query.resultContainer = result
-                    }
+                    Task.detached { await query.getData() }
                 }
                 if var document {
                     print("document text: \(document.text)")
-                    document.runQuery() { result in
-                        // ug, I don't like (breaks encapsulation), but I'm strugging to deal with an async
-                        // callback that mutates the hosting struct... maybe my object architecture is just weird
-                        print("... got result back.")
-                        document.focusedResult = result
-                    }
-                    
-                    document.messages.insert(
-                        TextLocated(
-                            location: TextLocation(oneBasedLine: 1, column: 1),
-                            entity: Message.init(category: .informational, length: 10, summary: "foobar baz", description: "more text here that can be long and formatted")
-                        )
-                    )
+                    document.runFocusedQuery()
                 }
-                // alternate method? seems to act the same
-//                if var document {
-//                    document.getData() {
-//                        document.queryAt(document.position)?.query.resultContainer = $0
-//                        document.focusedResult = $0
-//                    }
-//                }
             }.keyboardShortcut("\n")
         }
     }

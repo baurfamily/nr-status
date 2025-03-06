@@ -31,20 +31,19 @@ struct NrqlViewer : View {
             .frame(minWidth: 300)
         } detail: {
             Button("Run query...") {
-//                query.resultContainer = nil
+                query.invalidated = true
                 Task.detached {
                     await query.getData()
                 }
-                //                query.runQuery() { result in
-//                    query.resultContainer = result
-//                }
+            }
+            if query.invalidated {
+                ProgressView()
             }
             if let resultContainer = query.resultContainer {
                 ConfigurableChartView(resultsContainer: resultContainer)
             } else {
                 Text("Hit Command-return to run the focused query...")
                 Text(query.text)
-//                Text("resolved: \(query.resultContainer != nil)")
             }
         }
         .navigationSplitViewStyle(.balanced)

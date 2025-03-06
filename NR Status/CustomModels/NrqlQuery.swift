@@ -62,7 +62,12 @@ import LanguageSupport
     }
     
     func getData() async {
+        self.invalidated = true
+        //why do I have to do this?
+        //...if I don't, the UI doesn't update (unless something went wrong with the query
+        self.resultContainer = nil
         self.resultContainer = await Queries().getNrqlData(query: nrql, debug: false)
+        self.invalidated = false
     }
     
     func runQuery(_ callback: ((NrdbResultContainer?) -> ())? = nil) {

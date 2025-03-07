@@ -31,6 +31,9 @@ import LanguageSupport
     // we set this when the query changes
     var invalidated: Bool = false
     
+    // set this when things get run; clear when completed
+    var running: Bool = false
+    
     // the data behind the NRQL, but not trustworthy if invalidated == true
     // this attribute should work with observableobject, but I'm not sure it's working as I expected
     var resultContainer: NrdbResultContainer?
@@ -63,17 +66,22 @@ import LanguageSupport
     
     func getData() async {
         self.invalidated = true
+        self.running = true
         //why do I have to do this?
         //...if I don't, the UI doesn't update (unless something went wrong with the query
         self.resultContainer = nil
         self.resultContainer = await Queries().getNrqlData(query: nrql, debug: false)
         self.invalidated = false
+        self.running = false
     }
     
     func runQuery(_ callback: ((NrdbResultContainer?) -> ())? = nil) {
+        self.invalidated = true
+        self.running = true
         Queries().nrql(query: nrql) {
             self.resultContainer = $0
             self.invalidated = false
+            self.running = false
             if let callback { callback($0) }
         }
     }

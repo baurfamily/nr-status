@@ -20,6 +20,7 @@ struct NrqlViewer : View {
 
     var body: some View {
         NavigationSplitView {
+//            CodeEditor(source: $query.text, theme: .atelierSavannaDark)
             CodeEditor(
                 text: $query.text,
                 position: $query.position,
@@ -36,7 +37,7 @@ struct NrqlViewer : View {
                     await query.getData()
                 }
             }
-            if query.invalidated {
+            if query.running {
                 ProgressView()
             }
             if let resultContainer = query.resultContainer {
@@ -49,4 +50,8 @@ struct NrqlViewer : View {
         .navigationSplitViewStyle(.balanced)
         .focusedSceneValue(\.query, $query)
     }
+}
+
+#Preview {
+    NrqlViewer()
 }

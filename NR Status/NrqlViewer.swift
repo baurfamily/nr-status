@@ -20,7 +20,6 @@ struct NrqlViewer : View {
 
     var body: some View {
         NavigationSplitView {
-//            CodeEditor(source: $query.text, theme: .atelierSavannaDark)
             CodeEditor(
                 text: $query.text,
                 position: $query.position,

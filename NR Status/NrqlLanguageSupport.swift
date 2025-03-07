@@ -68,6 +68,7 @@ extension LanguageConfiguration {
     return LanguageConfiguration(name: "NRQL",
                                  supportsSquareBrackets: false,
                                  supportsCurlyBrackets: false,
+                                 caseInsensitiveReservedIdentifiers: true,
                                  stringRegex: /\"(?:\\\"|[^\"])*+\"/,
                                  characterRegex: nil,
                                  numberRegex: numberRegex,

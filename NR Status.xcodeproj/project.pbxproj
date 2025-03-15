@@ -88,6 +88,7 @@
 				Display/Configuration/TimeseriesChartConfigView.swift,
 				Display/ConfigurationMeta/ConfigurableChartView.swift,
 				Models/Application.swift,
+				Models/Attribute.swift,
 				Models/SyntheticMonitor.swift,
 				Nerdgraph/Alert.swift,
 				Nerdgraph/BasicFields.swift,

@@ -17,6 +17,8 @@ import CodeEditorView
 struct NrqlViewer : View {
     @State var query = NrqlQuery(from: "SELECT COUNT(*) FROM Transaction FACET name")
     @Environment(\.colorScheme) private var colorScheme: ColorScheme
+    @Environment(\.codeEditorLayoutConfiguration) private var layoutConfiguration: CodeEditor.LayoutConfiguration
+
 
     var body: some View {
         NavigationSplitView {
@@ -24,9 +26,9 @@ struct NrqlViewer : View {
                 text: $query.text,
                 position: $query.position,
                 messages: $query.messages,
-                language: .nrql(),
-                layout: CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true)
+                language: .nrql()
             )
+            .environment(\.codeEditorLayoutConfiguration, layoutConfiguration)
             .environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight))
             .frame(minWidth: 300)
         } detail: {

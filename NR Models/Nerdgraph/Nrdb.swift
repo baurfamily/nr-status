@@ -85,7 +85,7 @@ struct NrdbResultContainer : Decodable {
 }
 
 struct NrdbMetadata: Decodable {
-    var timeWindow: TimeWindow
+    var timeWindow: TimeWindow?
     var facets: [String]?
 }
 

@@ -32,19 +32,6 @@ struct RadioSelectionView : View {
     @Binding var fields: [SelectableField]
     @State var selectedField: String?
     
-    //trying to make sure only one is set, it's not doing what I want :(
-//    init(fields: Binding<[SelectableField]>) {
-//        self._fields = fields
-//        
-//        guard !self.fields.isEmpty else { return }
-//        
-//        self.selectedField = fields.first?.id
-//        for index in fields.indices {
-//            self.fields[index].isSelected = false
-//        }
-//        self.fields[0].isSelected = true
-//    }
-
     var body: some View {
         Picker("", selection: $selectedField) {
             ForEach(fields) { field in

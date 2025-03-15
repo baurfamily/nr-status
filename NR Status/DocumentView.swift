@@ -9,8 +9,14 @@ import SwiftUI
 import CodeEditorView
 import LanguageSupport
 
+extension EnvironmentValues {
+    @Entry var codeEditorLayoutConfiguration: CodeEditor.LayoutConfiguration = CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true)
+}
+
+
 struct DocumentView: View {
     @Environment(\.colorScheme) private var colorScheme: ColorScheme
+    @Environment(\.codeEditorLayoutConfiguration) private var codeEditorLayoutConfiguration: CodeEditor.LayoutConfiguration
     
     @Binding var document: NRQL_EditorDocument
     @State var position = CodeEditor.Position()
@@ -22,9 +28,9 @@ struct DocumentView: View {
                 text: $document.text,
                 position: $document.position,
                 messages: $document.messages,
-                language: .nrql(),
-                layout: CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true)
+                language: .nrql()
             )
+            .environment(\.codeEditorLayoutConfiguration, codeEditorLayoutConfiguration)
             .environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight))
             .navigationSplitViewColumnWidth(min: 200, ideal: 500, max: 1000)
         } detail: {

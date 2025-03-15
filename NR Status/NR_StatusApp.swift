@@ -16,24 +16,14 @@ struct QueryFocusedValueKey: FocusedValueKey {
 }
 
 extension FocusedValues {
-  var document: DocumentFocusedValueKey.Value? {
-    get {
-      return self[DocumentFocusedValueKey.self]
+    var document: DocumentFocusedValueKey.Value? {
+        get { self[DocumentFocusedValueKey.self] }
+        set { self[DocumentFocusedValueKey.self] = newValue }
     }
-            
-    set {
-        self[DocumentFocusedValueKey.self] = newValue
-    }
-  }
     
-  var query: QueryFocusedValueKey.Value? {
-        get {
-            return self[QueryFocusedValueKey.self]
-        }
-        
-        set {
-            self[QueryFocusedValueKey.self] = newValue
-        }
+    var query: QueryFocusedValueKey.Value? {
+        get { self[QueryFocusedValueKey.self] }
+        set { self[QueryFocusedValueKey.self] = newValue }
     }
 }
 
@@ -44,9 +34,8 @@ struct NRQL_EditorApp: App {
     var body: some Scene {
         WindowGroup(id: "summary-view") { SummaryView() }
         WindowGroup(id: "sample-charts") { ChartSampleView() }
-        WindowGroup(id: "nrql-viewer") {
-            NrqlViewer()
-        }
+        WindowGroup(id: "nrql-viewer") { NrqlViewer() }
+        WindowGroup(id: "nrql-explorer") { NrqlExplorer() }
         .commands {
             CommandMenu("Features") {
                 Button(action: {
@@ -64,6 +53,11 @@ struct NRQL_EditorApp: App {
                 }, label: {
                     Text("NRQL Viewer")
                 }).keyboardShortcut("n", modifiers: [ .command, .shift ])
+                Button(action: {
+                    openWindow(id: "nrql-explorer")
+                }, label: {
+                    Text("NRQL Editor")
+                }).keyboardShortcut("e", modifiers: [ .command, .shift ])
             }
             CommandMenu("Editor") { EditorMenuView() }
         }

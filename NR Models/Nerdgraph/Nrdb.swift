@@ -21,6 +21,10 @@ struct NrdbResultContainer : Decodable {
     var results: NrdbResults
     var metadata: NrdbMetadata
     
+    static var empty: NrdbResultContainer {
+        return .init()
+    }
+    
     var data: [NrdbResults.Datum] {
         return results.data
     }
@@ -70,6 +74,12 @@ struct NrdbResultContainer : Decodable {
     
     func adjustedTime(_ date: Date) -> Date {
         return date.addingTimeInterval(dateAdjustment)
+    }
+    
+    private init() {
+        self.nrql = ""
+        self.results = NrdbResults(data: [])
+        self.metadata = NrdbMetadata(timeWindow: nil, facets: nil)
     }
     
     // need to "manually" decode so we can use different types for the results

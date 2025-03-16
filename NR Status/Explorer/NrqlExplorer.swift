@@ -17,29 +17,32 @@ import CodeEditorView
 struct NrqlExplorer : View {
     @State var query = NrqlQuery(from: "SELECT COUNT(*) FROM Transaction FACET name")
     @Environment(\.colorScheme) private var colorScheme: ColorScheme
+    
+    @State var chartConfiguration: ChartConfiguration = ChartConfiguration(resultContainer: NrdbResultContainer.empty)
 
     var body: some View {
         NavigationSplitView {
             NrqlBuilder(query: $query)
         } detail: {
-            Button("Run query...") {
-                query.invalidated = true
-                Task.detached {
-                    await query.getData()
-                }
-            }
             if query.running {
                 ProgressView()
             }
-            if let resultContainer = query.resultContainer {
-                ConfigurableChartView(resultsContainer: resultContainer)
-            } else {
-                Text("Hit Command-return to run the focused query...")
-                Text(query.text)
-            }
+            ConfigurableChartView(config: chartConfiguration)
         }
         .navigationSplitViewStyle(.balanced)
         .focusedSceneValue(\.query, $query)
+        .onChange(of: $query.wrappedValue) {
+            print("updated query")
+            query.runQuery() { results in
+                guard let results else { return }
+                print("updating config")
+                chartConfiguration.updateResults(results)
+            }
+            if let resultContainer = query.resultContainer {
+                chartConfiguration.updateResults(resultContainer)
+//                chartConfiguration.resultContainer = resultContainer
+            }
+        }
     }
 }
 

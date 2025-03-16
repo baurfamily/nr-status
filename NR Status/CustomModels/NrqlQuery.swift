@@ -10,7 +10,7 @@ import CodeEditorView
 import CryptoKit
 import LanguageSupport
 
-@Observable class NrqlQuery : Identifiable {
+@Observable class NrqlQuery : Identifiable, Equatable {
     // this is the full text, including comments
     var text: String = "" {
         willSet { print("."); textWillUpdate(to: newValue) }
@@ -21,6 +21,10 @@ import LanguageSupport
         willSet {
             self.invalidated = true
         }
+    }
+    
+    static func == (lhs: NrqlQuery, rhs: NrqlQuery) -> Bool {
+        lhs.text == rhs.text
     }
     
     // so we can be embeded in a code editor, we need a position and messages... I guess?

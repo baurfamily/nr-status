@@ -17,8 +17,9 @@ struct SelectableField: Identifiable, Hashable {
     }
 }
 
-struct ChartConfiguration {
-    let resultContainer: NrdbResultContainer
+@Observable
+class ChartConfiguration {
+    var resultContainer: NrdbResultContainer
     var chartType: ChartType?
     
     var facets: FacetsConfiguration
@@ -47,6 +48,13 @@ struct ChartConfiguration {
         // must be last properties set
         self.plot = .init(fields: resultContainer.numberFieldNames)
         self.chartType = chartTypes.first
+    }
+    
+    func updateResults(_ newResultContainer: NrdbResultContainer) {
+        self.resultContainer = newResultContainer
+        self.fields = SelectableField.wrap( newResultContainer.numberFieldNames.sorted() )
+        self.facets = FacetsConfiguration(resultContainer: newResultContainer)
+        self.plot = .init(fields: newResultContainer.numberFieldNames)
     }
 }
 

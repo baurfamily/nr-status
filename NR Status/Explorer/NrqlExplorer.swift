@@ -43,16 +43,42 @@ struct NrqlExplorer : View {
     }
 }
 
+struct QueryBuilder {
+    var event: String
+    var attributes: [Attribute] = []
+    var facets: [Attribute] = []
+    var predicates: [String] = []
+    var timeseries: Bool = false
+    var timeseriesSize: String?
+    
+    var nrql: String {
+        var query = "FROM \(event) SELECT "
+        if !attributes.isEmpty {
+            query += attributes.map(\.key).joined(separator: ", ")
+        }
+        if !facets.isEmpty {
+            query += " FACET " + facets.map(\.key).joined(separator: ", ")
+        }
+        
+        // need to figure out how to do aggrecates before this will work
+        if timeseries {
+            query += " TIMESERIES " + (timeseriesSize ?? "")
+        }
+        
+        return query
+    }
+}
+
 struct NrqlBuilder : View {
     @Binding var query: NrqlQuery
     
-  
     @State var selectedEvent: String?
     @State var events: [String] = []
     
     @State var selectedAttribute: Set<Attribute> = []
     @State var attributes: [Attribute] = []
     
+    @State var queryBuilder: QueryBuilder?
     
     var body: some View {
         Form {
@@ -62,6 +88,12 @@ struct NrqlBuilder : View {
                 }
             }.onChange(of: selectedEvent, initial: false) { _, newEvent in
                 if let newEvent {
+                    queryBuilder = QueryBuilder(event: newEvent)
+                    if let queryBuilder {
+                        query = NrqlQuery(from: queryBuilder.nrql)
+                    }
+                    
+                    
                     Queries().nrql(query: "SELECT keyset() FROM \(newEvent)") { results in
                         if let results {
                             attributes = results.data.map {
@@ -76,7 +108,12 @@ struct NrqlBuilder : View {
                 }
             }
             ScrollView {
-                AttributeSelector(attributes: $attributes)
+                AttributeSelector(attributes: $attributes).onChange(of: attributes) { _, newAttributes in
+                    if queryBuilder != nil {
+                        queryBuilder!.attributes = newAttributes.filter(\.isSelected)
+                        query = NrqlQuery(from: queryBuilder!.nrql, run: true)
+                    }
+                }
             }
         }.task {
             Queries().nrql(query: "SHOW EVENT TYPES since 1 day ago") { results in

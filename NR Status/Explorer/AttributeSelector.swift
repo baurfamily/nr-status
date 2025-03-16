@@ -17,10 +17,10 @@ struct AttributeSelector : View {
         
         var body : some View {
             DisclosureGroup("\(title) Attributes") {
-                ForEach($attributes, id: \.self) { attribute in
-                    if filterClosure(attribute.wrappedValue) {
-                        Toggle(isOn: attribute.isSelected) {
-                            HStack {
+                Form {
+                    ForEach($attributes, id: \.self) { attribute in
+                        if filterClosure(attribute.wrappedValue) {
+                            Toggle(isOn: attribute.isSelected) {
                                 Text(attribute.wrappedValue.key)
                             }
                         }

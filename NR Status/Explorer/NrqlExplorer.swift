@@ -115,7 +115,8 @@ struct NrqlBuilder : View {
                     }
                 }
             }
-        }.task {
+        }
+        .task {
             Queries().nrql(query: "SHOW EVENT TYPES since 1 day ago") { results in
                 if let results {
                     events = results.data.map { $0.stringFields["eventType"] ?? "" }

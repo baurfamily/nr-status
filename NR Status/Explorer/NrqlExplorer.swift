@@ -8,12 +8,6 @@
 import SwiftUI
 import CodeEditorView
 
-//protocol QueryView : View {
-//    var query: NrqlQuery { get }
-//    mutating func updateQuery(_ query: NrqlQuery)
-//    mutating func runQuery()
-//}
-
 struct NrqlExplorer : View {
     @State var query = NrqlQuery(from: "SELECT COUNT(*) FROM Transaction FACET name")
     @Environment(\.colorScheme) private var colorScheme: ColorScheme
@@ -22,7 +16,7 @@ struct NrqlExplorer : View {
 
     var body: some View {
         NavigationSplitView {
-            NrqlBuilder(query: $query)
+            EventExplorer(query: $query)
         } detail: {
             if query.running {
                 ProgressView()
@@ -48,35 +42,6 @@ struct NrqlExplorer : View {
     }
 }
 
-struct QueryBuilder {
-    var event: String
-    var attributes: [Attribute] = []
-    var facets: [Attribute] = []
-    var predicates: [String] = []
-    var timewindow: String = " SINCE 6 hours ago"
-    var timeseries: Bool = false
-    var timeseriesSize: String?
-    
-    var nrql: String {
-        var query = "FROM \(event) SELECT "
-        if !attributes.isEmpty {
-            query += attributes.map(\.key).joined(separator: ", ")
-        }
-        
-        query += timewindow
-        
-        if !facets.isEmpty {
-            query += " FACET " + facets.map(\.key).joined(separator: ", ")
-        }
-        
-        // need to figure out how to do aggrecates before this will work
-        if timeseries {
-            query += " TIMESERIES " + (timeseriesSize ?? "")
-        }
-        
-        return query
-    }
-}
 
 struct NrqlBuilder : View {
     @Binding var query: NrqlQuery
@@ -88,7 +53,7 @@ struct NrqlBuilder : View {
     @State var attributes: [Attribute] = []
     
     @State var queryBuilder: QueryBuilder?
-    
+
     var body: some View {
         Form {
             Picker("Event", selection: $selectedEvent) {

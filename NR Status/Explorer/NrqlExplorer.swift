@@ -27,7 +27,10 @@ struct NrqlExplorer : View {
             if query.running {
                 ProgressView()
             }
-            ConfigurableChartView(config: chartConfiguration)
+            VStack {
+                Text(query.text)
+                ConfigurableChartView(config: chartConfiguration)
+            }
         }
         .navigationSplitViewStyle(.balanced)
         .focusedSceneValue(\.query, $query)
@@ -40,7 +43,6 @@ struct NrqlExplorer : View {
             }
             if let resultContainer = query.resultContainer {
                 chartConfiguration.updateResults(resultContainer)
-//                chartConfiguration.resultContainer = resultContainer
             }
         }
     }
@@ -51,6 +53,7 @@ struct QueryBuilder {
     var attributes: [Attribute] = []
     var facets: [Attribute] = []
     var predicates: [String] = []
+    var timewindow: String = " SINCE 6 hours ago"
     var timeseries: Bool = false
     var timeseriesSize: String?
     
@@ -59,6 +62,9 @@ struct QueryBuilder {
         if !attributes.isEmpty {
             query += attributes.map(\.key).joined(separator: ", ")
         }
+        
+        query += timewindow
+        
         if !facets.isEmpty {
             query += " FACET " + facets.map(\.key).joined(separator: ", ")
         }

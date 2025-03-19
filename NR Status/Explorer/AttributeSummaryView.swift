@@ -29,13 +29,13 @@ struct AttributeSummaryView : View {
             }
         }
         TabView {
+            Tab("Charts", systemImage: "chart.dots.scatter") {
+                AttributeCharts(summary: summary)
+            }
             Tab("Samples", systemImage: "list.bullet") {
                 List {
                     ForEach(summary.samples, id: \.self) { Text($0) }
                 }
-            }
-            Tab("Charts", systemImage: "chart.dots.scatter") {
-                Text("nothing to see here")
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

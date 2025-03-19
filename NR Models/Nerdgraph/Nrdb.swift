@@ -181,6 +181,8 @@ struct NrdbResults: Decodable {
         // someField => "someField"
         var numberFields: [String: Double] = [:]
         var stringFields: [String: String] = [:]
+        var stringArrayFields: [String:[String]] = [:]
+        var numericArrayFields: [String:[Double]] = [:]
         
         // in theory this could be dynamic, but currently it's filled by the decoder
         var fieldNames: [String] = []
@@ -222,6 +224,10 @@ struct NrdbResults: Decodable {
                     self.numberFields[key.stringValue] = doubleValue
                 } else if let stringValue = try? otherContainer.decode(String.self, forKey: key) {
                     self.stringFields[key.stringValue] = stringValue
+                } else if let arrayValue = try? otherContainer.decode(Array<Double>.self, forKey: key) {
+                    self.numericArrayFields[key.stringValue] = arrayValue
+                } else if let arrayValue = try? otherContainer.decode(Array<String>.self, forKey: key) {
+                    self.stringArrayFields[key.stringValue] = arrayValue
                 } else {
                     // does not account for an array from NRQL functions like uniques(name)
                     return

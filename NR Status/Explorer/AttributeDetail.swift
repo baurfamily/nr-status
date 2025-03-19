@@ -9,14 +9,17 @@ import SwiftUI
 
 struct AttributeDetail : View {
     let attribute: Attribute
+    @State var summary: AttributeSummary?
     
     var body: some View {
-        ScrollView {
-            VStack {
-                Text("detail view...")
-                Text(attribute.key)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+        VStack {
+            if let summary {
+                AttributeSummaryView(summary: summary)
+            }
+        }.task {
+            print("detail view for \(attribute.key)")
+            Task {
+                self.summary = await AttributeSummary.generate(from: attribute)
             }
         }
     }

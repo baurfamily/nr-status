@@ -42,65 +42,6 @@ struct NrqlExplorer : View {
     }
 }
 
-
-struct NrqlBuilder : View {
-    @Binding var query: NrqlQuery
-    
-    @State var selectedEvent: String?
-    @State var events: [String] = []
-    
-    @State var selectedAttribute: Set<Attribute> = []
-    @State var attributes: [Attribute] = []
-    
-    @State var queryBuilder: QueryBuilder?
-
-    var body: some View {
-        Form {
-            Picker("Event", selection: $selectedEvent) {
-                ForEach(events, id: \.self) { event in
-                    Text(event).tag(event)
-                }
-            }.onChange(of: selectedEvent, initial: false) { _, newEvent in
-                if let newEvent {
-                    queryBuilder = QueryBuilder(event: newEvent)
-                    if let queryBuilder {
-                        query = NrqlQuery(from: queryBuilder.nrql)
-                    }
-                    
-                    
-                    Queries().nrql(query: "SELECT keyset() FROM \(newEvent)") { results in
-                        if let results {
-                            attributes = results.data.map {
-                                Attribute(
-                                    event: newEvent,
-                                    type: $0.stringFields["type"]!,
-                                    key: $0.stringFields["key"]!
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-            ScrollView {
-                AttributeSelector(attributes: $attributes).onChange(of: attributes) { _, newAttributes in
-                    if queryBuilder != nil {
-                        queryBuilder!.attributes = newAttributes.filter(\.isSelected)
-                        query = NrqlQuery(from: queryBuilder!.nrql, run: true)
-                    }
-                }
-            }
-        }
-        .task {
-            Queries().nrql(query: "SHOW EVENT TYPES since 1 day ago") { results in
-                if let results {
-                    events = results.data.map { $0.stringFields["eventType"] ?? "" }
-                }
-            }
-        }
-    }
-}
-
-
 #Preview {
     NrqlExplorer()
 }

@@ -37,7 +37,16 @@ struct AttributeSummary : Identifiable{
         
         var summary = AttributeSummary(attribute: attribute)
         
-        let results = await Queries().getNrqlData(query: "SELECT uniqueCount(`\(attribute.key)`), uniques(`\(attribute.key)`), average(`\(attribute.key)`), min(`\(attribute.key)`), max(`\(attribute.key)`) FROM \(attribute.event) SINCE 1 day ago")
+        let results = await Queries().getNrqlData(query: """
+            SELECT
+                uniqueCount(`\(attribute.key)`),
+                uniques(`\(attribute.key)`),
+                average(`\(attribute.key)`),
+                min(`\(attribute.key)`),
+                max(`\(attribute.key)`)
+            FROM \(attribute.event)
+            SINCE 1 day ago
+        """)
         
         if let results {
             if let first = results.data.first {
@@ -60,8 +69,29 @@ struct AttributeSummary : Identifiable{
             }
         }
         
-        summary.timeseriesResultsContainer = await Queries().getNrqlData(query: "SELECT uniqueCount(`\(attribute.key)`), average(`\(attribute.key)`), min(`\(attribute.key)`), max(`\(attribute.key)`) FROM \(attribute.event) SINCE 1 day ago TIMESERIES 1 hour")
-        
+        if attribute.type == "numeric" {
+            summary.timeseriesResultsContainer = await Queries().getNrqlData(query: """
+                SELECT
+                    count(*),
+                    uniqueCount(`\(attribute.key)`),
+                    average(`\(attribute.key)`),
+                    min(`\(attribute.key)`),
+                    max(`\(attribute.key)`),
+                    stddev(`\(attribute.key)`)
+                FROM \(attribute.event)
+                SINCE 1 day ago
+                TIMESERIES 1 hour
+            """)
+        } else if attribute.type == "string" {
+            summary.timeseriesResultsContainer = await Queries().getNrqlData(query: """
+                SELECT
+                    count(*),
+                    uniqueCount(`\(attribute.key)`)
+                FROM \(attribute.event)
+                SINCE 1 day ago
+                TIMESERIES 1 hour
+            """)
+        }
         cache[attribute.id] = summary
         return summary
     }

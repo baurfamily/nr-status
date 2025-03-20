@@ -30,7 +30,7 @@ struct AttributeSummaryView : View {
         }
         TabView {
             Tab("Charts", systemImage: "chart.dots.scatter") {
-                AttributeCharts(summary: summary)
+                AttributeChartPicker(summary: summary)
             }
             Tab("Samples", systemImage: "list.bullet") {
                 List {
@@ -38,7 +38,7 @@ struct AttributeSummaryView : View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(minWidth: 300, maxWidth: .infinity, minHeight: 250, maxHeight: .infinity)
     }
 }
 

@@ -17,7 +17,6 @@ struct AttributeDetail : View {
                 AttributeSummaryView(summary: summary)
             }
         }.task {
-            print("detail view for \(attribute.key)")
             Task {
                 self.summary = await AttributeSummary.generate(from: attribute)
             }

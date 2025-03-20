@@ -164,6 +164,10 @@ struct NrdbResults: Decodable {
         // this shows up if we're looking at event data
         var timestamp: Date?
         
+        // this isn't adjusted for conmparison data sets
+        // useful is we don't care about overlaid graphs
+        var date: Date { isEvent ? timestamp! : beginTime! }
+        
         // if COMPARE WITH was used in the query, this will be populated
         var comparison: Comparison = .current
         
@@ -236,5 +240,7 @@ struct NrdbResults: Decodable {
                 fieldNames.append(key.stringValue)
             }
         }
+        
+        
     }
 }

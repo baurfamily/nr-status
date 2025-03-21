@@ -27,7 +27,12 @@ struct AttributeChartPicker : View {
     
     var body: some View {
         VStack {
-            AttributeChart(summary: summary, data: data, fieldName: fieldName)
+            if summary.attribute.type == "numeric" {
+                // testing, want this to be one of the tabs
+                AttributeStatsChart(summary: summary, data: data)
+            } else {
+                AttributeChart(summary: summary, data: data, fieldName: fieldName)
+            }
             
             Picker("", selection: $fieldName) {
                 if summary.attribute.type == "numeric" {
@@ -46,13 +51,81 @@ struct AttributeChart : View {
     let fieldName: String
     
     var body: some View {
+        Chart(data) { datum in
+            LineMark(
+                x: .value("Timestamp", datum.date),
+                y: .value(fieldName, datum.numberFields[fieldName] ?? 0)
+            )
+        }.frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+struct AttributeStatsChart : View {
+    let summary: AttributeSummary
+    var data: [NrdbResults.Datum]
+    
+    func fieldName(for metric: String) -> String {
+        return "\(metric).\(summary.attribute.key)"
+    }
+    
+    var body: some View {
         VStack {
             Chart(data) { datum in
                 LineMark(
                     x: .value("Timestamp", datum.date),
-                    y: .value(fieldName, datum.numberFields[fieldName] ?? 0)
+                    y: .value("average", datum.numberFields[fieldName(for: "average")] ?? 0)
                 )
-            }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                .lineStyle(by: .value("average", "average"))
+                .interpolationMethod(.catmullRom)
+                
+                SigmaMark(datum: datum, key: summary.attribute.key)
+                    .interpolationMethod(.catmullRom)
+                RangeMark(datum: datum, key: summary.attribute.key)
+                    .interpolationMethod(.catmullRom)
+            }
+            .chartForegroundStyleScale(range: Gradient(colors: [.yellow, .blue]))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
         }.frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+struct SigmaMark : ChartContent {
+    let datum: NrdbResults.Datum
+    let key: String
+    
+    func fieldName(for metric: String) -> String {
+        return "\(metric).\(key)"
+    }
+    
+    var body: some ChartContent {
+        AreaMark(
+            x: .value("Timestamp", datum.date),
+            yStart: .value("minus sigma", (datum.numberFields[fieldName(for: "average")] ?? 0)-(datum.numberFields[fieldName(for: "stddev")] ?? 0)),
+            yEnd: .value("plus sigma", (datum.numberFields[fieldName(for: "average")] ?? 0)+(datum.numberFields[fieldName(for: "stddev")] ?? 0))
+        )
+        .foregroundStyle(by: .value("1-sigma", "1-sigma"))
+        .interpolationMethod(.catmullRom)
+        .opacity(0.5)
+        
+    }
+}
+
+struct RangeMark : ChartContent {
+    let datum: NrdbResults.Datum
+    let key: String
+    
+    func fieldName(for metric: String) -> String {
+        return "\(metric).\(key)"
+    }
+    
+    var body: some ChartContent {
+        AreaMark(
+            x: .value("Timestamp", datum.date),
+            yStart: .value("minimum", datum.numberFields[fieldName(for: "min")] ?? 0),
+            yEnd: .value("maximum", datum.numberFields[fieldName(for: "max")] ?? 0)
+        )
+        .foregroundStyle(by: .value("range", "range"))
+        .opacity(0.2)
     }
 }

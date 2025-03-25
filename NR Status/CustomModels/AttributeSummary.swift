@@ -74,7 +74,8 @@ struct AttributeSummary : Identifiable{
                 SELECT
                     count(*),
                     uniqueCount(`\(attribute.key)`),
-                    average(`\(attribute.key)`),
+                    average(`\(attribute.key)`),        
+                    percentile(`\(attribute.key)`, 0, 25, 50, 75, 100),
                     min(`\(attribute.key)`),
                     max(`\(attribute.key)`),
                     stddev(`\(attribute.key)`)

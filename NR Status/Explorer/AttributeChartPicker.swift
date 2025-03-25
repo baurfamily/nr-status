@@ -29,7 +29,8 @@ struct AttributeChartPicker : View {
         VStack {
             if summary.attribute.type == "numeric" {
                 // testing, want this to be one of the tabs
-                AttributeStatsChart(summary: summary, data: data)
+//                AttributeStatsChart(summary: summary, data: data)
+                CandleStickChart(data: data, key: summary.attribute.key)
             } else {
                 AttributeChart(summary: summary, data: data, fieldName: fieldName)
             }
@@ -87,6 +88,50 @@ struct AttributeStatsChart : View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             
         }.frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+struct CandleStickChart : View {
+    let data: [NrdbResults.Datum]
+    let key: String
+    
+    var body: some View {
+        Chart(data) { datum in
+            CandleStickMark(
+                timestamp: datum.date,
+                min: datum.numericDictFields["percentile.\(key)"]!["0"]!,
+                firstQ: datum.numericDictFields["percentile.\(key)"]!["25"]!,
+                median: datum.numericDictFields["percentile.\(key)"]!["50"]!,
+                thirdQ: datum.numericDictFields["percentile.\(key)"]!["75"]!,
+                max: datum.numericDictFields["percentile.\(key)"]!["100"]!
+            )
+        }
+    }
+}
+
+struct CandleStickMark: ChartContent {
+    let timestamp: Date
+    let min: Double
+    let firstQ: Double
+    let median: Double
+    let thirdQ: Double
+    let max: Double
+    
+    var body: some ChartContent {
+        Plot {
+            BarMark(
+                x: .value("Timestamp", timestamp),
+                yStart: .value("1st Q", firstQ),
+                yEnd: .value("3rd Q", thirdQ),
+                width: 10
+            )
+            BarMark(
+                x: .value("Timestamp", timestamp),
+                yStart: .value("Max", max),
+                yEnd: .value("Min,", min),
+                width: 3
+            )
+        }
     }
 }
 

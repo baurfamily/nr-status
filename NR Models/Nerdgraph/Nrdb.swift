@@ -188,6 +188,9 @@ struct NrdbResults: Decodable {
         var stringArrayFields: [String:[String]] = [:]
         var numericArrayFields: [String:[Double]] = [:]
         
+        // currently I'm only aware of percentiles using this
+        var numericDictFields: [String:[String:Double]] = [:]
+        
         // in theory this could be dynamic, but currently it's filled by the decoder
         var fieldNames: [String] = []
         
@@ -232,6 +235,8 @@ struct NrdbResults: Decodable {
                     self.numericArrayFields[key.stringValue] = arrayValue
                 } else if let arrayValue = try? otherContainer.decode(Array<String>.self, forKey: key) {
                     self.stringArrayFields[key.stringValue] = arrayValue
+                } else if let dictValue = try? otherContainer.decode(Dictionary<String,Double>.self, forKey: key) {
+                    self.numericDictFields[key.stringValue] = dictValue
                 } else {
                     // does not account for an array from NRQL functions like uniques(name)
                     return

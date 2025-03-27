@@ -125,10 +125,12 @@ struct CandleStickChart : View {
                     max: percentiles["95"]!,
                     showRange: showRange
                 )
+                .zIndex(0)
                 LineMark(
                     x: .value("Timestamp", datum.date),
                     y: .value("Median", datum.numericDictFields["percentile.\(key)"]!["50"]!)
                 )
+                .zIndex(-1)
                 .foregroundStyle(by:.value("median", "Median"))
             }
         }
@@ -154,13 +156,9 @@ struct CandleStickMark: ChartContent {
                 yEnd: .value("3rd Q", thirdQ),
                 width: 10
             )
+            .zIndex(0)
             .cornerRadius(4)
-            RuleMark(
-                x: .value("Timestamp", timestamp),
-                yStart: .value("Median", median + 0.01*median),
-                yEnd: .value("Median", median -  0.01*median)
-            ).foregroundStyle(by:.value("Inner Quartile Range", "IQR"))
-            
+                        
             if showRange {
                 BarMark(
                     x: .value("Timestamp", timestamp),
@@ -168,6 +166,7 @@ struct CandleStickMark: ChartContent {
                     yEnd: .value("Min,", min),
                     width: 3
                 )
+                .zIndex(1)
                 .foregroundStyle(by:.value("5th/95th Percentile", "P5/P95"))
                 .cornerRadius(1)
                 .opacity(0.5)

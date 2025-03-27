@@ -13,6 +13,8 @@ struct AttributeChartPicker : View {
     
     var results: NrdbResultContainer? { summary.timeseriesResultsContainer }
     var data: [NrdbResults.Datum] { summary.timeseriesResultsContainer?.results.data ?? [] }
+    
+    @State var showRange: Bool = false
 
     @State var fieldName: String
     
@@ -28,9 +30,17 @@ struct AttributeChartPicker : View {
     var body: some View {
         VStack {
             if summary.attribute.type == "numeric" {
-                // testing, want this to be one of the tabs
-//                AttributeStatsChart(summary: summary, data: data)
-                CandleStickChart(data: data, key: summary.attribute.key)
+                switch fieldName {
+                case "average.\(summary.attribute.key)":
+                    AttributeStatsChart(summary: summary, data: data, showRange: showRange)
+                    
+                case "percentile.\(summary.attribute.key)":
+                    CandleStickChart(data: data, key: summary.attribute.key, showRange: showRange)
+                    
+                default:
+                    Text("I have no idea what to show now... (for \(fieldName)")
+                }
+                Toggle("Show Range", isOn: $showRange)
             } else {
                 AttributeChart(summary: summary, data: data, fieldName: fieldName)
             }
@@ -38,6 +48,7 @@ struct AttributeChartPicker : View {
             Picker("", selection: $fieldName) {
                 if summary.attribute.type == "numeric" {
                     Button("Average") {}.tag("average.\(summary.attribute.key)")
+                    Button("Range") {}.tag("percentile.\(summary.attribute.key)")
                 }
                 Button("Uniques") {}.tag("uniqueCount.\(summary.attribute.key)")
             }.pickerStyle(.palette)
@@ -64,6 +75,7 @@ struct AttributeChart : View {
 struct AttributeStatsChart : View {
     let summary: AttributeSummary
     var data: [NrdbResults.Datum]
+    var showRange: Bool
     
     func fieldName(for metric: String) -> String {
         return "\(metric).\(summary.attribute.key)"
@@ -76,13 +88,15 @@ struct AttributeStatsChart : View {
                     x: .value("Timestamp", datum.date),
                     y: .value("average", datum.numberFields[fieldName(for: "average")] ?? 0)
                 )
-                .lineStyle(by: .value("average", "average"))
+                .lineStyle(by: .value("average", "Average"))
                 .interpolationMethod(.catmullRom)
                 
                 SigmaMark(datum: datum, key: summary.attribute.key)
                     .interpolationMethod(.catmullRom)
-                RangeMark(datum: datum, key: summary.attribute.key)
-                    .interpolationMethod(.catmullRom)
+                if showRange {
+                    RangeMark(datum: datum, key: summary.attribute.key)
+                        .interpolationMethod(.catmullRom)
+                }
             }
             .chartForegroundStyleScale(range: Gradient(colors: [.yellow, .blue]))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -94,17 +108,26 @@ struct AttributeStatsChart : View {
 struct CandleStickChart : View {
     let data: [NrdbResults.Datum]
     let key: String
+    let showRange: Bool
     
     var body: some View {
         Chart(data) { datum in
-            CandleStickMark(
-                timestamp: datum.date,
-                min: datum.numericDictFields["percentile.\(key)"]!["0"]!,
-                firstQ: datum.numericDictFields["percentile.\(key)"]!["25"]!,
-                median: datum.numericDictFields["percentile.\(key)"]!["50"]!,
-                thirdQ: datum.numericDictFields["percentile.\(key)"]!["75"]!,
-                max: datum.numericDictFields["percentile.\(key)"]!["100"]!
-            )
+            if let percentiles = datum.numericDictFields["percentile.\(key)"] {
+                CandleStickMark(
+                    timestamp: datum.date,
+                    min: percentiles["5"]!,
+                    firstQ: percentiles["25"]!,
+                    median: percentiles["50"]!,
+                    thirdQ: percentiles["75"]!,
+                    max: percentiles["95"]!,
+                    showRange: showRange
+                )
+                LineMark(
+                    x: .value("Timestamp", datum.date),
+                    y: .value("Median", datum.numericDictFields["percentile.\(key)"]!["50"]!)
+                )
+                .foregroundStyle(by:.value("median", "Median"))
+            }
         }
     }
 }
@@ -117,20 +140,35 @@ struct CandleStickMark: ChartContent {
     let thirdQ: Double
     let max: Double
     
+    let showRange: Bool
+    
     var body: some ChartContent {
         Plot {
+            // 1st Q - 3nd Q
             BarMark(
                 x: .value("Timestamp", timestamp),
                 yStart: .value("1st Q", firstQ),
                 yEnd: .value("3rd Q", thirdQ),
                 width: 10
             )
-            BarMark(
+            .cornerRadius(4)
+            RuleMark(
                 x: .value("Timestamp", timestamp),
-                yStart: .value("Max", max),
-                yEnd: .value("Min,", min),
-                width: 3
-            )
+                yStart: .value("Median", median + 0.01*median),
+                yEnd: .value("Median", median -  0.01*median)
+            ).foregroundStyle(by:.value("Inner Quartile Range", "IQR"))
+            
+            if showRange {
+                BarMark(
+                    x: .value("Timestamp", timestamp),
+                    yStart: .value("Max", max),
+                    yEnd: .value("Min,", min),
+                    width: 3
+                )
+                .foregroundStyle(by:.value("Range", "5th/95th Percentile"))
+                .cornerRadius(1)
+                .opacity(0.5)
+            }
         }
     }
 }
@@ -149,7 +187,7 @@ struct SigmaMark : ChartContent {
             yStart: .value("minus sigma", (datum.numberFields[fieldName(for: "average")] ?? 0)-(datum.numberFields[fieldName(for: "stddev")] ?? 0)),
             yEnd: .value("plus sigma", (datum.numberFields[fieldName(for: "average")] ?? 0)+(datum.numberFields[fieldName(for: "stddev")] ?? 0))
         )
-        .foregroundStyle(by: .value("1-sigma", "1-sigma"))
+        .foregroundStyle(by: .value("1-sigma", "±1σ"))
         .interpolationMethod(.catmullRom)
         .opacity(0.5)
         
@@ -170,7 +208,7 @@ struct RangeMark : ChartContent {
             yStart: .value("minimum", datum.numberFields[fieldName(for: "min")] ?? 0),
             yEnd: .value("maximum", datum.numberFields[fieldName(for: "max")] ?? 0)
         )
-        .foregroundStyle(by: .value("range", "range"))
+        .foregroundStyle(by: .value("range", "Range"))
         .opacity(0.2)
     }
 }

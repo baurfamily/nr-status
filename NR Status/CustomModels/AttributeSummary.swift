@@ -75,14 +75,14 @@ struct AttributeSummary : Identifiable{
                     count(*),
                     uniqueCount(`\(attribute.key)`),
                     average(`\(attribute.key)`),        
-                    percentile(`\(attribute.key)`, 0, 25, 50, 75, 100),
+                    percentile(`\(attribute.key)`, 0, 5, 25, 50, 75, 95, 100),
                     min(`\(attribute.key)`),
                     max(`\(attribute.key)`),
                     stddev(`\(attribute.key)`)
                 FROM \(attribute.event)
                 SINCE 1 day ago
                 TIMESERIES 1 hour
-            """)
+            """, debug: true)
         } else if attribute.type == "string" {
             summary.timeseriesResultsContainer = await Queries().getNrqlData(query: """
                 SELECT

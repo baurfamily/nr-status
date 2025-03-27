@@ -37,6 +37,9 @@ struct AttributeChartPicker : View {
                 case "percentile.\(summary.attribute.key)":
                     CandleStickChart(data: data, key: summary.attribute.key, showRange: showRange)
                     
+                case "uniqueCount.\(summary.attribute.key)":
+                    AttributeChart(summary: summary, data: data, fieldName: fieldName)
+                    
                 default:
                     Text("I have no idea what to show now... (for \(fieldName)")
                 }
@@ -165,7 +168,7 @@ struct CandleStickMark: ChartContent {
                     yEnd: .value("Min,", min),
                     width: 3
                 )
-                .foregroundStyle(by:.value("Range", "5th/95th Percentile"))
+                .foregroundStyle(by:.value("5th/95th Percentile", "P5/P95"))
                 .cornerRadius(1)
                 .opacity(0.5)
             }

@@ -1,5 +1,5 @@
 //
-//  AttributeGroup.swift
+//  AttributeGroupView.swift
 //  NR Status
 //
 //  Created by Eric Baur on 3/18/25.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct AttributeGroup : View {
+struct AttributeGroupView : View {
     let title: String
     
     @Binding var attributes: [Attribute]

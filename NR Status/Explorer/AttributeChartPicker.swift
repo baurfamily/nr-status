@@ -43,17 +43,18 @@ struct AttributeChartPicker : View {
                 default:
                     Text("I have no idea what to show now... (for \(fieldName)")
                 }
-                Toggle("Show Range", isOn: $showRange)
+                Toggle("Show Min/Max", isOn: $showRange)
             } else {
                 AttributeChart(summary: summary, data: data, fieldName: fieldName)
             }
             
             Picker("", selection: $fieldName) {
                 if summary.attribute.type == "numeric" {
-                    Button("Average") {}.tag("average.\(summary.attribute.key)")
-                    Button("Range") {}.tag("percentile.\(summary.attribute.key)")
+                    Button("Distribution") {}.tag("average.\(summary.attribute.key)")
+                    Button("Box Plot") {}.tag("percentile.\(summary.attribute.key)")
+                } else {
+                    Button("Uniques") {}.tag("uniqueCount.\(summary.attribute.key)")
                 }
-                Button("Uniques") {}.tag("uniqueCount.\(summary.attribute.key)")
             }.pickerStyle(.palette)
             
         }.frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -66,6 +66,24 @@ struct AttributeSummary : Identifiable{
                         return (floor(x) == x ? "\(Int(x))" : String(format: "%.3f", x))
                     }
                 }
+                
+                // okay, this is a bit of a hack... basically, we only see a small number
+                // of samples when the values are fractional. No idea why uniques() doesn't work here
+                if attribute.type == "numeric" && summary.samples.count == 1 && summary.samples[0] == "0" {
+                    let uniquesResult = await Queries().getNrqlData(query: """
+                        SELECT `\(attribute.key)`
+                        FROM \(attribute.event)
+                        WHERE `\(attribute.key)` IS NOT NULL
+                        SINCE 1 day ago
+                        LIMIT 100
+                    """)
+                    
+                    if let uniquesResult {
+                        let samples = uniquesResult.data.map { String($0.numberFields[attribute.key] ?? .nan) }
+                        let sampleSet = Set(samples)
+                        summary.samples = sampleSet.sorted()
+                    }
+                }
             }
         }
         
@@ -82,7 +100,7 @@ struct AttributeSummary : Identifiable{
                 FROM \(attribute.event)
                 SINCE 1 day ago
                 TIMESERIES 1 hour
-            """, debug: true)
+            """)
         } else if attribute.type == "string" {
             summary.timeseriesResultsContainer = await Queries().getNrqlData(query: """
                 SELECT

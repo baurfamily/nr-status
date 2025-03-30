@@ -1,5 +1,5 @@
 //
-//  AttributeDetail.swift
+//  AttributeSummaryProxyView.swift
 //  NR Status
 //
 //  Created by Eric Baur on 3/16/25.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct AttributeDetail : View {
+struct AttributeSummaryProxyView : View {
     let attribute: Attribute
     @State var summary: AttributeSummary?
     
@@ -25,7 +25,7 @@ struct AttributeDetail : View {
 }
 
 #Preview {
-    AttributeDetail(attribute: .init(
+    AttributeSummaryProxyView(attribute: .init(
         event: "Test Event",
         type: "numeric",
         key: "test"

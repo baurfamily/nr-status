@@ -19,7 +19,7 @@ struct AttributeExplorer : View {
         ScrollView {
             LazyVStack {
                 ForEach(attributeTypes, id: \.self) { typeName in
-                    AttributeGroup(title: typeName.capitalized, attributes: $attributes) { $0.type == typeName }
+                    AttributeGroupView(title: typeName.capitalized, attributes: $attributes) { $0.type == typeName }
                 }
             }
         }

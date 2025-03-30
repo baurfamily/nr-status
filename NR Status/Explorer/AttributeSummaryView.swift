@@ -10,24 +10,51 @@ import SwiftUI
 struct AttributeSummaryView : View {
     @State var summary: AttributeSummary
     
+    func loadNext() {
+        // something, something, load?
+    }
+    
+    func loadPrev() {
+        // something else... load?
+    }
+    
     var body: some View {
         Grid {
             GridRow {
-                VStack {
-                    Text("Cardinality: ").font(.headline)
-                    Text(String(summary.cardinality)).font(.largeTitle)
-                }
-                Form {
-                    if let avg = summary.average {
-                        Text("Average: ").font(.headline) + Text(String(format: "%.2f", avg))
+                HStack {
+                    Button(action: loadPrev) {
+                        Image(systemName: "arrowshape.backward.fill")
+                        Text("prev")
                     }
-                    if let min = summary.minimum, let max = summary.maximum {
-                        Text("Min: ").font(.headline) + Text(String(format: "%.2f", min))
-                        Text("Max: ").font(.headline) + Text(String(format: "%.2f", max))
+                    Spacer()
+                    Text(summary.attribute.key).font(.largeTitle)
+                    Spacer()
+                    Button(action: loadNext) {
+                        Text("next")
+                        Image(systemName: "arrowshape.forward.fill")
+                    }
+                }
+            }
+            GridRow {
+                HStack {
+                    VStack {
+                        Text("Cardinality: ").font(.headline)
+                        Text(String(summary.cardinality)).font(.largeTitle)
+                    }
+                    Form {
+                        if let avg = summary.average {
+                            Text("Average: ").font(.headline) + Text(String(format: "%.2f", avg))
+                        }
+                        if let min = summary.minimum, let max = summary.maximum {
+                            Text("Min: ").font(.headline) + Text(String(format: "%.2f", min))
+                            Text("Max: ").font(.headline) + Text(String(format: "%.2f", max))
+                        }
                     }
                 }
             }
         }
+        .multilineTextAlignment(.center)
+        
         TabView {
             Tab("Charts", systemImage: "chart.dots.scatter") {
                 AttributeChartPicker(summary: summary)

@@ -96,13 +96,15 @@ struct AttributeStatsChart : View {
                 .interpolationMethod(.catmullRom)
                 
                 SigmaMark(datum: datum, key: summary.attribute.key)
+                    .foregroundStyle(.yellow)
                     .interpolationMethod(.catmullRom)
+            
                 if showRange {
                     RangeMark(datum: datum, key: summary.attribute.key)
                         .interpolationMethod(.catmullRom)
                 }
             }
-            .chartForegroundStyleScale(range: Gradient(colors: [.yellow, .blue]))
+            .chartForegroundStyleScale(range: (showRange ? Gradient(colors: [.yellow, .blue]) : Gradient(colors: [.yellow])))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             
         }.frame(maxWidth: .infinity, maxHeight: .infinity)

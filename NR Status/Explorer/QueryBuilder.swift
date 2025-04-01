@@ -5,7 +5,7 @@
 //  Created by Eric Baur on 3/16/25.
 //
 
-struct QueryBuilder {
+struct QueryBuilder : Equatable {
     var event: String
     var attributes: [Attribute] = []
     var facets: [Attribute] = []

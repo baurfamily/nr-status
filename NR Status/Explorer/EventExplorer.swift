@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct EventExplorer : View {
-    @Binding var query: NrqlQuery
+    @Binding var query: QueryBuilder
     
     @State var events: [String] = []
     @State var eventFilter: String = ""
@@ -25,7 +25,7 @@ struct EventExplorer : View {
                 NavigationLink(event, value: event)
             }
             .navigationDestination(for: String.self) {
-                AttributeExplorer(event: $0)
+                AttributeExplorer(event: $0, query: $query)
             }
             .navigationDestination(for: Attribute.self) {
                 AttributeSummaryProxyView(attribute: $0)
@@ -44,6 +44,6 @@ struct EventExplorer : View {
 }
 
 #Preview {
-    @Previewable @State var query: NrqlQuery = NrqlQuery(from:"SELECT * FROM foo")
-   EventExplorer(query: $query)
+    @Previewable @State var query: QueryBuilder = .init(event: "Transaction")
+    EventExplorer(query: $query)
 }

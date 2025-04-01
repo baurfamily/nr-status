@@ -92,7 +92,7 @@ struct AttributeStatsChart : View {
                     x: .value("Timestamp", datum.date),
                     y: .value("average", datum.numberFields[fieldName(for: "average")] ?? 0)
                 )
-                .lineStyle(by: .value("average", "Average"))
+                .lineStyle(by: .value("Statistic", "Average"))
                 .interpolationMethod(.catmullRom)
                 
                 SigmaMark(datum: datum, key: summary.attribute.key)
@@ -104,7 +104,9 @@ struct AttributeStatsChart : View {
                         .interpolationMethod(.catmullRom)
                 }
             }
-            .chartForegroundStyleScale(range: (showRange ? Gradient(colors: [.yellow, .blue]) : Gradient(colors: [.yellow])))
+            .chartForegroundStyleScale(
+                range: (showRange ? Gradient(colors: [.yellow, .blue]) : Gradient(colors: [.yellow]))
+            )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             
         }.frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -134,7 +136,7 @@ struct CandleStickChart : View {
                     y: .value("Median", datum.numericDictFields["percentile.\(key)"]!["50"]!)
                 )
                 .zIndex(-1)
-                .foregroundStyle(by:.value("median", "Median"))
+                .foregroundStyle(by:.value("Statistic", "Median"))
             }
         }
     }
@@ -170,7 +172,7 @@ struct CandleStickMark: ChartContent {
                     width: 3
                 )
                 .zIndex(1)
-                .foregroundStyle(by:.value("5th/95th Percentile", "P5/P95"))
+                .foregroundStyle(by:.value("Statistic", "P5/P95"))
                 .cornerRadius(1)
                 .opacity(0.5)
             }
@@ -192,7 +194,7 @@ struct SigmaMark : ChartContent {
             yStart: .value("minus sigma", (datum.numberFields[fieldName(for: "average")] ?? 0)-(datum.numberFields[fieldName(for: "stddev")] ?? 0)),
             yEnd: .value("plus sigma", (datum.numberFields[fieldName(for: "average")] ?? 0)+(datum.numberFields[fieldName(for: "stddev")] ?? 0))
         )
-        .foregroundStyle(by: .value("1-sigma", "±1σ"))
+        .foregroundStyle(by: .value("Statistic", "±1σ"))
         .interpolationMethod(.catmullRom)
         .opacity(0.5)
         
@@ -213,7 +215,7 @@ struct RangeMark : ChartContent {
             yStart: .value("minimum", datum.numberFields[fieldName(for: "min")] ?? 0),
             yEnd: .value("maximum", datum.numberFields[fieldName(for: "max")] ?? 0)
         )
-        .foregroundStyle(by: .value("range", "Range"))
+        .foregroundStyle(by: .value("Statistic", "Range"))
         .opacity(0.2)
     }
 }

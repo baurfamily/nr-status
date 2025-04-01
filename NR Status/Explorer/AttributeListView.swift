@@ -9,6 +9,8 @@ import SwiftUI
 
 struct AttributeListView : View {
     let attribute: Attribute
+    @Binding var query: QueryBuilder
+    
     @State private var detailPresented: Bool = false
     @State private var summaryStats: AttributeSummary?
     
@@ -29,7 +31,6 @@ struct AttributeListView : View {
                     }
                 }.padding(.all)
                     .task {
-                        print("popover for \(attribute.key)")
                         Task {
                             self.summaryStats = await AttributeSummary.generate(from: attribute)
                         }
@@ -37,21 +38,53 @@ struct AttributeListView : View {
             }.buttonStyle(.borderless)
             
             Menu {
-                Button("Select") { print("select") }
-                Button("Facet") { print("facet") }
+                Button("Select") { addSelect() }
+                Button("Facet") { addFacet() }
                 Divider()
-                Button("Count") { print("count") }
-                Button("Count Unique") { print("uniq") }
+                Button("Count") { addCount() }
+                Button("Count Unique") { addUniqueCount() }
                 Divider()
-                Button("Average") { print("avg") }
-                Button("Std. Dev.") { print("stddev") }
-                Button("Minimum") { print("min") }
-                Button("Maximum") { print("max") }
+                Button("Average") { addAverage() }
+                Button("Std. Dev.") { addStdDev() }
+                Button("Minimum") { addMin() }
+                Button("Maximum") { addMax() }
             } label: {
                 Image(systemName: "chart.xyaxis.line")
             }
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal)
+    }
+    
+    func addSelect() {
+        query.attributes.append(attribute)
+    }
+    
+    func addFacet() {
+        query.facets.append(attribute)
+    }
+    
+    func addCount() {
+//        query..append(attribute)
+    }
+    
+    func addUniqueCount() {
+        
+    }
+    
+    func addAverage() {
+        
+    }
+    
+    func addStdDev() {
+        
+    }
+    
+    func addMin() {
+        
+    }
+    
+    func addMax() {
+        
     }
 }

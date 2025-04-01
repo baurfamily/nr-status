@@ -9,6 +9,7 @@ import SwiftUI
 
 struct AttributeGroupView : View {
     let title: String
+    @Binding var query: QueryBuilder
     
     @Binding var attributes: [Attribute]
     var filterClosure: ((Attribute) -> Bool)
@@ -22,7 +23,7 @@ struct AttributeGroupView : View {
         ForEach($attributes, id: \.self) { attribute in
             if filteredAttributes.contains(attribute.wrappedValue) {
                 NavigationLink(value: attribute.wrappedValue) {
-                    AttributeListView(attribute: attribute.wrappedValue)
+                    AttributeListView(attribute: attribute.wrappedValue, query: $query)
                 }
                 .buttonStyle(.borderless)
             }

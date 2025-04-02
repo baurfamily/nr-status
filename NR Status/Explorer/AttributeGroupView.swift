@@ -23,7 +23,7 @@ struct AttributeGroupView : View {
         ForEach($attributes, id: \.self) { attribute in
             if filteredAttributes.contains(attribute.wrappedValue) {
                 NavigationLink(value: attribute.wrappedValue) {
-                    AttributeListView(attribute: attribute.wrappedValue, query: $query)
+                    AttributeListItemView(attribute: attribute.wrappedValue, query: $query)
                 }
                 .buttonStyle(.borderless)
             }

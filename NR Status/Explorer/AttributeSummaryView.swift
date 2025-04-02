@@ -75,8 +75,7 @@ struct AttributeSummaryView : View {
             attribute: Attribute(
                 event: "Attributes",
                 type: "numeric",
-                key: "testAttr",
-                isSelected: true
+                key: "testAttr"
             ),
             cardinality: 2345,
             average: 56.75,

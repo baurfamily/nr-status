@@ -36,8 +36,6 @@ struct AttributeListItemView : View {
     @State private var detailPresented: Bool = false
     @State private var summaryStats: AttributeSummary?
     
-    @State var toggles:[String:Bool] = [:]
-    
     func makeBinding(for key: String) -> Binding<Bool> {
         return Binding(
             get: {

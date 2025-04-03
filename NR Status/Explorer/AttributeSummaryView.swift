@@ -10,6 +10,11 @@ import SwiftUI
 struct AttributeSummaryView : View {
     @State var summary: AttributeSummary
     
+    @State var summaryZoomed: Bool = false
+    var summarySize: (width: CGFloat, height: CGFloat) {(
+        width: summaryZoomed ? 600 : 300,
+        height: summaryZoomed ? 500 : 250,
+    )}
 //    func loadNext() {
 //        // something, something, load?
 //    }
@@ -20,6 +25,18 @@ struct AttributeSummaryView : View {
     
     var body: some View {
         Grid {
+            GridRow {
+                HStack {
+                    Spacer()
+                    Toggle(isOn: $summaryZoomed) {
+                        if summaryZoomed {
+                            Image(systemName: "square.resize.down")
+                        } else {
+                            Image(systemName: "square.resize.up")
+                        }
+                    }.toggleStyle(.button)
+                }
+            }
             GridRow {
                 HStack {
 //                    Button(action: loadPrev) {
@@ -65,7 +82,12 @@ struct AttributeSummaryView : View {
                 }
             }
         }
-        .frame(minWidth: 300, maxWidth: .infinity, minHeight: 250, maxHeight: .infinity)
+        .frame(
+            minWidth: summarySize.width,
+            maxWidth: .infinity,
+            minHeight: summarySize.height,
+            maxHeight: .infinity
+        )
     }
 }
 

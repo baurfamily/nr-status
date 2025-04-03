@@ -31,11 +31,9 @@ struct NrqlExplorer : View {
         .navigationSplitViewStyle(.balanced)
         .focusedSceneValue(\.query, $query)
         .onChange(of: $queryBuilder.wrappedValue) {
-            print("updated query")
             query = .init(from: queryBuilder.nrql)
             query.runQuery() { results in
                 guard let results else { return }
-                print("updating config")
                 chartConfiguration.updateResults(results)
             }
         }

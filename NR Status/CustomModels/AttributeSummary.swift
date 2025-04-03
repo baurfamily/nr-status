@@ -31,7 +31,6 @@ struct AttributeSummary : Identifiable{
     
     static func generate(from attribute: Attribute) async -> Self {
         guard cache[attribute.id] == nil else {
-            print("returned from cache")
             return cache[attribute.id]!
         }
         

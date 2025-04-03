@@ -59,6 +59,65 @@ struct AttributeListItemView : View {
             Text(attribute.key)
             Spacer()
             
+            if query.contains(attribute: attribute) {
+                Button {
+                    query.remove(attribute: attribute)
+                } label: {
+                    HStack {
+                        Text("select")
+                        Image(systemName: "xmark.app")
+                    }
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 5)
+                    .background(
+                        RoundedRectangle(
+                            cornerRadius: 10,
+                            style: .continuous
+                        )
+                        .fill(.yellow)
+                    )
+                }
+            }
+            if query.contains(facet: attribute) {
+                Button {
+                    query.remove(facet: attribute)
+                } label: {
+                    HStack {
+                        Text("facet")
+                        Image(systemName: "xmark.app")
+                    }
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 5)
+                    .background(
+                        RoundedRectangle(
+                            cornerRadius: 10,
+                            style: .continuous
+                        )
+                        .fill(.green)
+                    )
+                }
+            }
+            ForEach(query.aggregates.filter { $0.attribute == attribute}) { agg in
+                Button {
+                    query.remove(aggregate: agg.name, with: attribute)
+                } label: {
+                    HStack {
+                        Text(agg.name)
+                        Image(systemName: "xmark.app")
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 5)
+                    .background(
+                        RoundedRectangle(
+                            cornerRadius: 10,
+                            style: .continuous
+                        )
+                        .fill(.blue)
+                    )
+                }
+            }
+            
+            Spacer().frame(width: 10)
             Button {
                 self.detailPresented = true
             } label: {

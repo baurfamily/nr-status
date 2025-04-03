@@ -7,7 +7,9 @@
 
 import SwiftUI
 
-struct AggregateFunction : Equatable {
+struct AggregateFunction : Equatable, Identifiable {
+    var id: String { nrql }
+    
     let name: String
     let alias: String? = nil
     

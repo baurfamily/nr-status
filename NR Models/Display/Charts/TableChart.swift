@@ -13,6 +13,19 @@ struct TableChart : View {
     var resultContainer: NrdbResultContainer {
         config.resultContainer
     }
+    
+    func value(for field: String, in datum: NrdbResults.Datum) -> String {
+        var result: String
+        
+        if datum.numberFields.keys.contains(field) {
+            result = String(datum.numberFields[field] ?? 0)
+        } else {
+            result = String(datum.stringFields[field] ?? "")
+        }
+        
+        return result
+    }
+    
     var body: some View {
         Table(resultContainer.data) {
             if resultContainer.isTimeseries {
@@ -22,11 +35,7 @@ struct TableChart : View {
             }
             TableColumnForEach(resultContainer.fieldNames, id:\.self) { field in
                 TableColumn(field) { datum in
-                    if datum.numberFields.keys.contains(field) {
-                        Text(datum.numberFields[field] ?? 0, format: .number)
-                    } else {
-                        Text(datum.stringFields[field] ?? "")
-                    }
+                    Text(value(for: field, in: datum))
                 }
             }
         }

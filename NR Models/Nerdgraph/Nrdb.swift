@@ -151,7 +151,23 @@ struct NrdbResults: Decodable {
             case current, previous
         }
         
-        var id: Double { beginTime?.timeIntervalSince1970 ?? 0 }
+        var id: String {
+            if let beginTime {
+                return String(beginTime.timeIntervalSince1970)
+            } else if let timestamp {
+                return String(timestamp.timeIntervalSince1970)
+            } else {
+                return fieldNames.map { field in
+                    if let value = numberFields[field] {
+                        return String(format: "%.6f", value)
+                    } else if let value = stringFields[field] {
+                        return value
+                    } else {
+                        return "no id"
+                    }
+                }.joined(separator: "-")
+            }
+        }
         
         var isFaceted: Bool { facet != nil }
         var isMultiFaceted: Bool { facets != nil }

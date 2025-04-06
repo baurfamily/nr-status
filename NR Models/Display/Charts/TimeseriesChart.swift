@@ -51,8 +51,10 @@ struct TimeseriesChart: View {
             return config.resultContainer.adjustedTime(datum.beginTime!)
         } else if config.resultContainer.isEvents {
             return datum.timestamp!
+        } else if let beginTime = datum.beginTime {
+            return beginTime
         } else {
-            return datum.beginTime!
+            return Date()
         }
     }
     

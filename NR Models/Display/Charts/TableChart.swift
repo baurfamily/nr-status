@@ -30,7 +30,11 @@ struct TableChart : View {
         Table(resultContainer.data) {
             if resultContainer.isTimeseries {
                 TableColumn("Timestamp") { datum in
-                    Text(datum.beginTime!, format: .dateTime)
+                    if let beginTime = datum.beginTime {
+                        Text(beginTime, format: .dateTime)
+                    } else {
+                        Text("")
+                    }
                 }
             }
             TableColumnForEach(resultContainer.fieldNames, id:\.self) { field in

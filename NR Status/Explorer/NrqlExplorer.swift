@@ -24,6 +24,7 @@ struct NrqlExplorer : View {
                 ProgressView()
             }
             VStack {
+                TimePicker(query: $queryBuilder)
                 Text(queryBuilder.nrql)
                 ConfigurableChartView(config: chartConfiguration)
             }

@@ -151,11 +151,12 @@ struct NrdbResults: Decodable {
             case current, previous
         }
         
+        // not sure how efficient this is
         var id: String {
             if let beginTime {
-                return String(beginTime.timeIntervalSince1970)
+                return String(beginTime.timeIntervalSince1970)+(isComparable ? "-\(comparison)" : "")
             } else if let timestamp {
-                return String(timestamp.timeIntervalSince1970)
+                return String(timestamp.timeIntervalSince1970)+(isComparable ? "-\(comparison)" : "")
             } else {
                 return fieldNames.map { field in
                     if let value = numberFields[field] {
@@ -163,7 +164,7 @@ struct NrdbResults: Decodable {
                     } else if let value = stringFields[field] {
                         return value
                     } else {
-                        return "no id"
+                        return "unknown_datatype"
                     }
                 }.joined(separator: "-")
             }

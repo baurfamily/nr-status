@@ -74,12 +74,6 @@ struct AttributeSummaryActionsView : View {
                         SparklineChart(data: summary?.timeseriesResultsContainer?.results.data ?? [], key: "average.\(attribute.key)")
                     }
                     GridRow {
-                        Toggle(isOn: makeBinding(for: "median")) {
-                            Text("Median")
-                        }.toggleStyle(.titleShift)
-                        SparklineChart(data: summary?.timeseriesResultsContainer?.results.data ?? [], keyTuple: ("percentile.\(attribute.key)", "50"))
-                    }
-                    GridRow {
                         Toggle(isOn: makeBinding(for: "stddev")) {
                             Text("Std. Dev.")
                         }.toggleStyle(.titleShift)

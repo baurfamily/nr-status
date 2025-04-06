@@ -32,7 +32,7 @@ struct QueryBuilder : Equatable {
     var aggregates: [AggregateFunction] = []
     var facets: [Attribute] = []
     var predicates: [String] = []
-    var timewindow: String = " SINCE 6 hours ago"
+    var timewindow: String = "SINCE 6 hours ago"
     var isTimeseries: Bool = false
     var timeseriesSize: String?
     
@@ -93,7 +93,10 @@ struct QueryBuilder : Equatable {
             query += aggregates.map(\.nrql).joined(separator: ", ")
         }
         
-        query += timewindow
+        if !timewindow.isEmpty {
+            query += " \(timewindow)"
+        }
+        
         
         if !facets.isEmpty {
             query += " FACET " + facets.map(\.key).joined(separator: ", ")

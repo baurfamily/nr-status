@@ -28,7 +28,7 @@ struct EventExplorer : View {
                 AttributeExplorer(event: $0, query: $query)
             }
             .navigationDestination(for: Attribute.self) {
-                AttributeSummaryProxyView(attribute: $0)
+                AttributeSummaryActionsView(attribute: $0, query: $query)
             }
         }
         .navigationViewStyle(.columns)

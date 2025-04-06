@@ -16,6 +16,7 @@ struct AttributeSummary : Identifiable{
     
     var cardinality: Int = 0
     var average: Double?
+    var median: Double?
     var minimum: Double?
     var maximum: Double?
     
@@ -41,6 +42,7 @@ struct AttributeSummary : Identifiable{
                 uniqueCount(`\(attribute.key)`),
                 uniques(`\(attribute.key)`),
                 average(`\(attribute.key)`),
+                median(`\(attribute.key)`),
                 min(`\(attribute.key)`),
                 max(`\(attribute.key)`)
             FROM \(attribute.event)
@@ -52,6 +54,7 @@ struct AttributeSummary : Identifiable{
                 summary.cardinality = Int(first.numberFields["uniqueCount.\(attribute.key)"] ?? 0)
                 
                 summary.average = first.numberFields["average.\(attribute.key)"]
+                summary.median = first.numberFields["average.\(attribute.key)"]
                 summary.minimum = first.numberFields["min.\(attribute.key)"]
                 summary.maximum = first.numberFields["max.\(attribute.key)"]
                 

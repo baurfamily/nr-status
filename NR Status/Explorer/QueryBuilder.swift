@@ -61,6 +61,9 @@ struct QueryBuilder : Equatable {
     
     mutating func add(facet attribute: Attribute) {
         attributes.removeAll()
+        // right now we only support single facets, which is sad, but true
+        // this next line is only there to force a single facet at a time
+        facets.removeAll()
         facets.append(attribute)
     }
     

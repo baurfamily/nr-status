@@ -32,14 +32,17 @@ struct AttributeSummaryActionsView : View {
         VStack {
             Grid(alignment: .trailingFirstTextBaseline) {
                 GridRow {
+                    Spacer()
                     Toggle(isOn: Binding(
                         get: { query.contains(attribute: attribute) },
                         set: { $0 ? query.add(attribute: attribute) : query.remove(attribute: attribute)}
                     )) { Text("Select") }
                         .toggleStyle(.titleShift)
                         .disabled(query.isFaceted)
+                    Spacer()
                 }
                 GridRow {
+                    Spacer()
                     Toggle(isOn: Binding(
                         get: { query.contains(facet: attribute) },
                         set: { newVal in
@@ -51,45 +54,58 @@ struct AttributeSummaryActionsView : View {
                         }
                     )) { Text("Facet") }
                         .toggleStyle(.titleShift)
+                    Spacer()
                 }
                 Divider()
                 GridRow {
+                    Spacer()
                     Toggle(isOn: makeBinding(for: "count")) {
                         Text("Count")
                     }.toggleStyle(.titleShift)
                     SparklineChart(data: summary?.timeseriesResultsContainer?.results.data ?? [], key: "count")
+                    Spacer()
                 }
                 GridRow {
+                    Spacer()
                     Toggle(isOn: makeBinding(for: "countUnique")) {
                         Text("Count Unique")
                     }.toggleStyle(.titleShift)
                     SparklineChart(data: summary?.timeseriesResultsContainer?.results.data ?? [], key: "uniqueCount.\(attribute.key)")
+                    Spacer()
                 }
                 if attribute.type == "numeric" {
                     Divider()
                     GridRow {
+                        Spacer()
                         Toggle(isOn: makeBinding(for: "average")) {
                             Text("Average")
                         }.toggleStyle(.titleShift)
                         SparklineChart(data: summary?.timeseriesResultsContainer?.results.data ?? [], key: "average.\(attribute.key)")
+                        Spacer()
                     }
                     GridRow {
+                        Spacer()
                         Toggle(isOn: makeBinding(for: "stddev")) {
                             Text("Std. Dev.")
                         }.toggleStyle(.titleShift)
                         SparklineChart(data: summary?.timeseriesResultsContainer?.results.data ?? [], key: "stddev.\(attribute.key)")
+                        Spacer()
                     }
                     GridRow {
+                        Spacer()
                         Toggle(isOn: makeBinding(for: "min")) {
                             Text("Minimum")
                         }.toggleStyle(.titleShift)
                         SparklineChart(data: summary?.timeseriesResultsContainer?.results.data ?? [], key: "min.\(attribute.key)")
+                        Spacer()
                     }
                     GridRow {
+                        Spacer()
                         Toggle(isOn: makeBinding(for: "max")) {
                             Text("Maximum")
                         }.toggleStyle(.titleShift(activeColor: .green))
                         SparklineChart(data: summary?.timeseriesResultsContainer?.results.data ?? [], key: "max.\(attribute.key)")
+                        Spacer()
                     }
                 }
             }

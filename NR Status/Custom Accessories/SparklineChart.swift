@@ -51,7 +51,7 @@ struct SparklineChart : View {
                 y: valueFor(datum: datum)
             )
         }
-        .frame(width: 100, height: 20)
+        .frame(width: 150, height: 20)
         .chartLegend(.hidden)
         .chartXAxis(.hidden)
         .chartYAxis(.hidden)

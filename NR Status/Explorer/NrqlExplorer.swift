@@ -24,9 +24,13 @@ struct NrqlExplorer : View {
                 ProgressView()
             }
             VStack {
-                TimePicker(query: $queryBuilder)
-                Text(queryBuilder.nrql)
+                HStack {
+                    TimePicker(query: $queryBuilder)
+                    Text(queryBuilder.nrql)
+                        .textSelection(.enabled)
+                }
                 ConfigurableChartView(config: chartConfiguration)
+                    .frame(maxHeight: .infinity)
             }
         }
         .navigationSplitViewStyle(.balanced)

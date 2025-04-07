@@ -28,13 +28,9 @@ struct TableChart : View {
     
     var body: some View {
         Table(resultContainer.data) {
-            if resultContainer.isTimeseries {
-                TableColumn("Timestamp") { datum in
-                    if let beginTime = datum.beginTime {
-                        Text(beginTime, format: .dateTime)
-                    } else {
-                        Text("")
-                    }
+            if resultContainer.isTimeseries || resultContainer.isEvents {
+                TableColumn("Timestamp") { (datum: NrdbResults.Datum) in
+                    Text(datum.date, style: .relative)
                 }
             }
             TableColumnForEach(resultContainer.fieldNames, id:\.self) { field in

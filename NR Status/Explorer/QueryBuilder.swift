@@ -26,6 +26,45 @@ struct AggregateFunction : Equatable, Identifiable {
     }
 }
 
+struct TimeIntervalChoice : Comparable, Identifiable {
+    var id: TimeInterval { timeInterval }
+    
+    let timeInterval: TimeInterval
+    let displayName: String
+    
+    static func < (lhs: TimeIntervalChoice, rhs: TimeIntervalChoice) -> Bool {
+        return lhs.timeInterval < rhs.timeInterval
+    }
+    
+    static var choices: [TimeIntervalChoice] = [
+        .init(timeInterval: 60, displayName: "1 minute"),
+        .init(timeInterval: 5*60, displayName: "5 minutes"),
+        .init(timeInterval: 15*60, displayName: "15 minutes"),
+        .init(timeInterval: 60*60, displayName: "1 hour"),
+        .init(timeInterval: 6*60*60, displayName: "6 hours"),
+        .init(timeInterval: 24*60*60, displayName: "1 day"),
+        .init(timeInterval: 7*24*60*60, displayName: "1 week"),
+    ]
+}
+
+struct TimeWindowChoice : Identifiable, Hashable {
+    var id: String { since }
+    
+    let since: String
+    
+    var nrql: String { "SINCE \(since)" }
+    
+    static var choices: [TimeWindowChoice] = [
+        .init(since: "1 hour ago"),
+        .init(since: "6 hours ago"),
+        .init(since: "1 day ago"),
+        .init(since: "3 days ago"),
+        .init(since: "1 week ago"),
+        .init(since: "1 month ago"),
+        .init(since: "3 month ago"),
+    ]
+}
+
 struct QueryBuilder : Equatable {
     var event: String
     var attributes: [Attribute] = []
@@ -86,7 +125,7 @@ struct QueryBuilder : Equatable {
         } else {
             query += attributes.map(\.key).joined(separator: ", ")
             
-            if !attributes.isEmpty {
+            if !attributes.isEmpty && !aggregates.isEmpty {
                 query += ", "
             }
             

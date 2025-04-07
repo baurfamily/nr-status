@@ -12,21 +12,26 @@ struct TimePicker : View {
     
     @State var selectedWindow: String = "SINCE 1 hour ago"
     
-    var choices: [String] {
-        ["SINCE 1 hour ago", "SINCE 6 hours ago", "SINCE 1 day ago", "SINCE 3 days ago", "SINCE 1 week ago", "SINCE 1 month ago"]
-    }
-    
     var body: some View {
         HStack {
-            Toggle(isOn: $query.isTimeseries) {
-                Text("Timeseries")
-            }
             Picker("TimeWindow", selection: $selectedWindow) {
-                ForEach(choices, id:\.self) { choice in
-                    Text(choice).tag(choice)
+                ForEach(TimeWindowChoice.choices, id:\.self) { choice in
+                    Text(choice.since).tag(choice.nrql)
                 }
             }.onChange(of: selectedWindow) { _, newValue in
                 query.timewindow = newValue
+            }
+            Toggle(isOn: $query.isTimeseries) {
+                Text("Timeseries")
+            }
+            if query.isTimeseries {
+                Picker("Interval", selection: $query.timeseriesSize) {
+                    Text("AUTO").tag("AUTO")
+                    ForEach(TimeIntervalChoice.choices) { choice in
+                        Text(choice.displayName).tag(choice.displayName)
+                    }
+                    Text("MAX").tag("MAX")
+                }
             }
         }.task {
             self.selectedWindow = query.timewindow

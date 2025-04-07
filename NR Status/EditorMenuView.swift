@@ -13,27 +13,19 @@ import LanguageSupport
 
 struct EditorMenuView : View {
     @FocusedBinding(\.document) var document: NRQL_EditorDocument?
-
+    @FocusedBinding(\.query) var query: NrqlQuery?
+    
     var body: some View {
         Group {
             Button("Run query...") {
-                if var document {
-                    document.runQuery()
-                    
-                    document.messages.insert(
-                        TextLocated(
-                            location: TextLocation(oneBasedLine: 1, column: 1),
-                            entity: Message.init(category: .informational, length: 10, summary: "foobar baz", description: "more text here that can be long and formatted")
-                        )
-                    )
+                if let query {
+                    print("query text: \(query.text)")
+                    Task.detached { await query.getData() }
                 }
-                // alternate method? seems to act the same
-//                if var document {
-//                    document.getData() {
-//                        document.queryAt(document.position)?.query.resultContainer = $0
-//                        document.focusedResult = $0
-//                    }
-//                }
+                if var document {
+                    print("document text: \(document.text)")
+                    document.runFocusedQuery()
+                }
             }.keyboardShortcut("\n")
         }
     }

@@ -21,6 +21,10 @@ struct NrdbResultContainer : Decodable {
     var results: NrdbResults
     var metadata: NrdbMetadata
     
+    static var empty: NrdbResultContainer {
+        return .init()
+    }
+    
     var data: [NrdbResults.Datum] {
         return results.data
     }
@@ -72,6 +76,12 @@ struct NrdbResultContainer : Decodable {
         return date.addingTimeInterval(dateAdjustment)
     }
     
+    private init() {
+        self.nrql = ""
+        self.results = NrdbResults(data: [])
+        self.metadata = NrdbMetadata(timeWindow: nil, facets: nil)
+    }
+    
     // need to "manually" decode so we can use different types for the results
     // based on the type of query (faceted, timeseries, etc)
     init(from decoder : Decoder) throws {
@@ -85,7 +95,7 @@ struct NrdbResultContainer : Decodable {
 }
 
 struct NrdbMetadata: Decodable {
-    var timeWindow: TimeWindow
+    var timeWindow: TimeWindow?
     var facets: [String]?
 }
 
@@ -154,6 +164,10 @@ struct NrdbResults: Decodable {
         // this shows up if we're looking at event data
         var timestamp: Date?
         
+        // this isn't adjusted for conmparison data sets
+        // useful is we don't care about overlaid graphs
+        var date: Date { isEvent ? timestamp! : beginTime! }
+        
         // if COMPARE WITH was used in the query, this will be populated
         var comparison: Comparison = .current
         
@@ -171,6 +185,11 @@ struct NrdbResults: Decodable {
         // someField => "someField"
         var numberFields: [String: Double] = [:]
         var stringFields: [String: String] = [:]
+        var stringArrayFields: [String:[String]] = [:]
+        var numericArrayFields: [String:[Double]] = [:]
+        
+        // currently I'm only aware of percentiles using this
+        var numericDictFields: [String:[String:Double]] = [:]
         
         // in theory this could be dynamic, but currently it's filled by the decoder
         var fieldNames: [String] = []
@@ -212,6 +231,12 @@ struct NrdbResults: Decodable {
                     self.numberFields[key.stringValue] = doubleValue
                 } else if let stringValue = try? otherContainer.decode(String.self, forKey: key) {
                     self.stringFields[key.stringValue] = stringValue
+                } else if let arrayValue = try? otherContainer.decode(Array<Double>.self, forKey: key) {
+                    self.numericArrayFields[key.stringValue] = arrayValue
+                } else if let arrayValue = try? otherContainer.decode(Array<String>.self, forKey: key) {
+                    self.stringArrayFields[key.stringValue] = arrayValue
+                } else if let dictValue = try? otherContainer.decode(Dictionary<String,Double>.self, forKey: key) {
+                    self.numericDictFields[key.stringValue] = dictValue
                 } else {
                     // does not account for an array from NRQL functions like uniques(name)
                     return
@@ -220,5 +245,7 @@ struct NrdbResults: Decodable {
                 fieldNames.append(key.stringValue)
             }
         }
+        
+        
     }
 }

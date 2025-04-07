@@ -19,7 +19,7 @@ extension UTType {
 struct DocumentQuery : Identifiable {
     var position: CodeEditor.Position
     // not sure if this attirbute accomplishes anything
-    @ObservedObject var query: NrqlQuery
+    @State var query: NrqlQuery
     var focused: Bool = false
     
     var startCharacter: Int {
@@ -52,7 +52,6 @@ struct NRQL_EditorDocument: FileDocument {
             focusedQueryId = docQuery.id
         }
     }
-//    var results: [Int:NrdbResultContainer] = [:]
     var focusedResult: NrdbResultContainer?
     var focusedQueryId: String?
     
@@ -62,6 +61,7 @@ struct NRQL_EditorDocument: FileDocument {
 
     init(text: String = "// Title of query\nSELECT count(*) FROM Transactions FACET name SINCE 1 day ago TIMESERIES 15 minutes") {
         self.text = text
+        parseQueries()
     }
 
     static var readableContentTypes: [UTType] { [.exampleText] }
@@ -152,21 +152,35 @@ struct NRQL_EditorDocument: FileDocument {
         return docQuery
     }
     
-    mutating func runQuery() {
+    mutating func runFocusedQuery() {
+        print("run query")
+        guard let range = position.selections.first else { return }
+        print("\t=> \(range)")
+        guard let docQuery = queries.first( where:{ NSLocationInRange(range.lowerBound, $0.position.selections.first!) }) else { return }
+        
+        print("\t=> \(docQuery.id)")
+        docQuery.query.runQuery()
+        
+        self.position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
+
+    }
+
+    mutating func runQuery(callback: @escaping (NrdbResultContainer?) -> ()) {
         guard let range = position.selections.first else { return }
         guard let docQuery = queries.first( where:{ NSLocationInRange(range.lowerBound, $0.position.selections.first!) }) else { return }
         
-        docQuery.query.runQuery()
+        docQuery.query.runQuery(callback)
+        
         self.position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
 //        self.position = docQuery.position
-        print("message!")
+        
         // I Have no idea why this isn't working...
-        self.messages.insert(
-            TextLocated(
-                location: TextLocation(oneBasedLine: 1, column: 1),
-                entity: Message.init(category: .informational, length: 10, summary: "foobar baz", description: "more text here that can be long and formatted")
-            )
-        )
+//        self.messages.insert(
+//            TextLocated(
+//                location: TextLocation(oneBasedLine: 1, column: 1),
+//                entity: Message.init(category: .informational, length: 10, summary: "foobar baz", description: "more text here that can be long and formatted")
+//            )
+//        )
 
     }
     
@@ -174,6 +188,5 @@ struct NRQL_EditorDocument: FileDocument {
         queryAt(position)?.query.runQuery() { result in
                 callback(result)
         }
-        
     }
 }

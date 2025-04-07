@@ -14,6 +14,7 @@
 		3FA635082CD7D4E30050F813 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B29F2CBB3CBD00CCB8DD /* WidgetKit.framework */; };
 		3FA635092CD7D4E30050F813 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B2A12CBB3CBD00CCB8DD /* SwiftUI.framework */; };
 		3FA635172CD7D4E40050F813 /* NRQL WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3FA635072CD7D4E30050F813 /* NRQL WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		3FC6BEC42D79679300E38D17 /* CodeEditor in Frameworks */ = {isa = PBXBuildFile; productRef = 3FC6BEC32D79679300E38D17 /* CodeEditor */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -69,7 +70,6 @@
 		3F28B37C2CBB996200CCB8DD /* Exceptions for "NR Models" folder in "NR Models" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				CustomModels/NrqlQuery.swift,
 				Display/Accessories/AnnotationView.swift,
 				Display/Charts/BarChart.swift,
 				Display/Charts/BillboardChart.swift,
@@ -81,13 +81,14 @@
 				Display/Configuration/BarChartConfigView.swift,
 				Display/Configuration/BillboardChartConfigView.swift,
 				Display/Configuration/ChartConfiguration.swift,
-				Display/Configuration/ConfigurableChartView.swift,
 				Display/Configuration/PieChartConfigView.swift,
 				Display/Configuration/ScatterPlotConfigView.swift,
 				Display/Configuration/SeriesDropdownView.swift,
 				Display/Configuration/SeriesSelectionView.swift,
 				Display/Configuration/TimeseriesChartConfigView.swift,
+				Display/ConfigurationMeta/ConfigurableChartView.swift,
 				Models/Application.swift,
+				Models/Attribute.swift,
 				Models/SyntheticMonitor.swift,
 				Nerdgraph/Alert.swift,
 				Nerdgraph/BasicFields.swift,
@@ -187,6 +188,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3FC6BEC42D79679300E38D17 /* CodeEditor in Frameworks */,
 				3FA5BADA2CC22C5400B75771 /* HexGrid in Frameworks */,
 				3F01FD7E2CBF718600D9E068 /* LanguageSupport in Frameworks */,
 				3F01FD7C2CBF718600D9E068 /* CodeEditorView in Frameworks */,
@@ -306,6 +308,7 @@
 				3F01FD7B2CBF718600D9E068 /* CodeEditorView */,
 				3F01FD7D2CBF718600D9E068 /* LanguageSupport */,
 				3FA5BAD92CC22C5400B75771 /* HexGrid */,
+				3FC6BEC32D79679300E38D17 /* CodeEditor */,
 			);
 			productName = "NRQL Editor";
 			productReference = 3F01FD252CBDFADF00D9E068 /* NR Status.app */;
@@ -469,6 +472,7 @@
 			packageReferences = (
 				3F7896472CA7CE1100A03646 /* XCRemoteSwiftPackageReference "HexGrid" */,
 				3F01FD7A2CBF718600D9E068 /* XCRemoteSwiftPackageReference "CodeEditorView" */,
+				3FC6BEC22D79679300E38D17 /* XCRemoteSwiftPackageReference "CodeEditor" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3F5714742C9EA7BC00685FEA /* Products */;
@@ -597,7 +601,7 @@
 				CODE_SIGN_ENTITLEMENTS = "NR Status/NR_Status.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"NR Status/Preview Content\"";
 				DEVELOPMENT_TEAM = EHM929N34N;
@@ -615,7 +619,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.0.2;
+				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -632,7 +636,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"NR Status/Preview Content\"";
 				DEVELOPMENT_TEAM = EHM929N34N;
@@ -650,7 +654,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.0.2;
+				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -965,7 +969,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = "NRQL Widget/NRQL_Widget.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = EHM929N34N;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -979,7 +983,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.0.2;
+				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status.NRQL-Widget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -995,7 +999,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = "NRQL Widget/NRQL_Widget.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = EHM929N34N;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1009,7 +1013,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.0.2;
+				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status.NRQL-Widget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1103,6 +1107,14 @@
 				minimumVersion = 0.1.2;
 			};
 		};
+		3FC6BEC22D79679300E38D17 /* XCRemoteSwiftPackageReference "CodeEditor" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ZeeZide/CodeEditor.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.2.6;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1120,6 +1132,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 3F7896472CA7CE1100A03646 /* XCRemoteSwiftPackageReference "HexGrid" */;
 			productName = HexGrid;
+		};
+		3FC6BEC32D79679300E38D17 /* CodeEditor */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3FC6BEC22D79679300E38D17 /* XCRemoteSwiftPackageReference "CodeEditor" */;
+			productName = CodeEditor;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

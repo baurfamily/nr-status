@@ -73,32 +73,6 @@ struct ConfigurableChartView: View {
     }
 }
 
-struct ChartSelector: View {
-    var availableChartTypes: [ChartType]
-    @Binding var selectedChartType: ChartType?
-    
-    var body: some View {
-        Menu {
-            ForEach(ChartType.allCases, id: \.self) { option in
-                if availableChartTypes.contains(option) {
-                    Button(action: { selectedChartType = option }) {
-                        Text(option.rawValue)
-                    }
-                } else {
-                    Button(action: {}) {
-                        Text(option.rawValue).foregroundColor(.gray)
-                    }.disabled(true)
-                }
-            }
-        } label: {
-            Text(selectedChartType?.rawValue ?? "Select chart style...")
-                .foregroundColor(.primary)
-                .padding(.horizontal)
-        }
-        .padding(.horizontal)
-    }
-}
-
 #Preview("Timeseries (medium)") {
     if let single = ChartSamples.sampleData(size: .tiny, statistics: true) {
         ConfigurableChartView(config: ChartConfiguration(resultContainer: single))

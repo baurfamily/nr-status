@@ -10,25 +10,32 @@ import SwiftUI
 struct DocumentFocusedValueKey: FocusedValueKey {
   typealias Value = Binding<NRQL_EditorDocument>
 }
-    
+
+struct QueryFocusedValueKey: FocusedValueKey {
+    typealias Value = Binding<NrqlQuery>
+}
+
 extension FocusedValues {
-  var document: DocumentFocusedValueKey.Value? {
-    get {
-      return self[DocumentFocusedValueKey.self]
+    var document: DocumentFocusedValueKey.Value? {
+        get { self[DocumentFocusedValueKey.self] }
+        set { self[DocumentFocusedValueKey.self] = newValue }
     }
-            
-    set {
-        self[DocumentFocusedValueKey.self] = newValue
+    
+    var query: QueryFocusedValueKey.Value? {
+        get { self[QueryFocusedValueKey.self] }
+        set { self[QueryFocusedValueKey.self] = newValue }
     }
-  }
 }
 
 @main
 struct NRQL_EditorApp: App {
     @Environment(\.openWindow) var openWindow
-    
+
     var body: some Scene {
         WindowGroup(id: "summary-view") { SummaryView() }
+        WindowGroup(id: "sample-charts") { ChartSampleView() }
+        WindowGroup(id: "nrql-viewer") { NrqlViewer() }
+        WindowGroup(id: "nrql-explorer") { NrqlExplorer() }
         .commands {
             CommandMenu("Features") {
                 Button(action: {
@@ -36,24 +43,29 @@ struct NRQL_EditorApp: App {
                 }, label: {
                     Text("Summary View")
                 })
-            }
-        }
-        WindowGroup(id: "sample-charts") { ChartSampleView() }
-        .commands {
-            CommandMenu("Features") {
                 Button(action: {
                     openWindow(id: "sample-charts")
                 }, label: {
                     Text("Sample Charts")
                 })
+                Button(action: {
+                    openWindow(id: "nrql-viewer")
+                }, label: {
+                    Text("NRQL Viewer")
+                }).keyboardShortcut("n", modifiers: [ .command, .shift ])
+                Button(action: {
+                    openWindow(id: "nrql-explorer")
+                }, label: {
+                    Text("NRQL Editor")
+                }).keyboardShortcut("e", modifiers: [ .command, .shift ])
             }
+            CommandMenu("Editor") { EditorMenuView() }
         }
-        
+            
         // the NRQL viewer document stuff
         DocumentGroup(newDocument: NRQL_EditorDocument()) { file in
-            DocumentView(document: file.$document).focusedSceneValue(\.document, file.$document)
-        }.commands {
-            CommandMenu("Editor") { EditorMenuView() }
+            DocumentView(document: file.$document)
+                .focusedSceneValue(\.document, file.$document)
         }
         
         Settings {

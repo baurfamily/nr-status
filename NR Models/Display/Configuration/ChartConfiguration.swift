@@ -6,39 +6,7 @@
 //
 
 import AppIntents
-
-enum ChartType : String, CaseIterable, AppEnum {
-    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Chart Type"
-    
-    static var caseDisplayRepresentations: [ChartType : DisplayRepresentation]  = [
-        .bar: .init(stringLiteral: "Bar"),
-        .billboard: .init(stringLiteral: "Billboard"),
-        .line: .init(stringLiteral: "Line"),
-        .plot: .init(stringLiteral: "Plot"),
-        .pie: .init(stringLiteral: "Pie"),
-        .table: .init(stringLiteral: "Table")
-    ]
-    
-    case line, billboard, plot, pie, bar, table
-    
-    // want to refactor this to look at chart properties more deeply
-    // for example, plot should only be used if there are at least two numeric fields
-    static func cases(for resultContainer: NrdbResultContainer) -> [ChartType] {
-        if resultContainer.isTimeseries {
-            return [ .line, .table, .plot, .bar ]
-        } else if resultContainer.isEvents {
-            return [ .line, .table, .plot ]
-        } else if resultContainer.isComparable {
-            return [ .billboard, .line, .table ]
-        } else {
-            return [ .billboard, .plot, .bar, .pie, .table ]
-        }
-    }
-    
-    func isSupported(for resultContainer: NrdbResultContainer) -> Bool {
-        return ChartType.cases(for: resultContainer).contains(self)
-    }
-}
+import SwiftUI
 
 struct SelectableField: Identifiable, Hashable {
     let id: String
@@ -49,8 +17,9 @@ struct SelectableField: Identifiable, Hashable {
     }
 }
 
-struct ChartConfiguration {
-    let resultContainer: NrdbResultContainer
+@Observable
+class ChartConfiguration {
+    var resultContainer: NrdbResultContainer
     var chartType: ChartType?
     
     var facets: FacetsConfiguration
@@ -79,6 +48,13 @@ struct ChartConfiguration {
         // must be last properties set
         self.plot = .init(fields: resultContainer.numberFieldNames)
         self.chartType = chartTypes.first
+    }
+    
+    func updateResults(_ newResultContainer: NrdbResultContainer) {
+        self.resultContainer = newResultContainer
+        self.fields = SelectableField.wrap( newResultContainer.numberFieldNames.sorted() )
+        self.facets = FacetsConfiguration(resultContainer: newResultContainer)
+        self.plot = .init(fields: newResultContainer.numberFieldNames)
     }
 }
 

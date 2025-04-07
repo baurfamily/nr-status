@@ -42,7 +42,17 @@ struct TableChart : View {
     }
 }
 
-#Preview {
+#Preview("Event data") {
+    if let single = ChartSamples.sampleData(facet: .none, timeseries: false, comparable: false, size: .large) {
+        Text("data \(single.results.data.count)")
+        TableChart(config: .init(resultContainer: single))
+    } else {
+        Text("No sample data")
+        Text(ChartSamples.sampleFilename(facet: .none, timeseries: false, comparable: false, size: .large))
+    }
+}
+
+#Preview("Single Facet") {
     if let single = ChartSamples.sampleData(facet: .single, timeseries: false, comparable: false, size: .small) {
         Text("data \(single.results.data.count)")
         TableChart(config: .init(resultContainer: single))

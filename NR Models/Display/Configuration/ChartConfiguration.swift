@@ -95,8 +95,9 @@ struct ScatterPlotConfig {
     var xField: String?
     var yField: String?
     
+    var colorField: String?
     var sizeField: String?
-    
+
     init(fields: [String]) {
         // this can't be used if there are less than 2 fields
         // it's probably somewhat unpredictable what order these end up in

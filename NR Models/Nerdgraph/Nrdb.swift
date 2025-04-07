@@ -126,9 +126,10 @@ struct NrdbResults: Decodable {
         let value: Double
     }
     struct StatDatum: Identifiable {
-        var id: String { "\(facet)(\(x),\(y),\(z))" }
+        var id: String { "\(color)(\(x),\(y),\(z))" }
         
         let facet: String
+        let color: String
         let x: Double
         let y: Double
         let z: Double

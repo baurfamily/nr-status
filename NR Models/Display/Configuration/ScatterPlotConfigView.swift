@@ -35,7 +35,7 @@ struct ScatterPlotConfigView: View {
                 if config.facets.all.isEmpty {   
                     SeriesDropdownView(
                         title: "Color",
-                        fields: config.fields.map(\.id),
+                        fields: config.allFields.map(\.id),
                         selection: $config.plot.colorField,
                         includeNone: true
                     )

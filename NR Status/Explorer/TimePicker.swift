@@ -21,6 +21,9 @@ struct TimePicker : View {
             }.onChange(of: selectedWindow) { _, newValue in
                 query.timewindow = newValue
             }
+            Toggle(isOn: $query.defaultCount) {
+                Text("Default w/Count")
+            }
             Toggle(isOn: $query.isTimeseries) {
                 Text("Timeseries")
             }

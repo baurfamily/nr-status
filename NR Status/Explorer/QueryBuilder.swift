@@ -67,6 +67,7 @@ struct TimeWindowChoice : Identifiable, Hashable {
 
 struct QueryBuilder : Equatable {
     var event: String
+    var defaultCount: Bool = true
     var attributes: [Attribute] = []
     var aggregates: [AggregateFunction] = []
     var facets: [Attribute] = []
@@ -122,7 +123,7 @@ struct QueryBuilder : Equatable {
     var nrql: String {
         var query = "FROM \(event) SELECT "
         if attributes.isEmpty && aggregates.isEmpty {
-            query += "COUNT(*)"
+            query += (defaultCount ? "COUNT(*)" : "*")
         } else {
             query += attributes.map(\.key).joined(separator: ", ")
             

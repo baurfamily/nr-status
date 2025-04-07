@@ -138,6 +138,7 @@ struct QueryBuilder : Equatable {
             query += " \(timewindow)"
         }
         
+
         
         if !facets.isEmpty {
             query += " FACET " + facets.map(\.key).joined(separator: ", ")

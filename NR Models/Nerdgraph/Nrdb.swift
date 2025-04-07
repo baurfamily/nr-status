@@ -126,9 +126,10 @@ struct NrdbResults: Decodable {
         let value: Double
     }
     struct StatDatum: Identifiable {
-        var id: String { "\(facet)(\(x),\(y),\(z))" }
+        var id: String { "\(color)(\(x),\(y),\(z))" }
         
         let facet: String
+        let color: String
         let x: Double
         let y: Double
         let z: Double
@@ -151,7 +152,24 @@ struct NrdbResults: Decodable {
             case current, previous
         }
         
-        var id: Double { beginTime?.timeIntervalSince1970 ?? 0 }
+        // not sure how efficient this is
+        var id: String {
+            if let beginTime {
+                return String(beginTime.timeIntervalSince1970)+(isComparable ? "-\(comparison)" : "")
+            } else if let timestamp {
+                return String(timestamp.timeIntervalSince1970)+(isComparable ? "-\(comparison)" : "")
+            } else {
+                return fieldNames.map { field in
+                    if let value = numberFields[field] {
+                        return String(format: "%.6f", value)
+                    } else if let value = stringFields[field] {
+                        return value
+                    } else {
+                        return "unknown_datatype"
+                    }
+                }.joined(separator: "-")
+            }
+        }
         
         var isFaceted: Bool { facet != nil }
         var isMultiFaceted: Bool { facets != nil }

@@ -15,7 +15,9 @@ struct ScatterPlotConfigView: View {
     var body: some View {
         GroupBox {
             Form {
-                Toggle("Color facets", isOn: $config.plot.colorFacets)
+                if !config.facets.all.isEmpty {
+                    Toggle("Color facets", isOn: $config.plot.colorFacets)
+                }
                 Toggle("X Log scale", isOn: $config.plot.xLogScale)
                 Toggle("Y Log scale", isOn: $config.plot.yLogScale)
 
@@ -30,6 +32,14 @@ struct ScatterPlotConfigView: View {
                     fields: config.fields.map(\.id),
                     selection: $config.plot.yField
                 )
+                if config.facets.all.isEmpty {   
+                    SeriesDropdownView(
+                        title: "Color",
+                        fields: config.allFields.map(\.id),
+                        selection: $config.plot.colorField,
+                        includeNone: true
+                    )
+                }
                 SeriesDropdownView(
                     title: "Point Size",
                     fields: config.fields.map(\.id),

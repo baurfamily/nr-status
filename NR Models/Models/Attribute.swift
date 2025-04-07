@@ -13,6 +13,4 @@ struct Attribute : Hashable, Identifiable {
     let event: String
     let type: String
     let key: String
-    
-    var isSelected = false
 }

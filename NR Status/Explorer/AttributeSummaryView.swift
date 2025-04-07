@@ -10,24 +10,68 @@ import SwiftUI
 struct AttributeSummaryView : View {
     @State var summary: AttributeSummary
     
+    @State var summaryZoomed: Bool = false
+    var summarySize: (width: CGFloat, height: CGFloat) {(
+        width: summaryZoomed ? 600 : 300,
+        height: summaryZoomed ? 500 : 250,
+    )}
+//    func loadNext() {
+//        // something, something, load?
+//    }
+//    
+//    func loadPrev() {
+//        // something else... load?
+//    }
+    
     var body: some View {
         Grid {
             GridRow {
-                VStack {
-                    Text("Cardinality: ").font(.headline)
-                    Text(String(summary.cardinality)).font(.largeTitle)
+                HStack {
+                    Spacer()
+                    Toggle(isOn: $summaryZoomed) {
+                        if summaryZoomed {
+                            Image(systemName: "square.resize.down")
+                        } else {
+                            Image(systemName: "square.resize.up")
+                        }
+                    }.toggleStyle(.button)
                 }
-                Form {
-                    if let avg = summary.average {
-                        Text("Average: ").font(.headline) + Text(String(format: "%.2f", avg))
+            }
+            GridRow {
+                HStack {
+//                    Button(action: loadPrev) {
+//                        Image(systemName: "arrowshape.backward.fill")
+//                        Text("prev")
+//                    }
+//                    Spacer()
+                    Text(summary.attribute.key).font(.largeTitle)
+//                    Spacer()
+//                    Button(action: loadNext) {
+//                        Text("next")
+//                        Image(systemName: "arrowshape.forward.fill")
+//                    }
+                }
+            }
+            GridRow {
+                HStack {
+                    VStack {
+                        Text("Cardinality: ").font(.headline)
+                        Text(String(summary.cardinality)).font(.largeTitle)
                     }
-                    if let min = summary.minimum, let max = summary.maximum {
-                        Text("Min: ").font(.headline) + Text(String(format: "%.2f", min))
-                        Text("Max: ").font(.headline) + Text(String(format: "%.2f", max))
+                    Form {
+                        if let avg = summary.average {
+                            Text("Average: ").font(.headline) + Text(String(format: "%.2f", avg))
+                        }
+                        if let min = summary.minimum, let max = summary.maximum {
+                            Text("Min: ").font(.headline) + Text(String(format: "%.2f", min))
+                            Text("Max: ").font(.headline) + Text(String(format: "%.2f", max))
+                        }
                     }
                 }
             }
         }
+        .multilineTextAlignment(.center)
+        
         TabView {
             Tab("Charts", systemImage: "chart.dots.scatter") {
                 AttributeChartPicker(summary: summary)
@@ -38,7 +82,12 @@ struct AttributeSummaryView : View {
                 }
             }
         }
-        .frame(minWidth: 300, maxWidth: .infinity, minHeight: 250, maxHeight: .infinity)
+        .frame(
+            minWidth: summarySize.width,
+            maxWidth: .infinity,
+            minHeight: summarySize.height,
+            maxHeight: .infinity
+        )
     }
 }
 
@@ -48,8 +97,7 @@ struct AttributeSummaryView : View {
             attribute: Attribute(
                 event: "Attributes",
                 type: "numeric",
-                key: "testAttr",
-                isSelected: true
+                key: "testAttr"
             ),
             cardinality: 2345,
             average: 56.75,

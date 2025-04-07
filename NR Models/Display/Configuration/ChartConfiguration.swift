@@ -29,6 +29,7 @@ class ChartConfiguration {
     var pie: PieCharConfiguration = .init()
     var bar: BarChartConfiguration = .init()
     var plot: ScatterPlotConfig
+    var allFields: [SelectableField] = []
     var fields: [SelectableField] = []
     
     var selectedFields: [String] {
@@ -42,6 +43,7 @@ class ChartConfiguration {
     init(resultContainer: NrdbResultContainer) {
         self.resultContainer = resultContainer
         
+        self.allFields = SelectableField.wrap( resultContainer.fieldNames.sorted() )
         self.fields = SelectableField.wrap( resultContainer.numberFieldNames.sorted() )
         self.facets = FacetsConfiguration(resultContainer: resultContainer)
         
@@ -52,6 +54,7 @@ class ChartConfiguration {
     
     func updateResults(_ newResultContainer: NrdbResultContainer) {
         self.resultContainer = newResultContainer
+        self.allFields = SelectableField.wrap( resultContainer.fieldNames.sorted() )
         self.fields = SelectableField.wrap( newResultContainer.numberFieldNames.sorted() )
         self.facets = FacetsConfiguration(resultContainer: newResultContainer)
         self.plot = .init(fields: newResultContainer.numberFieldNames)
@@ -95,8 +98,9 @@ struct ScatterPlotConfig {
     var xField: String?
     var yField: String?
     
+    var colorField: String?
     var sizeField: String?
-    
+
     init(fields: [String]) {
         // this can't be used if there are less than 2 fields
         // it's probably somewhat unpredictable what order these end up in

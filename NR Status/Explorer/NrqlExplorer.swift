@@ -10,33 +10,36 @@ import CodeEditorView
 
 struct NrqlExplorer : View {
     @State var query = NrqlQuery(from: "SELECT COUNT(*) FROM Transaction FACET name")
-    @Environment(\.colorScheme) private var colorScheme: ColorScheme
+    @State var queryBuilder: QueryBuilder = .init(event: "")
     
     @State var chartConfiguration: ChartConfiguration = ChartConfiguration(resultContainer: NrdbResultContainer.empty)
 
+    @Environment(\.colorScheme) private var colorScheme: ColorScheme
+    
     var body: some View {
         NavigationSplitView {
-            EventExplorer(query: $query)
+            EventExplorer(query: $queryBuilder)
         } detail: {
             if query.running {
                 ProgressView()
             }
             VStack {
-                Text(query.text)
+                HStack {
+                    TimePicker(query: $queryBuilder)
+                    Text(queryBuilder.nrql)
+                        .textSelection(.enabled)
+                }
                 ConfigurableChartView(config: chartConfiguration)
+                    .frame(maxHeight: .infinity)
             }
         }
         .navigationSplitViewStyle(.balanced)
         .focusedSceneValue(\.query, $query)
-        .onChange(of: $query.wrappedValue) {
-            print("updated query")
+        .onChange(of: $queryBuilder.wrappedValue) {
+            query = .init(from: queryBuilder.nrql)
             query.runQuery() { results in
                 guard let results else { return }
-                print("updating config")
                 chartConfiguration.updateResults(results)
-            }
-            if let resultContainer = query.resultContainer {
-                chartConfiguration.updateResults(resultContainer)
             }
         }
     }

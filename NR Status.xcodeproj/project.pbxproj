@@ -97,6 +97,7 @@
 				Nerdgraph/Nrdb.swift,
 				Nerdgraph/Queries.swift,
 				"Preview Content/ApplicationSamples.swift",
+				"Preview Content/ChartData/AddingExamples.md",
 				"Preview Content/ChartData/FacetedComparableSmall.json",
 				"Preview Content/ChartData/FacetedMedium.json",
 				"Preview Content/ChartData/FacetedSmall.json",
@@ -105,9 +106,12 @@
 				"Preview Content/ChartData/FacetedTimeseriesSmall.json",
 				"Preview Content/ChartData/FacetedTimeseriesStatsLarge.json",
 				"Preview Content/ChartData/FacetedTimeseriesStatsMedium.json",
+				"Preview Content/ChartData/Large.json",
+				"Preview Content/ChartData/Medium.json",
 				"Preview Content/ChartData/MultiFacetedComparableSmall.json",
 				"Preview Content/ChartData/MultiFacetedSmall.json",
 				"Preview Content/ChartData/MultiFacetedTimeseriesMedium.json",
+				"Preview Content/ChartData/Small.json",
 				"Preview Content/ChartData/StatsTiny.json",
 				"Preview Content/ChartData/TimeseriesComparableMedium.json",
 				"Preview Content/ChartData/TimeseriesComparableSmall.json",
@@ -123,6 +127,13 @@
 				NR_Models.h,
 			);
 			target = 3F28B3642CBB996200CCB8DD /* NR Models */;
+		};
+		3F4479D42DA37BFC007C7EDD /* Exceptions for "NR Models" folder in "NRQL WidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Preview Content/ChartData/TimeseriesMedium.json",
+			);
+			target = 3FA635062CD7D4E30050F813 /* NRQL WidgetExtension */;
 		};
 		3F5501902D49F05500950FE2 /* Exceptions for "NRQL Widget" folder in "NRQL WidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
@@ -154,6 +165,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				3F28B37C2CBB996200CCB8DD /* Exceptions for "NR Models" folder in "NR Models" target */,
+				3F4479D42DA37BFC007C7EDD /* Exceptions for "NR Models" folder in "NRQL WidgetExtension" target */,
 			);
 			path = "NR Models";
 			sourceTree = "<group>";

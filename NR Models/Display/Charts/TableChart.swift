@@ -13,27 +13,46 @@ struct TableChart : View {
     var resultContainer: NrdbResultContainer {
         config.resultContainer
     }
+    
+    func value(for field: String, in datum: NrdbResults.Datum) -> String {
+        var result: String
+        
+        if datum.numberFields.keys.contains(field) {
+            result = String(datum.numberFields[field] ?? 0)
+        } else {
+            result = String(datum.stringFields[field] ?? "")
+        }
+        
+        return result
+    }
+    
     var body: some View {
         Table(resultContainer.data) {
-            if resultContainer.isTimeseries {
-                TableColumn("Timestamp") { datum in
-                    Text(datum.beginTime!, format: .dateTime)
+            if resultContainer.isTimeseries || resultContainer.isEvents {
+                TableColumn("Timestamp") { (datum: NrdbResults.Datum) in
+                    Text(datum.date, style: .relative)
                 }
             }
             TableColumnForEach(resultContainer.fieldNames, id:\.self) { field in
                 TableColumn(field) { datum in
-                    if datum.numberFields.keys.contains(field) {
-                        Text(datum.numberFields[field] ?? 0, format: .number)
-                    } else {
-                        Text(datum.stringFields[field] ?? "")
-                    }
+                    Text(value(for: field, in: datum))
                 }
             }
         }
     }
 }
 
-#Preview {
+#Preview("Event data") {
+    if let single = ChartSamples.sampleData(facet: .none, timeseries: false, comparable: false, size: .large) {
+        Text("data \(single.results.data.count)")
+        TableChart(config: .init(resultContainer: single))
+    } else {
+        Text("No sample data")
+        Text(ChartSamples.sampleFilename(facet: .none, timeseries: false, comparable: false, size: .large))
+    }
+}
+
+#Preview("Single Facet") {
     if let single = ChartSamples.sampleData(facet: .single, timeseries: false, comparable: false, size: .small) {
         Text("data \(single.results.data.count)")
         TableChart(config: .init(resultContainer: single))

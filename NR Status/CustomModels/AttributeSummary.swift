@@ -16,6 +16,7 @@ struct AttributeSummary : Identifiable{
     
     var cardinality: Int = 0
     var average: Double?
+    var median: Double?
     var minimum: Double?
     var maximum: Double?
     
@@ -31,7 +32,6 @@ struct AttributeSummary : Identifiable{
     
     static func generate(from attribute: Attribute) async -> Self {
         guard cache[attribute.id] == nil else {
-            print("returned from cache")
             return cache[attribute.id]!
         }
         
@@ -42,6 +42,7 @@ struct AttributeSummary : Identifiable{
                 uniqueCount(`\(attribute.key)`),
                 uniques(`\(attribute.key)`),
                 average(`\(attribute.key)`),
+                median(`\(attribute.key)`),
                 min(`\(attribute.key)`),
                 max(`\(attribute.key)`)
             FROM \(attribute.event)
@@ -53,6 +54,7 @@ struct AttributeSummary : Identifiable{
                 summary.cardinality = Int(first.numberFields["uniqueCount.\(attribute.key)"] ?? 0)
                 
                 summary.average = first.numberFields["average.\(attribute.key)"]
+                summary.median = first.numberFields["average.\(attribute.key)"]
                 summary.minimum = first.numberFields["min.\(attribute.key)"]
                 summary.maximum = first.numberFields["max.\(attribute.key)"]
                 
@@ -64,6 +66,24 @@ struct AttributeSummary : Identifiable{
                 } else if !numericSamples.isEmpty {
                     summary.samples = numericSamples.map { x in
                         return (floor(x) == x ? "\(Int(x))" : String(format: "%.3f", x))
+                    }
+                }
+                
+                // okay, this is a bit of a hack... basically, we only see a small number
+                // of samples when the values are fractional. No idea why uniques() doesn't work here
+                if attribute.type == "numeric" && summary.samples.count == 1 && summary.samples[0] == "0" {
+                    let uniquesResult = await Queries().getNrqlData(query: """
+                        SELECT `\(attribute.key)`
+                        FROM \(attribute.event)
+                        WHERE `\(attribute.key)` IS NOT NULL
+                        SINCE 1 day ago
+                        LIMIT 100
+                    """)
+                    
+                    if let uniquesResult {
+                        let samples = uniquesResult.data.map { String($0.numberFields[attribute.key] ?? .nan) }
+                        let sampleSet = Set(samples)
+                        summary.samples = sampleSet.sorted()
                     }
                 }
             }
@@ -82,7 +102,7 @@ struct AttributeSummary : Identifiable{
                 FROM \(attribute.event)
                 SINCE 1 day ago
                 TIMESERIES 1 hour
-            """, debug: true)
+            """)
         } else if attribute.type == "string" {
             summary.timeseriesResultsContainer = await Queries().getNrqlData(query: """
                 SELECT

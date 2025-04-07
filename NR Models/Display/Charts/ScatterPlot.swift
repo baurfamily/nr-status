@@ -27,10 +27,11 @@ struct ScatterPlot: View {
         
         self.data = allData.map { datum in
             NrdbResults.StatDatum(
-                facet: (datum.facet ?? "??"),
+                facet: datum.facet ?? "",
+                color: colorValue(for: datum),
                 x: datum.numberFields[xField] ?? 0,
                 y: datum.numberFields[yField] ?? 0,
-                z: size(for: datum)
+                z: size(for: datum),
             )
         }
     }
@@ -48,6 +49,19 @@ struct ScatterPlot: View {
         return datum.numberFields[sizeField] ?? 100
     }
     
+    func colorValue(for datum: NrdbResults.Datum) -> String {
+        if let field = config.plot.colorField {
+            if let value = datum.stringFields[field] {
+                return value
+            } else if let value = datum.numberFields[field] {
+                return "\(value)"
+            }
+        } else if config.plot.colorFacets {
+            return datum.facet ?? ""
+        }
+        return ""
+    }
+    
     var body: some View {
         Chart() {
             PointPlot(
@@ -56,10 +70,19 @@ struct ScatterPlot: View {
                 y: .value( yField, \.y )
             )
             .symbolSize(by: .value((sizeField ?? ""), \.z))
-            .foregroundStyle(by: .value("Facet", \.facet))
+            .foregroundStyle(by: .value("Facet", \.color))
         }
         .chartXScale(type: (config.plot.xLogScale ? .symmetricLog : .linear))
         .chartYScale(type: (config.plot.yLogScale ? .symmetricLog : .linear))
+    }
+}
+
+#Preview("Event Data") {
+    if let data = ChartSamples.sampleData(facet: .none, timeseries: false, comparable: false, size: .medium) {
+        ConfigurableChartView(config: ChartConfiguration(resultContainer: data))
+    } else {
+        Text("No sample data")
+        Text(ChartSamples.sampleFilename(facet: .none, timeseries: false, comparable: false, size: .medium))
     }
 }
 

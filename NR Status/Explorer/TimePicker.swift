@@ -32,6 +32,14 @@ struct TimePicker : View {
                     }
                     Text("MAX").tag("MAX")
                 }
+            } else {
+                Picker("Limit", selection: $query.limit) {
+                    Text("AUTO").tag(0)
+                    Text("10").tag(10)
+                    Text("100").tag(100)
+                    Text("1000").tag(1000)
+                    Text("MAX").tag(Int.max)
+                }
             }
         }.task {
             self.selectedWindow = query.timewindow

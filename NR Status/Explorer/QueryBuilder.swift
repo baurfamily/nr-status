@@ -74,6 +74,7 @@ struct QueryBuilder : Equatable {
     var timewindow: String = "SINCE 6 hours ago"
     var isTimeseries: Bool = false
     var timeseriesSize: String?
+    var limit: Int = 0
     
     var isFaceted: Bool { !facets.isEmpty }
     var allowsAggregates: Bool { attributes.isEmpty || isFaceted }
@@ -144,6 +145,8 @@ struct QueryBuilder : Equatable {
         // need to figure out how to do aggrecates before this will work
         if isTimeseries {
             query += " TIMESERIES " + (timeseriesSize ?? "")
+        } else if limit != 0{
+            query += (limit == .max ? " LIMIT MAX" : " LIMIT \(limit)")
         }
         
         return query

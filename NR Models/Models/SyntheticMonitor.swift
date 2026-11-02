@@ -20,13 +20,8 @@ struct SyntheticMonitor {
         return alertSeverity
     }
     
-    static func all() -> [SyntheticMonitor] {
-        var apps: [SyntheticMonitor] = []
-        Queries().entities(domain: .APM) { applications in
-            if let applications = applications {
-                apps = applications.map { Self(entity: $0) }
-            }
-        }
-        return apps
+    static func all() async -> [SyntheticMonitor] {
+        let entities = (try? await Queries().entities(domain: .SYNTH)) ?? []
+        return entities.map { Self(entity: $0) }
     }
 }

@@ -30,7 +30,7 @@ struct BarChartProvider: AppIntentTimelineProvider {
             apiKey: configuration.apiKey,
             accountIds: configuration.accountIds
         )
-        let resultContainer = await queries.getNrqlData(query: configuration.nrqlQuery, debug: true)
+        let resultContainer = try? await queries.getNrqlData(query: configuration.nrqlQuery, debug: true)
         guard let resultContainer else {
             let entry = BarChartEntry(
                 comment: configuration.nrqlQuery,

@@ -42,16 +42,18 @@ struct PreferencesView: View {
     }
     
     func testRequest() {
-        Queries().user() { user in
-            if let email = user?.email {
+        let queries = Queries()
+        
+        Task {
+            if let email = (try? await queries.user())?.email {
                 self.email = email
                 self.emailCheck = true
             } else {
                 self.emailCheck = false
             }
         }
-        Queries().accounts() { accounts in
-            if let accounts = accounts {
+        Task {
+            if let accounts = try? await queries.accounts() {
                 let names = accounts.map() { "\($0.name ?? "no name found") (\(String($0.id ?? 0)))" }
                 let ids = accounts.map() { $0.id }
                 

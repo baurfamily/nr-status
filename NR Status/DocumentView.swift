@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  DocumentView.swift
 //  NRQL Editor
 //
 //  Created by Eric Baur on 10/14/24.
@@ -19,8 +19,7 @@ struct DocumentView: View {
     @Environment(\.codeEditorLayoutConfiguration) private var codeEditorLayoutConfiguration: CodeEditor.LayoutConfiguration
     
     @Binding var document: NRQL_EditorDocument
-    @State var position = CodeEditor.Position()
-    @State var selectedQueryId: Int?
+    // local state variables removed: use the document's position and focusedQueryId
     
     var body: some View {
         NavigationSplitView {
@@ -43,16 +42,40 @@ struct ResultsTabView : View {
     @Binding var document: NRQL_EditorDocument
     
     var body: some View {
-        TabView(selection: $document.focusedQueryId) {
-            ForEach(document.queries) { docQuery in
-                Tab(value: docQuery.id) {
-                    if let resultContainer = docQuery.query.resultContainer {
-                        ConfigurableChartView(resultsContainer: resultContainer)
+        if document.queries.isEmpty {
+            // Friendly placeholder when there are no queries/results
+            VStack {
+                Spacer()
+                Text("No query results")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+                Text("Run a query in the editor to see results here.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            TabView(selection: $document.focusedQueryId) {
+                ForEach(document.queries) { docQuery in
+                    Tab(value: docQuery.id) {
+                        if let resultContainer = docQuery.query.resultContainer {
+                            ConfigurableChartView(resultsContainer: resultContainer)
+                        } else {
+                            // If a query exists but has no results yet, show placeholder
+                            VStack {
+                                Spacer()
+                                Text("No results for this query")
+                                    .font(.headline)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                            }
+                        }
                     }
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

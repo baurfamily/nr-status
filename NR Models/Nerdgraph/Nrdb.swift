@@ -35,13 +35,10 @@ struct NrdbResultContainer : Decodable {
     var isMultiFaceted: Bool { results.data.first?.isMultiFaceted ?? false }
     var isComparable: Bool { results.data.first?.isComparable ?? false }
     
+    // unique names, in the order they first appear in the results
     var fieldNames: [String] {
-        var names: Set<String> = []
-        let sampleSize = results.data.count
-        
-        results.data[0..<sampleSize].forEach { names.formUnion($0.fieldNames) }
-        
-        return Array(names)
+        var seen: Set<String> = []
+        return results.data.flatMap(\.fieldNames).filter { seen.insert($0).inserted }
     }
     
     var numberFieldNames: [String] {
@@ -55,21 +52,23 @@ struct NrdbResultContainer : Decodable {
     
     var allFacets: Set<String> {
         // does not deal with array facet
-        if isFaceted {
-            return Set<String>(results.data.map { $0.facet! })
-        } else {
-            return []
-        }
+        Set(results.data.compactMap(\.facet))
     }
-    var minDate: Date {
-        return results.data.filter{ $0.comparison == .current }.map{ $0.beginTime ?? .distantPast }.min()!
+    var minDate: Date? {
+        results.data.filter{ $0.comparison == .current }.map{ $0.beginTime ?? .distantPast }.min()
     }
-    var maxDate: Date {
-        return results.data.filter{ $0.comparison == .current }.map{ $0.endTime ?? .distantFuture }.max()!
+    var maxDate: Date? {
+        results.data.filter{ $0.comparison == .current }.map{ $0.endTime ?? .distantFuture }.max()
     }
     
+    // how far to shift COMPARE WITH data forward so it overlays the current period;
+    // zero when there is nothing to compare
     var dateAdjustment: TimeInterval {
-        return minDate.timeIntervalSince1970 - data.filter{ $0.comparison == .previous }.map{ $0.beginTime ?? .distantPast }.min()!.timeIntervalSince1970
+        guard let minDate,
+              let previousStart = data.filter({ $0.comparison == .previous }).map({ $0.beginTime ?? .distantPast }).min()
+        else { return 0 }
+        
+        return minDate.timeIntervalSince1970 - previousStart.timeIntervalSince1970
     }
     
     func adjustedTime(_ date: Date) -> Date {
@@ -152,12 +151,18 @@ struct NrdbResults: Decodable {
             case current, previous
         }
         
-        // not sure how efficient this is
-        var id: String {
+        // computed once at decode time; includes the facet so faceted timeseries
+        // rows that share a timestamp don't collide
+        private(set) var id: String = ""
+        
+        private func makeId() -> String {
+            let facetPart = (facet ?? facets?.joined(separator: "|")).map { "-\($0)" } ?? ""
+            let comparisonPart = isComparable ? "-\(comparison)" : ""
+            
             if let beginTime {
-                return String(beginTime.timeIntervalSince1970)+(isComparable ? "-\(comparison)" : "")
+                return String(beginTime.timeIntervalSince1970) + facetPart + comparisonPart
             } else if let timestamp {
-                return String(timestamp.timeIntervalSince1970)+(isComparable ? "-\(comparison)" : "")
+                return String(timestamp.timeIntervalSince1970) + facetPart + comparisonPart
             } else {
                 return fieldNames.map { field in
                     if let value = numberFields[field] {
@@ -167,7 +172,7 @@ struct NrdbResults: Decodable {
                     } else {
                         return "unknown_datatype"
                     }
-                }.joined(separator: "-")
+                }.joined(separator: "-") + facetPart
             }
         }
         
@@ -257,11 +262,13 @@ struct NrdbResults: Decodable {
                     self.numericDictFields[key.stringValue] = dictValue
                 } else {
                     // does not account for an array from NRQL functions like uniques(name)
-                    return
+                    continue
                 }
                 
                 fieldNames.append(key.stringValue)
             }
+            
+            self.id = makeId()
         }
         
         

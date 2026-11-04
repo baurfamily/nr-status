@@ -8,7 +8,7 @@
 import WidgetKit
 import AppIntents
 
-struct PlotConfigAppIntent: WidgetConfigurationIntent {
+struct PlotConfigAppIntent: NrqlWidgetIntent {
     static var title: LocalizedStringResource { "NRQL Scatter Plot" }
     static var description: IntentDescription { "This widget allows you to view a Plot graph built from a NRQL query." }
     

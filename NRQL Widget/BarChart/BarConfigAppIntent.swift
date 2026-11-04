@@ -8,7 +8,7 @@
 import WidgetKit
 import AppIntents
 
-struct BarConfigAppIntent: WidgetConfigurationIntent {
+struct BarConfigAppIntent: NrqlWidgetIntent {
     static var title: LocalizedStringResource { "NRQL Bar Chart" }
     static var description: IntentDescription { "This widget allows you to view a Bar graph built from a NRQL query." }
     

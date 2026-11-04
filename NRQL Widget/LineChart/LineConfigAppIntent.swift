@@ -8,7 +8,7 @@
 import WidgetKit
 import AppIntents
 
-struct LineConfigAppIntent: WidgetConfigurationIntent {
+struct LineConfigAppIntent: NrqlWidgetIntent {
     static var title: LocalizedStringResource { "NRQL Timeseries Chart" }
     static var description: IntentDescription { "This widget allows you to view a line graph built from a Timeseries NRQL query." }
     

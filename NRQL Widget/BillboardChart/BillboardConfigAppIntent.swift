@@ -8,7 +8,7 @@
 import WidgetKit
 import AppIntents
 
-struct BillboardConfigAppIntent: WidgetConfigurationIntent {
+struct BillboardConfigAppIntent: NrqlWidgetIntent {
     static var title: LocalizedStringResource { "NRQL Billboard Chart" }
     static var description: IntentDescription { "This widget allows you to view a Billboard built from a NRQL query." }
     

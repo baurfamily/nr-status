@@ -11,17 +11,20 @@ import CryptoKit
 import LanguageSupport
 
 @Observable class NrqlQuery : Identifiable, Equatable {
+    enum State {
+        case idle
+        case running
+        case loaded(NrdbResultContainer)
+        case failed(String)
+    }
+    
     // this is the full text, including comments
     var text: String = "" {
-        willSet { print("."); textWillUpdate(to: newValue) }
+        willSet { textWillUpdate(to: newValue) }
     }
     
     // this is just the functional part, minus comments
-    var nrql: String {
-        willSet {
-            self.invalidated = true
-        }
-    }
+    private(set) var nrql: String
     
     static func == (lhs: NrqlQuery, rhs: NrqlQuery) -> Bool {
         lhs.text == rhs.text
@@ -32,15 +35,28 @@ import LanguageSupport
     var position: CodeEditor.Position
     var messages: Set<TextLocated<Message>> = Set()
     
-    // we set this when the query changes
-    var invalidated: Bool = false
+    // Views switch on this, so a new result replaces the "running" content and
+    // charts that copy their data at creation get rebuilt with the new results.
+    // Always change it through setState(_:) so updates happen on the main actor.
+    private(set) var state: State = .idle
     
-    // set this when things get run; clear when completed
-    var running: Bool = false
+    @ObservationIgnored private var runningTask: Task<Void, Never>?
     
-    // the data behind the NRQL, but not trustworthy if invalidated == true
-    // this attribute should work with observableobject, but I'm not sure it's working as I expected
-    var resultContainer: NrdbResultContainer?
+    var isRunning: Bool {
+        if case .running = state { return true }
+        return false
+    }
+    
+    // the data from the last successful run; nil while a new run is in flight
+    var resultContainer: NrdbResultContainer? {
+        if case .loaded(let container) = state { return container }
+        return nil
+    }
+    
+    var errorMessage: String? {
+        if case .failed(let message) = state { return message }
+        return nil
+    }
     
     var id: String { hash(nrql: self.nrql) }
     
@@ -64,26 +80,35 @@ import LanguageSupport
         textWillUpdate(to: text)
         
         if run {
-            self.runQuery()
+            self.run()
         }
     }
     
+    /// Runs the query and waits for the result; see `state` for the outcome.
     func getData() async {
-        self.invalidated = true
-        self.running = true
-        //why do I have to do this?
-        //...if I don't, the UI doesn't update (unless something went wrong with the query
-        self.resultContainer = nil
-        self.resultContainer = try? await Queries().getNrqlData(query: nrql, debug: false)
-        self.invalidated = false
-        self.running = false
+        await setState(.running)
+        
+        do {
+            let container = try await Queries().getNrqlData(query: nrql)
+            // a newer run has taken over, so don't clobber its state
+            guard !Task.isCancelled else { return }
+            
+            await setState(container.map { .loaded($0) } ?? .failed("The query returned no data"))
+        } catch {
+            guard !Task.isCancelled else { return }
+            
+            await setState(.failed(error.localizedDescription))
+        }
     }
     
-    func runQuery(_ callback: ((NrdbResultContainer?) -> ())? = nil) {
-        Task {
-            await getData()
-            callback?(resultContainer)
-        }
+    /// Starts a run without waiting, cancelling any run still in flight.
+    func run() {
+        runningTask?.cancel()
+        runningTask = Task { await getData() }
+    }
+    
+    @MainActor private func setState(_ newState: State) {
+        state = newState
     }
     
     private func hash(nrql: String) -> String {
@@ -91,15 +116,10 @@ import LanguageSupport
     }
     
     private func textWillUpdate(to newValue: String) {
-        var lines: [Substring] = []
-        for line in newValue.split(separator: "\n") {
-            guard !line.starts(with: "//") else { continue }
-            lines.append(line)
-        }
+        let lines = newValue.split(separator: "\n").filter { !$0.starts(with: "//") }
         let nrql = lines.joined(separator: "\n")
-        if hash(nrql: nrql) != hash(nrql: self.nrql) {
+        if nrql != self.nrql {
             self.nrql = nrql
         }
     }
 }
-

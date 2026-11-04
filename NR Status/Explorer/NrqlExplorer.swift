@@ -20,7 +20,7 @@ struct NrqlExplorer : View {
         NavigationSplitView {
             EventExplorer(query: $queryBuilder)
         } detail: {
-            if query.running {
+            if query.isRunning {
                 ProgressView()
             }
             VStack {
@@ -36,9 +36,12 @@ struct NrqlExplorer : View {
         .navigationSplitViewStyle(.balanced)
         .focusedSceneValue(\.query, $query)
         .onChange(of: $queryBuilder.wrappedValue) {
-            query = .init(from: queryBuilder.nrql)
-            query.runQuery() { results in
-                guard let results else { return }
+            let newQuery = NrqlQuery(from: queryBuilder.nrql)
+            query = newQuery
+            Task {
+                await newQuery.getData()
+                // the builder may have changed again while this was running
+                guard query === newQuery, let results = newQuery.resultContainer else { return }
                 chartConfiguration.updateResults(results)
             }
         }

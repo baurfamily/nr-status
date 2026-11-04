@@ -33,17 +33,19 @@ struct NrqlViewer : View {
             .frame(minWidth: 300)
         } detail: {
             Button("Run query...") {
-                query.invalidated = true
-                Task.detached {
-                    await query.getData()
-                }
+                query.run()
             }
-            if query.running {
+            if query.isRunning {
                 ProgressView()
             }
             if let resultContainer = query.resultContainer {
                 ConfigurableChartView(resultsContainer: resultContainer)
-            } else {
+            } else if let errorMessage = query.errorMessage {
+                Text("The query failed")
+                    .font(.headline)
+                Text(errorMessage)
+                    .foregroundColor(.secondary)
+            } else if !query.isRunning {
                 Text("Hit Command-return to run the focused query...")
                 Text(query.text)
             }

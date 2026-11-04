@@ -65,9 +65,19 @@ struct ResultsTabView : View {
                             // If a query exists but has no results yet, show placeholder
                             VStack {
                                 Spacer()
-                                Text("No results for this query")
-                                    .font(.headline)
-                                    .foregroundColor(.secondary)
+                                if docQuery.query.isRunning {
+                                    ProgressView()
+                                } else if let errorMessage = docQuery.query.errorMessage {
+                                    Text("The query failed")
+                                        .font(.headline)
+                                        .foregroundColor(.secondary)
+                                    Text(errorMessage)
+                                        .foregroundColor(.secondary)
+                                } else {
+                                    Text("No results for this query")
+                                        .font(.headline)
+                                        .foregroundColor(.secondary)
+                                }
                                 Spacer()
                             }
                         }

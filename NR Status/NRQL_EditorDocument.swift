@@ -18,9 +18,7 @@ extension UTType {
 
 struct DocumentQuery : Identifiable {
     var position: CodeEditor.Position
-    // not sure if this attirbute accomplishes anything
-    @State var query: NrqlQuery
-    var focused: Bool = false
+    let query: NrqlQuery
     
     var startCharacter: Int {
         if let position = position.selections.first {
@@ -30,6 +28,7 @@ struct DocumentQuery : Identifiable {
         }
     }
     
+    // the resolved/unresolved suffix gives the results tab a new identity once data arrives
     var id: String { "\(position.selections.first?.upperBound ?? 0)-\(query.resultContainer == nil ? "nil" : "resolved")" }
     
     init(position: CodeEditor.Position, query: NrqlQuery) {
@@ -46,13 +45,11 @@ struct NRQL_EditorDocument: FileDocument {
     }
     var position: CodeEditor.Position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0) {
         willSet {
-            for var query in queries { query.focused ? query.focused = false : nil }
-            guard var docQuery = queryAt(newValue) else { return }
-            docQuery.focused = true
-            focusedQueryId = docQuery.id
+            if let docQuery = queryAt(newValue) {
+                focusedQueryId = docQuery.id
+            }
         }
     }
-    var focusedResult: NrdbResultContainer?
     var focusedQueryId: String?
     
     var messages: Set<TextLocated<Message>> = Set()
@@ -77,42 +74,14 @@ struct NRQL_EditorDocument: FileDocument {
     }
     
     mutating func parseQueries() {
-        var potentialQueries: [DocumentQuery] = []
-        
-        var position = 0
-        var commentStart = 0
-        var queryStart = 0
-        var queryLines: [String] = []
-        for substr in text.split(separator: "\n", omittingEmptySubsequences: false) {
-            let line = String(substr)
-            
-            if line.isEmpty {
-                if queryLines.count > 0 {
-                    let position = CodeEditor.Position(
-                        selections: [NSMakeRange( queryStart, position - queryStart )],
-                        verticalScrollPosition: Double(queryStart) // I have no idea if we can get this here
-                    )
-                    let query = NrqlQuery(from: queryLines.joined(separator: "\n"))
-                    
-                    potentialQueries.append(
-                        DocumentQuery( position: position, query: query )
-                    )
-                    commentStart = 0
-                    queryStart = 0
-                    queryLines.removeAll()
-                }
-            } else {
-                if line.starts(with: "//") && commentStart == 0 {
-                    commentStart = position
-                }
-                if !line.starts(with: "//") && queryStart == 0 {
-                    queryStart = position
-                }
-                queryLines.append(line)
-            }
-            
-            // increment out position based on the number of characters read
-            position += substr.count + 1 // account for stripped newline
+        let potentialQueries = NrqlDocumentParser.parse(text).map { parsed in
+            DocumentQuery(
+                position: CodeEditor.Position(
+                    selections: [parsed.range],
+                    verticalScrollPosition: Double(parsed.range.location) // I have no idea if we can get this here
+                ),
+                query: NrqlQuery(from: parsed.text)
+            )
         }
         
         // this is basically just merging the arrays
@@ -126,11 +95,12 @@ struct NRQL_EditorDocument: FileDocument {
                 oldQuery.query.text = newQuery.query.text
                 oldQuery.position = newQuery.position
                 newQueries.append(oldQuery)
-            } else if let oldQuery = queries.first( where: { $0.query.id == newQuery.query.id } ) {
-                // the query is the same, but the title might have changed
+            } else if var oldQuery = queries.first( where: { $0.query.id == newQuery.query.id } ) {
+                // the query is the same, but the title or location might have changed
                 // not sure if this will get weird if you have two idential queries in the editor???
                 // really, the position check above might work for the vast majority of cases
                 oldQuery.query.text = newQuery.query.text
+                oldQuery.position = newQuery.position
                 newQueries.append(oldQuery)
             } else {
                 newQueries.append(newQuery)
@@ -147,46 +117,14 @@ struct NRQL_EditorDocument: FileDocument {
     
     func queryAt(_ position: CodeEditor.Position) -> DocumentQuery? {
         guard let range = position.selections.first else { return nil }
-        guard let docQuery = queries.first( where:{ NSLocationInRange(range.lowerBound, $0.position.selections.first!) }) else { return nil }
-        
-        return docQuery
+        return queries.first { NSLocationInRange(range.lowerBound, $0.position.selections.first!) }
     }
     
-    mutating func runFocusedQuery() {
-        print("run query")
-        guard let range = position.selections.first else { return }
-        print("\t=> \(range)")
-        guard let docQuery = queries.first( where:{ NSLocationInRange(range.lowerBound, $0.position.selections.first!) }) else { return }
-        
-        print("\t=> \(docQuery.id)")
-        docQuery.query.runQuery()
-        
-        self.position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
-
-    }
-
-    mutating func runQuery(callback: @escaping (NrdbResultContainer?) -> ()) {
-        guard let range = position.selections.first else { return }
-        guard let docQuery = queries.first( where:{ NSLocationInRange(range.lowerBound, $0.position.selections.first!) }) else { return }
-        
-        docQuery.query.runQuery(callback)
-        
-        self.position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
-//        self.position = docQuery.position
-        
-        // I Have no idea why this isn't working...
-//        self.messages.insert(
-//            TextLocated(
-//                location: TextLocation(oneBasedLine: 1, column: 1),
-//                entity: Message.init(category: .informational, length: 10, summary: "foobar baz", description: "more text here that can be long and formatted")
-//            )
-//        )
-
-    }
+    // the query under the cursor
+    var focusedQuery: DocumentQuery? { queryAt(position) }
     
-    func getData(_ callback: @escaping (NrdbResultContainer?) -> Void) {
-        queryAt(position)?.query.runQuery() { result in
-                callback(result)
-        }
+    // queries are reference types, so this doesn't change the document itself
+    func runFocusedQuery() {
+        focusedQuery?.query.run()
     }
 }

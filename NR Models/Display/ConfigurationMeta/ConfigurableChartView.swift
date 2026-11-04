@@ -34,40 +34,26 @@ struct ConfigurableChartView: View {
     
     var body: some View {
         Section {
-            if config.chartType == .line {
-                TimeseriesChart(config: config)
-            } else if config.chartType == .billboard {
-                BillboardChart(config: config)
-            } else if config.chartType == .plot {
-                ScatterPlot(config: config)
-            } else if config.chartType == .pie {
-                PieChart(config: config)
-            } else if config.chartType == .bar {
-                BarChart(config: config)
-            } else if config.chartType == .table {
-                TableChart(config: config)
-            } else {
-                TimeseriesChart(config: config)
+            switch config.chartType {
+            case .line, nil: TimeseriesChart(config: config)
+            case .billboard: BillboardChart(config: config)
+            case .plot: ScatterPlot(config: config)
+            case .pie: PieChart(config: config)
+            case .bar: BarChart(config: config)
+            case .table: TableChart(config: config)
             }
         }
         .inspectorColumnWidth(100)
         .inspector(isPresented: $configShowing) {
             ChartSelector(availableChartTypes: availableChartTypes, selectedChartType: $config.chartType)
             
-            if config.chartType == .line {
-                TimeseriesChartConfigView(config: $config)
-            } else if config.chartType == .billboard {
-                BillboardChartConfigView(config: $config)
-            } else if config.chartType == .plot {
-                ScatterPlotConfigView(config: $config)
-            } else if config.chartType == .pie {
-                PieChartConfigView(config: $config)
-            } else if config.chartType == .bar {
-                BarChartConfigView(config: $config)
-            } else if config.chartType == .table {
-                Text("No additonal configuration for tables")
-            } else {
-                Text("No additional config")
+            switch config.chartType {
+            case .line, nil: TimeseriesChartConfigView(config: $config)
+            case .billboard: BillboardChartConfigView(config: $config)
+            case .plot: ScatterPlotConfigView(config: $config)
+            case .pie: PieChartConfigView(config: $config)
+            case .bar: BarChartConfigView(config: $config)
+            case .table: Text("No additional configuration for tables")
             }
         }
     }

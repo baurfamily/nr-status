@@ -5,19 +5,19 @@
 
 import Foundation
 
-/// Connection settings for NerdGraph. The host and API key live in the keychain
-/// (shared with widgets through an access group); account IDs are just a default
-/// for queries, so they stay in the shared App Group defaults that `PreferencesView`
-/// writes through `@AppStorage`.
+/// Connection settings for NerdGraph. The host and API key live together in one
+/// keychain credential (shared with widgets through an access group); account IDs are
+/// just a default for queries, so they stay in the shared App Group defaults that
+/// `PreferencesView` writes through `@AppStorage`.
 struct NerdgraphConfig: Equatable {
     static let defaultHost = "api.newrelic.com"
     static let defaultApiKey = "NRAK-"
 
     static let appGroup = "EHM929N34N.net.baurhome.NR-Status"
-    private static let credentialKeys = ["host", "apiKey"]
+    private static let legacyCredentialKeys = ["host", "apiKey"]
 
     /// Replaced in tests.
-    static var secrets: SecretStore = KeychainStore.shared
+    static var credentialStore: CredentialStore = KeychainStore.shared
 
     /// Shared with the widget extension. Account IDs saved before the App Group
     /// existed are copied over once.
@@ -31,17 +31,20 @@ struct NerdgraphConfig: Equatable {
     }()
 
     /// Moves a host and key saved in `UserDefaults` by older versions into the
-    /// keychain. The old copies are only deleted once the keychain has the value.
+    /// keychain. The old copies are only deleted once the keychain has a credential.
     static func migrateCredentialsToKeychain(
         from defaultsList: [UserDefaults] = [sharedDefaults, .standard],
-        into secrets: SecretStore = secrets
+        into store: CredentialStore = credentialStore
     ) {
-        for key in credentialKeys {
-            if secrets.string(for: key) == nil,
-               let old = defaultsList.lazy.compactMap({ $0.string(forKey: key) }).first {
-                secrets.set(old, for: key)
-            }
-            guard secrets.string(for: key) != nil else { continue }
+        func legacyValue(_ key: String) -> String? {
+            defaultsList.lazy.compactMap { $0.string(forKey: key) }.first
+        }
+
+        if store.load() == nil, let apiKey = legacyValue("apiKey") {
+            store.save(Credential(host: legacyValue("host") ?? defaultHost, apiKey: apiKey))
+        }
+        guard store.load() != nil else { return }
+        for key in legacyCredentialKeys {
             for defaults in defaultsList {
                 defaults.removeObject(forKey: key)
             }
@@ -57,17 +60,21 @@ struct NerdgraphConfig: Equatable {
 
     static var current: NerdgraphConfig {
         _ = migrated
+        let credential = credentialStore.load()
         return NerdgraphConfig(
-            host: secrets.string(for: "host") ?? defaultHost,
-            apiKey: secrets.string(for: "apiKey") ?? defaultApiKey,
+            host: credential?.host ?? defaultHost,
+            apiKey: credential?.apiKey ?? defaultApiKey,
             accountIds: sharedDefaults.string(forKey: "accountIds") ?? ""
         )
     }
 
     static func saveCredentials(host: String, apiKey: String) {
         _ = migrated
-        secrets.set(host, for: "host")
-        secrets.set(apiKey, for: "apiKey")
+        let trimmedHost = host.trimmingCharacters(in: .whitespaces)
+        credentialStore.save(Credential(
+            host: trimmedHost.isEmpty ? defaultHost : trimmedHost,
+            apiKey: apiKey
+        ))
     }
 
     var url: URL {

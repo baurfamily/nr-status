@@ -7,15 +7,34 @@ import Testing
 import Foundation
 @testable import NR_Status
 
-private final class InMemorySecrets: SecretStore {
-    var values: [String: String] = [:]
+private final class InMemoryCredentialStore: CredentialStore {
+    var credential: Credential?
     var writesFail = false
 
-    func string(for key: String) -> String? { values[key] }
-    func set(_ value: String, for key: String) {
-        if !writesFail { values[key] = value }
+    func load() -> Credential? { credential }
+    func save(_ credential: Credential) {
+        if !writesFail { self.credential = credential }
     }
-    func remove(_ key: String) { values[key] = nil }
+    func remove() { credential = nil }
+}
+
+struct KeychainStoreTests {
+    @Test func keepsASingleCredentialAcrossHostChanges() {
+        let store = KeychainStore(label: "NR Status test \(UUID().uuidString)", accessGroup: nil)
+        defer { store.remove() }
+
+        store.save(Credential(host: "a.example.com", apiKey: "key-1"))
+        #expect(store.load() == Credential(host: "a.example.com", apiKey: "key-1"))
+
+        store.save(Credential(host: "a.example.com", apiKey: "key-2"))
+        #expect(store.load() == Credential(host: "a.example.com", apiKey: "key-2"))
+
+        store.save(Credential(host: "b.example.com", apiKey: "key-3"))
+        #expect(store.load() == Credential(host: "b.example.com", apiKey: "key-3"))
+
+        store.remove()
+        #expect(store.load() == nil)
+    }
 }
 
 struct CredentialMigrationTests {
@@ -26,42 +45,51 @@ struct CredentialMigrationTests {
         return defaults
     }
 
-    @Test func movesLegacyCredentialsIntoSecretsAndClearsDefaults() {
+    @Test func movesLegacyCredentialIntoStoreAndClearsDefaults() {
         let defaults = makeDefaults()
         defaults.set("eu01.api.newrelic.com", forKey: "host")
         defaults.set("NRAK-SECRET", forKey: "apiKey")
         defaults.set("123", forKey: "accountIds")
-        let secrets = InMemorySecrets()
+        let store = InMemoryCredentialStore()
 
-        NerdgraphConfig.migrateCredentialsToKeychain(from: [defaults], into: secrets)
+        NerdgraphConfig.migrateCredentialsToKeychain(from: [defaults], into: store)
 
-        #expect(secrets.values["host"] == "eu01.api.newrelic.com")
-        #expect(secrets.values["apiKey"] == "NRAK-SECRET")
+        #expect(store.credential == Credential(host: "eu01.api.newrelic.com", apiKey: "NRAK-SECRET"))
         #expect(defaults.string(forKey: "host") == nil)
         #expect(defaults.string(forKey: "apiKey") == nil)
         #expect(defaults.string(forKey: "accountIds") == "123")
     }
 
-    @Test func keepsLegacyValuesWhenSecretsCannotBeWritten() {
+    @Test func legacyKeyWithoutHostUsesDefaultHost() {
         let defaults = makeDefaults()
         defaults.set("NRAK-SECRET", forKey: "apiKey")
-        let secrets = InMemorySecrets()
-        secrets.writesFail = true
+        let store = InMemoryCredentialStore()
 
-        NerdgraphConfig.migrateCredentialsToKeychain(from: [defaults], into: secrets)
+        NerdgraphConfig.migrateCredentialsToKeychain(from: [defaults], into: store)
+
+        #expect(store.credential == Credential(host: NerdgraphConfig.defaultHost, apiKey: "NRAK-SECRET"))
+    }
+
+    @Test func keepsLegacyValuesWhenStoreCannotBeWritten() {
+        let defaults = makeDefaults()
+        defaults.set("NRAK-SECRET", forKey: "apiKey")
+        let store = InMemoryCredentialStore()
+        store.writesFail = true
+
+        NerdgraphConfig.migrateCredentialsToKeychain(from: [defaults], into: store)
 
         #expect(defaults.string(forKey: "apiKey") == "NRAK-SECRET")
     }
 
-    @Test func existingSecretsWinOverLegacyValues() {
+    @Test func existingCredentialWinsOverLegacyValues() {
         let defaults = makeDefaults()
         defaults.set("NRAK-OLD", forKey: "apiKey")
-        let secrets = InMemorySecrets()
-        secrets.values["apiKey"] = "NRAK-NEW"
+        let store = InMemoryCredentialStore()
+        store.credential = Credential(host: "api.newrelic.com", apiKey: "NRAK-NEW")
 
-        NerdgraphConfig.migrateCredentialsToKeychain(from: [defaults], into: secrets)
+        NerdgraphConfig.migrateCredentialsToKeychain(from: [defaults], into: store)
 
-        #expect(secrets.values["apiKey"] == "NRAK-NEW")
+        #expect(store.credential?.apiKey == "NRAK-NEW")
         #expect(defaults.string(forKey: "apiKey") == nil)
     }
 }

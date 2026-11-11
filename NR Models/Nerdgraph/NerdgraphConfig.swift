@@ -14,10 +14,8 @@ struct NerdgraphConfig: Equatable {
     static let defaultApiKey = "NRAK-"
 
     static let appGroup = "EHM929N34N.net.baurhome.NR-Status"
-    private static let legacyCredentialKeys = ["host", "apiKey"]
 
-    /// Replaced in tests.
-    static var credentialStore: CredentialStore = KeychainStore.shared
+    static let credentialStore: CredentialStore = KeychainStore.shared
 
     /// Shared with the widget extension. Account IDs saved before the App Group
     /// existed are copied over once.
@@ -30,36 +28,12 @@ struct NerdgraphConfig: Equatable {
         return shared
     }()
 
-    /// Moves a host and key saved in `UserDefaults` by older versions into the
-    /// keychain. The old copies are only deleted once the keychain has a credential.
-    static func migrateCredentialsToKeychain(
-        from defaultsList: [UserDefaults] = [sharedDefaults, .standard],
-        into store: CredentialStore = credentialStore
-    ) {
-        func legacyValue(_ key: String) -> String? {
-            defaultsList.lazy.compactMap { $0.string(forKey: key) }.first
-        }
-
-        if store.load() == nil, let apiKey = legacyValue("apiKey") {
-            store.save(Credential(host: legacyValue("host") ?? defaultHost, apiKey: apiKey))
-        }
-        guard store.load() != nil else { return }
-        for key in legacyCredentialKeys {
-            for defaults in defaultsList {
-                defaults.removeObject(forKey: key)
-            }
-        }
-    }
-
-    private static let migrated: Void = migrateCredentialsToKeychain()
-
     var host: String
     var apiKey: String
     // comma separated, exactly as entered in preferences
     var accountIds: String
 
     static var current: NerdgraphConfig {
-        _ = migrated
         let credential = credentialStore.load()
         return NerdgraphConfig(
             host: credential?.host ?? defaultHost,
@@ -69,7 +43,6 @@ struct NerdgraphConfig: Equatable {
     }
 
     static func saveCredentials(host: String, apiKey: String) {
-        _ = migrated
         let trimmedHost = host.trimmingCharacters(in: .whitespaces)
         credentialStore.save(Credential(
             host: trimmedHost.isEmpty ? defaultHost : trimmedHost,

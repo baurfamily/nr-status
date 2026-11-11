@@ -24,7 +24,7 @@
 - [ ] **Shared `NR Models` framework.** The app and widget each compile the `NR Models/` sources directly, so everything is built twice into separate modules (including the `ChartType` and `GaugeStyle` AppEnums, a possible registry conflict). Either make `NR Models` a real framework (needs `public` access and project-file work), or delete the unused `NR Models` and `NR ModelsTests` targets.
 - [ ] **Verify on screen:** opening a `.nrql` file with the new UTType, and the widgets' App Group data flow.
 - [ ] **Time picker:** check the Time window, Interval and Limit pickers after the `QueryBuilder` change. A timeseries with no interval chosen now emits `TIMESERIES AUTO` (it used to emit `TIMESERIES ` with nothing after it).
-- [x] **Credentials:** the host and API key are one keychain credential (internet password: server = host, data = key), shared with the widget via an access group. Legacy `UserDefaults` values migrate on first read. Account IDs stay in the shared defaults.
+- [x] **Credentials:** the host and API key are one keychain credential (internet password: server = host, data = key), shared with the widget via an access group. Account IDs stay in the shared defaults.
 - [ ] **Injection:** account IDs and the domain are interpolated into NRQL/GraphQL. Validate them (integers only) or pass them as variables.
 - [ ] **Move the `entitySearch` query** to a `.graphql` resource or a dedicated file.
 - [ ] **Remaining `print` calls.** Replace any that are left with `os.Logger`.

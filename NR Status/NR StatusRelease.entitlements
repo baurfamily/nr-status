@@ -12,5 +12,9 @@
 	<array>
 		<string>$(TeamIdentifierPrefix)net.baurhome.NR-Status</string>
 	</array>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)net.baurhome.NR-Status</string>
+	</array>
 </dict>
 </plist>

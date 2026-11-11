@@ -8,9 +8,8 @@
 import SwiftUI
 
 struct PreferencesView: View {
-    @AppStorage("host", store: NerdgraphConfig.sharedDefaults) var host: String = "api.newrelic.com"
-    // this is not particularly secure... :( 
-    @AppStorage("apiKey", store: NerdgraphConfig.sharedDefaults) var apiKey: String = "YOUR_API_KEY"
+    @State private var host: String = NerdgraphConfig.current.host
+    @State private var apiKey: String = NerdgraphConfig.current.apiKey
     @AppStorage("accountIds", store: NerdgraphConfig.sharedDefaults) var accountIds: String = ""
     
     @State var emailCheck: Bool? = nil
@@ -22,12 +21,14 @@ struct PreferencesView: View {
         VStack {
             Form {
                 TextField("API Url", text: $host)
-                TextField("API Key", text: $apiKey)
+                SecureField("API Key", text: $apiKey)
                 TextField("Account IDs (CSV)", text: $accountIds)
                 Button("Test") {
                     testRequest()
                 }
             }
+            .onChange(of: host) { saveCredentials() }
+            .onChange(of: apiKey) { saveCredentials() }
             
             Text("API Result")
             Text(email)
@@ -38,6 +39,10 @@ struct PreferencesView: View {
             }
         }
         .padding()
+    }
+    
+    func saveCredentials() {
+        NerdgraphConfig.saveCredentials(host: host, apiKey: apiKey)
     }
     
     func testRequest() {

@@ -15,13 +15,6 @@ struct AttributeSummaryView : View {
         width: summaryZoomed ? 600 : 300,
         height: summaryZoomed ? 500 : 250,
     )}
-//    func loadNext() {
-//        // something, something, load?
-//    }
-//    
-//    func loadPrev() {
-//        // something else... load?
-//    }
     
     var body: some View {
         Grid {
@@ -39,17 +32,7 @@ struct AttributeSummaryView : View {
             }
             GridRow {
                 HStack {
-//                    Button(action: loadPrev) {
-//                        Image(systemName: "arrowshape.backward.fill")
-//                        Text("prev")
-//                    }
-//                    Spacer()
                     Text(summary.attribute.key).font(.largeTitle)
-//                    Spacer()
-//                    Button(action: loadNext) {
-//                        Text("next")
-//                        Image(systemName: "arrowshape.forward.fill")
-//                    }
                 }
             }
             GridRow {

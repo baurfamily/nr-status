@@ -31,8 +31,8 @@ struct AttributeSummary : Identifiable{
     static var cache: [String: AttributeSummary] = [:]
     
     static func generate(from attribute: Attribute) async -> Self {
-        guard cache[attribute.id] == nil else {
-            return cache[attribute.id]!
+        if let cached = cache[attribute.id] {
+            return cached
         }
         
         var summary = AttributeSummary(attribute: attribute)

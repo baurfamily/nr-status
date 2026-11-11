@@ -95,7 +95,7 @@ struct TimeseriesChart: View {
                 if config.timeseries.isStacked {
                     AreaMark(
                         x: .value("Timestamp", dateFor(datum)),
-                        y: .value(field, datum.numberFields[field]!)
+                        y: .value(field, datum.numberFields[field] ?? 0)
                     )
                     .foregroundStyle(by: .value(seriesNames.0, seriesNames.1))
                     .interpolationMethod((config.timeseries.isSmoothed ? .catmullRom : .linear))

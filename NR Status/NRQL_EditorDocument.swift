@@ -61,7 +61,7 @@ struct NRQL_EditorDocument: FileDocument {
         parseQueries()
     }
 
-    static var readableContentTypes: [UTType] { [.exampleText] }
+    static var readableContentTypes: [UTType] { [.nrql] }
 
     init(configuration: ReadConfiguration) throws {
         guard let data = configuration.file.regularFileContents,
@@ -117,7 +117,10 @@ struct NRQL_EditorDocument: FileDocument {
     
     func queryAt(_ position: CodeEditor.Position) -> DocumentQuery? {
         guard let range = position.selections.first else { return nil }
-        return queries.first { NSLocationInRange(range.lowerBound, $0.position.selections.first!) }
+        return queries.first { query in
+            guard let queryRange = query.position.selections.first else { return false }
+            return NSLocationInRange(range.lowerBound, queryRange)
+        }
     }
     
     // the query under the cursor

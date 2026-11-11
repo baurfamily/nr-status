@@ -59,6 +59,12 @@ struct TimeseriesChart: View {
     }
     
     var body: some View {
+        // Read observable settings here so body tracks them; Chart's content closure may run outside body.
+        let isStacked = config.timeseries.isStacked
+        let interpolation: InterpolationMethod = config.timeseries.isSmoothed ? .catmullRom : .linear
+        let showLines = config.timeseries.showLines
+        let symbolSize: Double = config.timeseries.showDataPoints ? 50 : 0
+
         Chart(data.filter { $0.facet == nil || selectedFacets.contains($0.facet!)}) { datum in
             if let selectedDateRange {
                 RectangleMark(
@@ -92,15 +98,15 @@ struct TimeseriesChart: View {
             ForEach(selectedFields.sorted(), id: \.self) { field in
                 let seriesNames = seriesNames(for: field, in: datum)
 
-                if config.timeseries.isStacked {
+                if isStacked {
                     AreaMark(
                         x: .value("Timestamp", dateFor(datum)),
                         y: .value(field, datum.numberFields[field] ?? 0)
                     )
                     .foregroundStyle(by: .value(seriesNames.0, seriesNames.1))
-                    .interpolationMethod((config.timeseries.isSmoothed ? .catmullRom : .linear))
+                    .interpolationMethod(interpolation)
                     
-                } else if config.timeseries.showLines {
+                } else if showLines {
                     LineMark(
                         x: .value("Timestamp", dateFor(datum)),
                         y: .value(field, datum.numberFields[field] ?? 0)
@@ -108,8 +114,8 @@ struct TimeseriesChart: View {
                     .lineStyle(lineStyle(for: datum.comparison))
                     .foregroundStyle(by: .value(seriesNames.0, seriesNames.1))
                     .symbol(by: .value(seriesNames.0, seriesNames.1))
-                    .symbolSize(config.timeseries.showDataPoints ? 50 : 0)
-                    .interpolationMethod((config.timeseries.isSmoothed ? .catmullRom : .linear))
+                    .symbolSize(symbolSize)
+                    .interpolationMethod(interpolation)
                 } else {
                     PointMark(
                         x: .value("Timestamp", dateFor(datum)),
@@ -117,12 +123,14 @@ struct TimeseriesChart: View {
                     )
                     .foregroundStyle(by: .value(seriesNames.0, seriesNames.1))
                     .symbol(by: .value(seriesNames.0, seriesNames.1))
-                    .symbolSize(config.timeseries.showDataPoints ? 50 : 0)
+                    .symbolSize(symbolSize)
                 }
             }
         }
         .chartXSelection(value: $selectedDate)
         .chartXSelection(range: $selectedDateRange)
+        // Chart doesn't redraw on style-only changes until the pointer moves; a new identity forces it.
+        .id([isStacked, showLines, config.timeseries.isSmoothed, config.timeseries.showDataPoints])
     }
 }
 

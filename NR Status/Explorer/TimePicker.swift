@@ -10,16 +10,12 @@ import SwiftUI
 struct TimePicker : View {
     @Binding var query: QueryBuilder
     
-    @State var selectedWindow: String = "SINCE 1 hour ago"
-    
     var body: some View {
         HStack {
-            Picker("TimeWindow", selection: $selectedWindow) {
-                ForEach(TimeWindowChoice.choices, id:\.self) { choice in
-                    Text(choice.since).tag(choice.nrql)
+            Picker("TimeWindow", selection: $query.timewindow) {
+                ForEach(TimeWindowChoice.choices) { choice in
+                    Text(choice.since).tag(choice)
                 }
-            }.onChange(of: selectedWindow) { _, newValue in
-                query.timewindow = newValue
             }
             Toggle(isOn: $query.defaultCount) {
                 Text("Default w/Count")
@@ -29,23 +25,19 @@ struct TimePicker : View {
             }
             if query.isTimeseries {
                 Picker("Interval", selection: $query.timeseriesSize) {
-                    Text("AUTO").tag("AUTO")
+                    Text("AUTO").tag(TimeseriesSize.auto)
                     ForEach(TimeIntervalChoice.choices) { choice in
-                        Text(choice.displayName).tag(choice.displayName)
+                        Text(choice.displayName).tag(TimeseriesSize.interval(choice))
                     }
-                    Text("MAX").tag("MAX")
+                    Text("MAX").tag(TimeseriesSize.max)
                 }
             } else {
                 Picker("Limit", selection: $query.limit) {
-                    Text("AUTO").tag(0)
-                    Text("10").tag(10)
-                    Text("100").tag(100)
-                    Text("1000").tag(1000)
-                    Text("MAX").tag(Int.max)
+                    ForEach(ResultLimit.choices, id: \.self) { choice in
+                        Text(choice.displayName).tag(choice)
+                    }
                 }
             }
-        }.task {
-            self.selectedWindow = query.timewindow
         }
     }
 }

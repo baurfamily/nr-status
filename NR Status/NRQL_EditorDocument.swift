@@ -11,8 +11,8 @@ import CodeEditorView
 import LanguageSupport
 
 extension UTType {
-    static var exampleText: UTType {
-        UTType(importedAs: "com.example.plain-text")
+    static var nrql: UTType {
+        UTType(exportedAs: "net.baurhome.nrql")
     }
 }
 

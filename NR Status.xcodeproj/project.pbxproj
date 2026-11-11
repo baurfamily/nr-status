@@ -25,6 +25,13 @@
 			remoteGlobalIDString = 3F28B3642CBB996200CCB8DD;
 			remoteInfo = "NR Models";
 		};
+		3FD0000A2DC0000100D9E068 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3F57146B2C9EA7BC00685FEA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3F01FD242CBDFADF00D9E068;
+			remoteInfo = "NR Status";
+		};
 		3FA635152CD7D4E40050F813 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 3F57146B2C9EA7BC00685FEA /* Project object */;
@@ -383,6 +390,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				3FD0000B2DC0000100D9E068 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				3F5714872C9EA7BD00685FEA /* NR StatusTests */,
@@ -596,6 +604,11 @@
 			isa = PBXTargetDependency;
 			target = 3F28B3642CBB996200CCB8DD /* NR Models */;
 			targetProxy = 3F28B3702CBB996200CCB8DD /* PBXContainerItemProxy */;
+		};
+		3FD0000B2DC0000100D9E068 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3F01FD242CBDFADF00D9E068 /* NR Status */;
+			targetProxy = 3FD0000A2DC0000100D9E068 /* PBXContainerItemProxy */;
 		};
 		3FA635162CD7D4E40050F813 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

@@ -17,16 +17,8 @@ struct NerdgraphConfig: Equatable {
 
     static let credentialStore: CredentialStore = KeychainStore.shared
 
-    /// Shared with the widget extension. Account IDs saved before the App Group
-    /// existed are copied over once.
-    static let sharedDefaults: UserDefaults = {
-        guard let shared = UserDefaults(suiteName: appGroup) else { return .standard }
-        if shared.object(forKey: "accountIds") == nil,
-           let old = UserDefaults.standard.object(forKey: "accountIds") {
-            shared.set(old, forKey: "accountIds")
-        }
-        return shared
-    }()
+    /// Shared with the widget extension.
+    static let sharedDefaults = UserDefaults(suiteName: appGroup) ?? .standard
 
     var host: String
     var apiKey: String

@@ -35,6 +35,16 @@ struct NrdbResultContainer : Decodable {
     var isMultiFaceted: Bool { results.data.first?.isMultiFaceted ?? false }
     var isComparable: Bool { results.data.first?.isComparable ?? false }
     
+    // raw events, or any non-numeric values (strings, arrays), can't be charted
+    // meaningfully; these are best shown in a table
+    var prefersTable: Bool {
+        guard !results.data.isEmpty else { return false }
+        if isEvents { return true }
+        return results.data.contains {
+            !$0.stringFields.isEmpty || !$0.stringArrayFields.isEmpty || !$0.numericArrayFields.isEmpty
+        }
+    }
+    
     // unique names, in the order they first appear in the results
     var fieldNames: [String] {
         var seen: Set<String> = []

@@ -12,36 +12,59 @@ struct AttributeExplorer : View {
     
     @Binding var query: QueryBuilder
     @State var attributes: [Attribute] = []
+    @State private var isLoading = true
+    @State private var errorMessage: String?
+
+    @State private var filterText = ""
+
+    var filteredAttributes: [Attribute] {
+        let text = filterText.trimmingCharacters(in: .whitespaces)
+        guard !text.isEmpty else { return attributes }
+        return attributes.filter { $0.key.localizedCaseInsensitiveContains(text) }
+    }
 
     var attributeTypes: [String] {
-        Array(Set(attributes.map(\.type))).sorted()
+        Array(Set(filteredAttributes.map(\.type))).sorted()
     }
     
     var body: some View {
-        ScrollView {
-            LazyVStack {
-                ForEach(attributeTypes, id: \.self) { typeName in
-                    AttributeGroupView(title: typeName.capitalized, query: $query, attributes: $attributes) { $0.type == typeName }
-                }
+        List {
+            if isLoading {
+                ProgressView()
+            } else if let errorMessage {
+                Text(errorMessage).foregroundStyle(.red)
+            } else if attributes.isEmpty {
+                Text("No attributes found for \(event) in the last day.")
+                    .foregroundStyle(.secondary)
+            } else if filteredAttributes.isEmpty {
+                Text("No attributes match \"\(filterText)\".")
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(attributeTypes, id: \.self) { typeName in
+                AttributeGroupView(title: typeName.capitalized, query: $query, attributes: .constant(filteredAttributes)) { $0.type == typeName }
             }
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            TextField("Filter attributes", text: $filterText)
+                .textFieldStyle(.roundedBorder)
+                .padding(8)
+        }
         .navigationTitle("\(event) attributes")
-        .navigationViewStyle(.columns)
         .task {
             // a bit bass-ackwards of a feedback loop to set the
             // event on the query, but this works for now
             query.event = event
             
             // find the attributes associated with the event
-            if let results = try? await Queries().getNrqlData(query: "SELECT keyset() FROM \(event)") {
-                self.attributes = results.data.map {
-                    Attribute(
-                        event: event,
-                        type: $0.stringFields["type"]!,
-                        key: $0.stringFields["key"]!
-                    )
+            // same window as the event list, otherwise events without very recent data come back empty
+            do {
+                if let results = try await Queries().getNrqlData(query: "SELECT keyset() FROM \(event) SINCE 1 day ago") {
+                    attributes = Attribute.attributes(event: event, fromKeyset: results)
                 }
+            } catch {
+                errorMessage = "Couldn't load attributes: \(error.localizedDescription)"
             }
+            isLoading = false
         }
         
     }

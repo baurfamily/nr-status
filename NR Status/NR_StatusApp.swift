@@ -35,7 +35,7 @@ struct NRQL_EditorApp: App {
         WindowGroup(id: "summary-view") { SummaryView() }
         WindowGroup(id: "sample-charts") { ChartSampleView() }
         WindowGroup(id: "nrql-viewer") { NrqlViewer() }
-        WindowGroup(id: "nrql-explorer") { NrqlExplorer() }
+        WindowGroup(id: "query-builder") { QueryBuilderView() }
         .commands {
             CommandMenu("Features") {
                 Button(action: {
@@ -54,9 +54,9 @@ struct NRQL_EditorApp: App {
                     Text("NRQL Viewer")
                 }).keyboardShortcut("n", modifiers: [ .command, .shift ])
                 Button(action: {
-                    openWindow(id: "nrql-explorer")
+                    openWindow(id: "query-builder")
                 }, label: {
-                    Text("NRQL Editor")
+                    Text("Query Builder")
                 }).keyboardShortcut("e", modifiers: [ .command, .shift ])
             }
             CommandMenu("Editor") { EditorMenuView() }

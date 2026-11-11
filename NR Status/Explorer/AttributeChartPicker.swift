@@ -48,14 +48,17 @@ struct AttributeChartPicker : View {
                 AttributeChart(summary: summary, data: data, fieldName: fieldName)
             }
             
-            Picker("", selection: $fieldName) {
-                if summary.attribute.type == "numeric" {
+            if summary.attribute.type == "numeric" {
+                Picker("", selection: $fieldName) {
                     Button("Distribution") {}.tag("average.\(summary.attribute.key)")
                     Button("Box Plot") {}.tag("percentile.\(summary.attribute.key)")
-                } else {
-                    Button("Uniques") {}.tag("uniqueCount.\(summary.attribute.key)")
-                }
-            }.pickerStyle(.palette)
+                }.pickerStyle(.palette)
+            } else {
+                Toggle("Unique values only", isOn: Binding(
+                    get: { fieldName == "uniqueCount.\(summary.attribute.key)" },
+                    set: { fieldName = $0 ? "uniqueCount.\(summary.attribute.key)" : "count" }
+                ))
+            }
             
         }.frame(maxWidth: .infinity, maxHeight: .infinity)
     }

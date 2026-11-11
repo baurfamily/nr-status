@@ -166,33 +166,42 @@ struct QueryBuilder : Equatable {
         facets.removeAll(key: attribute.key)
     }
     
-    var nrql: String {
-        var query = "FROM \(event) SELECT "
+    // one entry per NRQL clause, in query order
+    var clauses: [String] {
+        var select = "SELECT "
         if attributes.isEmpty && aggregates.isEmpty {
-            query += (defaultCount ? "COUNT(*)" : "*")
+            select += (defaultCount ? "COUNT(*)" : "*")
         } else {
-            query += attributes.map(\.key).joined(separator: ", ")
+            select += attributes.map(\.key).joined(separator: ", ")
             
             if !attributes.isEmpty && !aggregates.isEmpty {
-                query += ", "
+                select += ", "
             }
             
-            query += aggregates.map(\.nrql).joined(separator: ", ")
+            select += aggregates.map(\.nrql).joined(separator: ", ")
         }
         
-        query += " \(timewindow.nrql)"
+        var clauses = ["FROM \(event)", select, timewindow.nrql]
         
         if !facets.isEmpty {
-            query += " FACET " + facets.map(\.key).joined(separator: ", ")
+            clauses.append("FACET " + facets.map(\.key).joined(separator: ", "))
+        }
+        
+        if let limitClause = limit.nrql {
+            clauses.append(limitClause)
         }
         
         // need to figure out how to do aggrecates before this will work
         if isTimeseries {
-            query += " TIMESERIES \(timeseriesSize.nrql)"
-        } else if let limitClause = limit.nrql {
-            query += " \(limitClause)"
+            clauses.append("TIMESERIES \(timeseriesSize.nrql)")
         }
         
-        return query
+        return clauses
     }
+    
+    // what gets sent to NRDB
+    var nrql: String { clauses.joined(separator: " ") }
+    
+    // same query, one clause per line, for display
+    var formattedNrql: String { clauses.joined(separator: "\n") }
 }

@@ -61,4 +61,44 @@ struct NrdbTests {
         #expect(container.dateAdjustment == 600)
         #expect(container.adjustedTime(Date(timeIntervalSince1970: 400)) == Date(timeIntervalSince1970: 1000))
     }
+
+    @Test func chartTypeFallsBackWhenResultsNoLongerSupportIt() throws {
+        let single = try container(results: #"[{"count":5}]"#)
+        let config = ChartConfiguration(resultContainer: single)
+        #expect(config.chartType == .billboard)
+
+        let timeseries = try container(results: #"[{"beginTimeSeconds":100,"endTimeSeconds":160,"count":1}]"#)
+        config.updateResults(timeseries)
+        #expect(config.chartType == .line)
+
+        // a still-supported choice is kept
+        config.chartType = .bar
+        config.updateResults(timeseries)
+        #expect(config.chartType == .bar)
+    }
+
+    @Test func switchesToTableForEventsAndNonNumericData() throws {
+        let single = try container(results: #"[{"count":5}]"#)
+        let config = ChartConfiguration(resultContainer: single)
+        #expect(config.chartType == .billboard)
+
+        let events = try container(results: #"[{"timestamp":1000,"appName":"A","duration":1.5}]"#)
+        config.updateResults(events)
+        #expect(config.chartType == .table)
+
+        let strings = try container(results: #"[{"appName":"A"}]"#)
+        #expect(ChartType.cases(for: strings) == [.table])
+    }
+
+    @Test func keysetParsesPerRowAndGroupedShapes() throws {
+        let rows = try container(results: #"[{"key":"duration","type":"numeric"},{"key":"name","type":"string"}]"#)
+        let fromRows = Attribute.attributes(event: "Transaction", fromKeyset: rows)
+        #expect(fromRows.map(\.key) == ["duration", "name"])
+        #expect(fromRows.first?.type == "numeric")
+
+        let grouped = try container(results: #"[{"stringKeys":["name"],"numericKeys":["duration","error"],"booleanKeys":["error"],"allKeys":["duration","error","name"]}]"#)
+        let fromGroups = Attribute.attributes(event: "Transaction", fromKeyset: grouped)
+        #expect(fromGroups.map(\.key) == ["duration", "error", "name"])
+        #expect(fromGroups.map(\.type) == ["numeric", "boolean", "string"])
+    }
 }

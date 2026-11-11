@@ -97,12 +97,30 @@ struct QueryBuilderTests {
         #expect(!query.nrql.contains("LIMIT"))
     }
 
-    @Test func timeseriesReplacesLimit() {
+    @Test func formattedQueryPutsEachClauseOnItsOwnLine() {
         var query = QueryBuilder(event: "Transaction")
-        query.limit = .count(10)
+        query.add(aggregate: "average", with: duration)
+        query.add(facet: name)
+        query.isTimeseries = true
+
+        #expect(query.formattedNrql == """
+        FROM Transaction
+        SELECT average(duration)
+        SINCE 6 hours ago
+        FACET name
+        TIMESERIES AUTO
+        """)
+        #expect(query.formattedNrql.replacingOccurrences(of: "\n", with: " ") == query.nrql)
+    }
+
+    @Test func timeseriesIsCombinedWithLimit() {
+        var query = QueryBuilder(event: "Transaction")
         query.isTimeseries = true
 
         #expect(query.nrql == "FROM Transaction SELECT COUNT(*) SINCE 6 hours ago TIMESERIES AUTO")
+
+        query.limit = .count(10)
+        #expect(query.nrql == "FROM Transaction SELECT COUNT(*) SINCE 6 hours ago LIMIT 10 TIMESERIES AUTO")
 
         query.timeseriesSize = .interval(TimeIntervalChoice.choices[1])
         #expect(query.nrql.hasSuffix(" TIMESERIES 5 minutes"))

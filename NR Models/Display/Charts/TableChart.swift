@@ -26,21 +26,34 @@ struct TableChart : View {
         return result
     }
     
+    // row ids are positional: event timestamps (and other derived ids) can repeat,
+    // and duplicate ids crash Table
+    private struct Row : Identifiable {
+        let id: Int
+        let datum: NrdbResults.Datum
+    }
+    
+    private var rows: [Row] {
+        resultContainer.data.enumerated().map { Row(id: $0.offset, datum: $0.element) }
+    }
+    
     var body: some View {
-        Table(resultContainer.data) {
+        // the column set varies with the query; rebuild the table when it changes
+        Table(rows) {
             if resultContainer.isTimeseries || resultContainer.isEvents {
-                TableColumn("Timestamp") { (datum: NrdbResults.Datum) in
-                    if let date = datum.date {
+                TableColumn("Timestamp") { (row: Row) in
+                    if let date = row.datum.date {
                         Text(date, style: .relative)
                     }
                 }
             }
             TableColumnForEach(resultContainer.fieldNames, id:\.self) { field in
-                TableColumn(field) { datum in
-                    Text(value(for: field, in: datum))
+                TableColumn(field) { (row: Row) in
+                    Text(value(for: field, in: row.datum))
                 }
             }
         }
+        .id(resultContainer.fieldNames)
     }
 }
 

@@ -29,24 +29,21 @@ struct AttributeListView : View {
                     }
                 }.padding(.all)
                     .task {
-                        print("popover for \(attribute.key)")
-                        Task {
-                            self.summaryStats = await AttributeSummary.generate(from: attribute)
-                        }
+                        self.summaryStats = await AttributeSummary.generate(from: attribute)
                     }
             }.buttonStyle(.borderless)
             
             Menu {
-                Button("Select") { print("select") }
-                Button("Facet") { print("facet") }
+                Button("Select") { }
+                Button("Facet") { }
                 Divider()
-                Button("Count") { print("count") }
-                Button("Count Unique") { print("uniq") }
+                Button("Count") { }
+                Button("Count Unique") { }
                 Divider()
-                Button("Average") { print("avg") }
-                Button("Std. Dev.") { print("stddev") }
-                Button("Minimum") { print("min") }
-                Button("Maximum") { print("max") }
+                Button("Average") { }
+                Button("Std. Dev.") { }
+                Button("Minimum") { }
+                Button("Maximum") { }
             } label: {
                 Image(systemName: "chart.xyaxis.line")
             }

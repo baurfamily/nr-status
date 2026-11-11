@@ -25,7 +25,6 @@ struct PreferencesView: View {
                 TextField("API Key", text: $apiKey)
                 TextField("Account IDs (CSV)", text: $accountIds)
                 Button("Test") {
-                    print("Test: \(host)")
                     testRequest()
                 }
             }

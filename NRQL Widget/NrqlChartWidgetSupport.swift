@@ -47,11 +47,9 @@ struct NrqlChartProvider<Intent: NrqlWidgetIntent>: AppIntentTimelineProvider {
     }
 
     func timeline(for configuration: Intent, in context: Context) async -> Timeline<Entry> {
-        let queries = Queries(
-            host: configuration.apiHost,
-            apiKey: configuration.apiKey,
-            accountIds: configuration.accountIds
-        )
+        // Connection settings come from the app's Preferences (shared App Group)
+        // rather than the intent, because Edit Widget is currently unusable.
+        let queries = Queries()
         let resultContainer = try? await queries.getNrqlData(query: configuration.nrqlQuery, debug: true)
 
         let entry: Entry

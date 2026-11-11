@@ -8,10 +8,10 @@
 import SwiftUI
 
 struct PreferencesView: View {
-    @AppStorage("host") var host: String = "api.newrelic.com"
+    @AppStorage("host", store: NerdgraphConfig.sharedDefaults) var host: String = "api.newrelic.com"
     // this is not particularly secure... :( 
-    @AppStorage("apiKey") var apiKey: String = "YOUR_API_KEY"
-    @AppStorage("accountIds") var accountIds: String = ""
+    @AppStorage("apiKey", store: NerdgraphConfig.sharedDefaults) var apiKey: String = "YOUR_API_KEY"
+    @AppStorage("accountIds", store: NerdgraphConfig.sharedDefaults) var accountIds: String = ""
     
     @State var emailCheck: Bool? = nil
     @State var email: String = ""

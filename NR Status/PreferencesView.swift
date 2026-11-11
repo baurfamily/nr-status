@@ -8,10 +8,9 @@
 import SwiftUI
 
 struct PreferencesView: View {
-    @AppStorage("host") var host: String = "api.newrelic.com"
-    // this is not particularly secure... :( 
-    @AppStorage("apiKey") var apiKey: String = "YOUR_API_KEY"
-    @AppStorage("accountIds") var accountIds: String = ""
+    @State private var host: String = NerdgraphConfig.current.host
+    @State private var apiKey: String = NerdgraphConfig.current.apiKey
+    @AppStorage("accountIds", store: NerdgraphConfig.sharedDefaults) var accountIds: String = ""
     
     @State var emailCheck: Bool? = nil
     @State var email: String = ""
@@ -22,13 +21,14 @@ struct PreferencesView: View {
         VStack {
             Form {
                 TextField("API Url", text: $host)
-                TextField("API Key", text: $apiKey)
+                SecureField("API Key", text: $apiKey)
                 TextField("Account IDs (CSV)", text: $accountIds)
                 Button("Test") {
-                    print("Test: \(host)")
                     testRequest()
                 }
             }
+            .onChange(of: host) { saveCredentials() }
+            .onChange(of: apiKey) { saveCredentials() }
             
             Text("API Result")
             Text(email)
@@ -41,17 +41,23 @@ struct PreferencesView: View {
         .padding()
     }
     
+    func saveCredentials() {
+        NerdgraphConfig.saveCredentials(host: host, apiKey: apiKey)
+    }
+    
     func testRequest() {
-        Queries().user() { user in
-            if let email = user?.email {
+        let queries = Queries()
+        
+        Task {
+            if let email = (try? await queries.user())?.email {
                 self.email = email
                 self.emailCheck = true
             } else {
                 self.emailCheck = false
             }
         }
-        Queries().accounts() { accounts in
-            if let accounts = accounts {
+        Task {
+            if let accounts = try? await queries.accounts() {
                 let names = accounts.map() { "\($0.name ?? "no name found") (\(String($0.id ?? 0)))" }
                 let ids = accounts.map() { $0.id }
                 

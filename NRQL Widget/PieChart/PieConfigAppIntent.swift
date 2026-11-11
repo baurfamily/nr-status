@@ -8,7 +8,7 @@
 import WidgetKit
 import AppIntents
 
-struct PieConfigAppIntent: WidgetConfigurationIntent {
+struct PieConfigAppIntent: NrqlWidgetIntent {
     static var title: LocalizedStringResource { "NRQL Pie Chart" }
     static var description: IntentDescription { "This widget allows you to view a pie graph built from a NRQL query." }
     

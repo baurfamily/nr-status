@@ -12,9 +12,21 @@ struct LineWidget: Widget {
     let kind: String = "NRQL Line Chart"
 
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(kind: kind, intent: LineConfigAppIntent.self, provider: LineChartProvider()) { entry in
-            LineChartWidgetView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+        AppIntentConfiguration(
+            kind: kind,
+            intent: LineConfigAppIntent.self,
+            provider: NrqlChartProvider<LineConfigAppIntent>(chartType: .line)
+        ) { entry in
+            NrqlChartWidgetView(
+                entry: entry,
+                configure: { config, intent in
+                    config.timeseries.isSmoothed = intent.isSmoothed
+                    config.timeseries.isStacked = intent.isStacked
+                    config.timeseries.showDataPoints = intent.showDataPoints
+                },
+                chart: { config in TimeseriesChart(config: config) }
+            )
+            .containerBackground(.fill.tertiary, for: .widget)
         }
     }
 }

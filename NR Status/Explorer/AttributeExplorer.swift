@@ -33,15 +33,13 @@ struct AttributeExplorer : View {
             query.event = event
             
             // find the attributes associated with the event
-            Queries().nrql(query: "SELECT keyset() FROM \(event)") { results in
-                if let results {
-                    self.attributes = results.data.map {
-                        Attribute(
-                            event: event,
-                            type: $0.stringFields["type"]!,
-                            key: $0.stringFields["key"]!
-                        )
-                    }
+            if let results = try? await Queries().getNrqlData(query: "SELECT keyset() FROM \(event)") {
+                self.attributes = results.data.map {
+                    Attribute(
+                        event: event,
+                        type: $0.stringFields["type"]!,
+                        key: $0.stringFields["key"]!
+                    )
                 }
             }
         }

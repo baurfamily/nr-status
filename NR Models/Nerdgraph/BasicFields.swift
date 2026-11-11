@@ -7,6 +7,11 @@
 
 struct Root : Decodable {
     var data: NRData?
+    var errors: [GraphQLError]?
+}
+
+struct GraphQLError : Decodable {
+    var message: String
 }
 
 struct NRData : Decodable {

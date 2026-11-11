@@ -34,10 +34,8 @@ struct EventExplorer : View {
         .navigationViewStyle(.columns)
         .navigationTitle("Events")
         .task {
-            Queries().nrql(query: "SHOW EVENT TYPES since 1 day ago") { results in
-                if let results {
-                    events = results.data.map { $0.stringFields["eventType"] ?? "" }
-                }
+            if let results = try? await Queries().getNrqlData(query: "SHOW EVENT TYPES since 1 day ago") {
+                events = results.data.map { $0.stringFields["eventType"] ?? "" }
             }
         }.searchable(text: $eventFilter, placement: .sidebar)
     }

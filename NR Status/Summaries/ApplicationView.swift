@@ -19,7 +19,7 @@ struct ApplicationView: View {
         }
         .task {
             if applications.isEmpty {
-                Application.all() { applications = $0 }
+                applications = await Application.all()
             }
         }
     }

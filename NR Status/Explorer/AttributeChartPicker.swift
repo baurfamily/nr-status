@@ -68,10 +68,12 @@ struct AttributeChart : View {
     
     var body: some View {
         Chart(data) { datum in
-            LineMark(
-                x: .value("Timestamp", datum.date),
-                y: .value(fieldName, datum.numberFields[fieldName] ?? 0)
-            )
+            if let date = datum.date {
+                LineMark(
+                    x: .value("Timestamp", date),
+                    y: .value(fieldName, datum.numberFields[fieldName] ?? 0)
+                )
+            }
         }.frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -88,12 +90,14 @@ struct AttributeStatsChart : View {
     var body: some View {
         VStack {
             Chart(data) { datum in
-                LineMark(
-                    x: .value("Timestamp", datum.date),
-                    y: .value("average", datum.numberFields[fieldName(for: "average")] ?? 0)
-                )
-                .lineStyle(by: .value("Statistic", "Average"))
-                .interpolationMethod(.catmullRom)
+                if let date = datum.date {
+                    LineMark(
+                        x: .value("Timestamp", date),
+                        y: .value("average", datum.numberFields[fieldName(for: "average")] ?? 0)
+                    )
+                    .lineStyle(by: .value("Statistic", "Average"))
+                    .interpolationMethod(.catmullRom)
+                }
                 
                 SigmaMark(datum: datum, key: summary.attribute.key)
                     .foregroundStyle(.yellow)
@@ -120,9 +124,10 @@ struct CandleStickChart : View {
     
     var body: some View {
         Chart(data) { datum in
-            if let percentiles = datum.numericDictFields["percentile.\(key)"] {
+            if let date = datum.date,
+               let percentiles = datum.numericDictFields["percentile.\(key)"] {
                 CandleStickMark(
-                    timestamp: datum.date,
+                    timestamp: date,
                     min: percentiles["5"]!,
                     firstQ: percentiles["25"]!,
                     median: percentiles["50"]!,
@@ -132,7 +137,7 @@ struct CandleStickChart : View {
                 )
                 .zIndex(0)
                 LineMark(
-                    x: .value("Timestamp", datum.date),
+                    x: .value("Timestamp", date),
                     y: .value("Median", datum.numericDictFields["percentile.\(key)"]!["50"]!)
                 )
                 .zIndex(-1)
@@ -189,15 +194,16 @@ struct SigmaMark : ChartContent {
     }
     
     var body: some ChartContent {
-        AreaMark(
-            x: .value("Timestamp", datum.date),
-            yStart: .value("minus sigma", (datum.numberFields[fieldName(for: "average")] ?? 0)-(datum.numberFields[fieldName(for: "stddev")] ?? 0)),
-            yEnd: .value("plus sigma", (datum.numberFields[fieldName(for: "average")] ?? 0)+(datum.numberFields[fieldName(for: "stddev")] ?? 0))
-        )
-        .foregroundStyle(by: .value("Statistic", "±1σ"))
-        .interpolationMethod(.catmullRom)
-        .opacity(0.5)
-        
+        if let date = datum.date {
+            AreaMark(
+                x: .value("Timestamp", date),
+                yStart: .value("minus sigma", (datum.numberFields[fieldName(for: "average")] ?? 0)-(datum.numberFields[fieldName(for: "stddev")] ?? 0)),
+                yEnd: .value("plus sigma", (datum.numberFields[fieldName(for: "average")] ?? 0)+(datum.numberFields[fieldName(for: "stddev")] ?? 0))
+            )
+            .foregroundStyle(by: .value("Statistic", "±1σ"))
+            .interpolationMethod(.catmullRom)
+            .opacity(0.5)
+        }
     }
 }
 
@@ -210,12 +216,14 @@ struct RangeMark : ChartContent {
     }
     
     var body: some ChartContent {
-        AreaMark(
-            x: .value("Timestamp", datum.date),
-            yStart: .value("minimum", datum.numberFields[fieldName(for: "min")] ?? 0),
-            yEnd: .value("maximum", datum.numberFields[fieldName(for: "max")] ?? 0)
-        )
-        .foregroundStyle(by: .value("Statistic", "Range"))
-        .opacity(0.2)
+        if let date = datum.date {
+            AreaMark(
+                x: .value("Timestamp", date),
+                yStart: .value("minimum", datum.numberFields[fieldName(for: "min")] ?? 0),
+                yEnd: .value("maximum", datum.numberFields[fieldName(for: "max")] ?? 0)
+            )
+            .foregroundStyle(by: .value("Statistic", "Range"))
+            .opacity(0.2)
+        }
     }
 }

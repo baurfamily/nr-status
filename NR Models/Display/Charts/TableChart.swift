@@ -30,7 +30,9 @@ struct TableChart : View {
         Table(resultContainer.data) {
             if resultContainer.isTimeseries || resultContainer.isEvents {
                 TableColumn("Timestamp") { (datum: NrdbResults.Datum) in
-                    Text(datum.date, style: .relative)
+                    if let date = datum.date {
+                        Text(date, style: .relative)
+                    }
                 }
             }
             TableColumnForEach(resultContainer.fieldNames, id:\.self) { field in

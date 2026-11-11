@@ -19,13 +19,9 @@ struct EditorMenuView : View {
         Group {
             Button("Run query...") {
                 if let query {
-                    print("query text: \(query.text)")
-                    Task.detached { await query.getData() }
+                    query.run()
                 }
-                if var document {
-                    print("document text: \(document.text)")
-                    document.runFocusedQuery()
-                }
+                document?.runFocusedQuery()
             }.keyboardShortcut("\n")
         }
     }

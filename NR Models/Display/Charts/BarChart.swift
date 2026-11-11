@@ -59,14 +59,14 @@ struct BarChart: View {
                     if let facet = datum.facet {
                         BarMark(
                             x: .value( "Timestamp", datum.beginTime!),
-                            y: .value( "\(facet) (\(fieldName))", datum.numberFields[fieldName]!)
+                            y: .value( "\(facet) (\(fieldName))", datum.numberFields[fieldName] ?? 0)
                         ).foregroundStyle(
                             by: .value( seriesNames.0, seriesNames.1 )
                         )
                     } else {
                         BarMark(
                             x: .value( "Timestamp", datum.beginTime!),
-                            y: .value( "Foo: \(fieldName)", datum.numberFields[fieldName]!)
+                            y: .value( "Foo: \(fieldName)", datum.numberFields[fieldName] ?? 0)
                         ).foregroundStyle(
                             by: .value( seriesNames.0, seriesNames.1 )
                         )
@@ -78,11 +78,11 @@ struct BarChart: View {
                         if selectedFacets.contains(facet) {
                             BarMark(
                                 x: .value( "Field", fieldName ),
-                                y: .value( facet, datum.numberFields[fieldName]! )
+                                y: .value( facet, datum.numberFields[fieldName] ?? 0 )
                             ).foregroundStyle(
                                 by: .value(
-                                    Text(verbatim: datum.facet!),
-                                    datum.facet!
+                                    Text(verbatim: facet),
+                                    facet
                                 )
                             )
                         }
@@ -90,24 +90,24 @@ struct BarChart: View {
                 }
             } else {
                 ForEach(selectedFields, id:\.self) { fieldName in
-                    if resultContainer.isFaceted {
+                    if resultContainer.isFaceted, let facet = datum.facet {
                         BarMark(
-                            x: .value("Facet", datum.facet!),
-                            y: .value(fieldName, datum.numberFields[fieldName]!)
+                            x: .value("Facet", facet),
+                            y: .value(fieldName, datum.numberFields[fieldName] ?? 0)
                         )
                         .foregroundStyle(
                             by: .value(
-                                Text(verbatim: datum.facet!),
-                                datum.facet!
+                                Text(verbatim: facet),
+                                facet
                             )
                         )
-                    } else if resultContainer.isMultiFaceted {
+                    } else if resultContainer.isMultiFaceted, let facets = datum.facets, facets.count >= 2 {
                         BarMark(
-                            x: .value("Facet", datum.facets![1]),
-                            y: .value(fieldName, datum.numberFields[fieldName]!)
+                            x: .value("Facet", facets[1]),
+                            y: .value(fieldName, datum.numberFields[fieldName] ?? 0)
                         )
                         .foregroundStyle(
-                            by: .value( "Facet", datum.facets![0] )
+                            by: .value( "Facet", facets[0] )
                         )
                     }
                 }

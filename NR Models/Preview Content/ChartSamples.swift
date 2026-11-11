@@ -6,8 +6,11 @@
 //
 
 import Foundation
+import os
 
 struct ChartSamples {
+    private static let logger = Logger(subsystem: "com.baurfamily.nrstatus", category: "ChartSamples")
+
     enum DataSize : String, CaseIterable {
         case tiny = "Tiny"
         case small = "Small"
@@ -23,7 +26,7 @@ struct ChartSamples {
     static func loadFrom(filename: String) -> NrdbResultContainer? {
         // Load and decode the JSON.
         guard let url = Bundle.main.url(forResource: filename, withExtension: "json") else {
-            print("Failed to find \(filename).json")
+            logger.error("Failed to find \(filename, privacy: .public).json")
             return nil
         }
 
@@ -33,7 +36,7 @@ struct ChartSamples {
             
             return root.data?.actor?.nrql
         } catch {
-            print("Failed to load sample data from \(filename).json: \(error)")
+            logger.error("Failed to load sample data from \(filename, privacy: .public).json: \(error)")
         }
         return nil
     }

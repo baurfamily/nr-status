@@ -7,27 +7,27 @@
 
 import SwiftUI
 
-//struct AggregateToggle : View {
-//    var title: String
-//    var function: String
-//    var attribute: Attribute
-//    @Binding var query: QueryBuilder
-//    
-//    @State var toggles:[String:Bool] = [:]
-//
-//    func makeBinding(for key: String) -> Binding<Bool> {
-//        return Binding(
-//            get: { return toggles[key] ?? false },
-//            set: { newVal in toggles[key] = newVal }
-//        )
-//    }
-//    
-//    var body: some View {
-//        Toggle(isOn: makeBinding(for: attribute.key)) {
-//            Text(title)
-//        }
-//    }
-//}
+struct RemovablePill : View {
+    let text: String
+    let textColor: Color
+    let fill: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Text(text)
+                Image(systemName: "xmark.app")
+            }
+            .foregroundColor(textColor)
+            .padding(.horizontal, 5)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(fill)
+            )
+        }
+    }
+}
 
 struct AttributeListItemView : View {
     let attribute: Attribute
@@ -36,11 +36,23 @@ struct AttributeListItemView : View {
     @State private var detailPresented: Bool = false
     @State private var summaryStats: AttributeSummary?
     
+    private var selectBinding: Binding<Bool> {
+        Binding(
+            get: { query.contains(attribute: attribute) },
+            set: { $0 ? query.add(attribute: attribute) : query.remove(attribute: attribute) }
+        )
+    }
+
+    private var facetBinding: Binding<Bool> {
+        Binding(
+            get: { query.contains(facet: attribute) },
+            set: { $0 ? query.add(facet: attribute) : query.remove(facet: attribute) }
+        )
+    }
+
     func makeBinding(for key: String) -> Binding<Bool> {
-        return Binding(
-            get: {
-                query.contains(aggregate: key, with: attribute)
-            },
+        Binding(
+            get: { query.contains(aggregate: key, with: attribute) },
             set: { newVal in
                 if newVal {
                     query.add(aggregate: key, with: attribute)
@@ -50,71 +62,28 @@ struct AttributeListItemView : View {
             }
         )
     }
-    
-    
+
     var body : some View {
         HStack {
             Text(attribute.key)
             Spacer()
             
             if query.contains(attribute: attribute) {
-                Button {
+                RemovablePill(text: "select", textColor: .black, fill: .yellow) {
                     query.remove(attribute: attribute)
-                } label: {
-                    HStack {
-                        Text("select")
-                        Image(systemName: "xmark.app")
-                    }
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 5)
-                    .background(
-                        RoundedRectangle(
-                            cornerRadius: 10,
-                            style: .continuous
-                        )
-                        .fill(.yellow)
-                    )
                 }
             }
             if query.contains(facet: attribute) {
-                Button {
+                RemovablePill(text: "facet", textColor: .black, fill: .green) {
                     query.remove(facet: attribute)
-                } label: {
-                    HStack {
-                        Text("facet")
-                        Image(systemName: "xmark.app")
-                    }
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 5)
-                    .background(
-                        RoundedRectangle(
-                            cornerRadius: 10,
-                            style: .continuous
-                        )
-                        .fill(.green)
-                    )
                 }
             }
-            ForEach(query.aggregates.filter { $0.attribute == attribute}) { agg in
-                Button {
+            ForEach(query.aggregates.filter { $0.attribute == attribute }) { agg in
+                RemovablePill(text: agg.name, textColor: .white, fill: .blue) {
                     query.remove(aggregate: agg.name, with: attribute)
-                } label: {
-                    HStack {
-                        Text(agg.name)
-                        Image(systemName: "xmark.app")
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 5)
-                    .background(
-                        RoundedRectangle(
-                            cornerRadius: 10,
-                            style: .continuous
-                        )
-                        .fill(.blue)
-                    )
                 }
             }
-            
+
             Spacer().frame(width: 10)
             Button {
                 self.detailPresented = true
@@ -128,31 +97,17 @@ struct AttributeListItemView : View {
                     }
                 }.padding(.all)
                     .task {
-                        Task {
-                            self.summaryStats = await AttributeSummary.generate(from: attribute)
-                        }
+                        self.summaryStats = await AttributeSummary.generate(from: attribute)
                     }
             }.buttonStyle(.borderless)
             
             Menu {
                 
-                Toggle(isOn: Binding(
-                    get: { query.contains(attribute: attribute) },
-                    set: { $0 ? query.add(attribute: attribute) : query.remove(attribute: attribute)}
-                )) { Text("Select") }
+                Toggle(isOn: selectBinding) { Text("Select") }
                     .disabled(query.isFaceted)
-                
-                Toggle(isOn: Binding(
-                    get: { query.contains(facet: attribute) },
-                    set: { newVal in
-                        if newVal {
-                            query.add(facet: attribute)
-                        } else {
-                            query.remove(facet: attribute)
-                        }
-                    }
-                )) { Text("Facet") }
-                
+
+                Toggle(isOn: facetBinding) { Text("Facet") }
+
                 Divider()
                 Group {
                     Toggle(isOn: makeBinding(for: "count")) { Text("count") }

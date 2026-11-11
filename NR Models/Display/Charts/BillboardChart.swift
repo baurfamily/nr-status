@@ -33,8 +33,7 @@ struct BillboardChart: View {
     var selectedFields: [String] { config.selectedFields }
     
     var selectedField : String {
-        guard !selectedFields.isEmpty else { return "" }
-        return selectedFields.first!
+        selectedFields.first ?? ""
     }
 
     let columns = [

@@ -51,7 +51,7 @@ struct ChartFormat: Equatable, Hashable {
             case "type":
                 format.type = ChartType(rawValue: value)
             case "attributes":
-                let names = value.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+                let names = value.split(whereSeparator: { $0 == "," || $0.isWhitespace }).map(String.init)
                 format.attributes = names.isEmpty ? nil : Set(names)
             default:
                 // unknown keys are left alone for later features

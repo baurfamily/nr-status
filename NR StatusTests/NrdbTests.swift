@@ -109,6 +109,7 @@ struct NrdbTests {
 
         #expect(format?.type == .line)
         #expect(format?.attributes == ["smoothed", "points"])
+        #expect(ChartFormat.parse(from: "/***\nattributes: smoothed points,lines\n***/")?.attributes == ["smoothed", "points", "lines"])
         #expect(ChartFormat.parse(from: "SELECT 1") == nil)
         #expect(ChartFormat.strip(from: "/***\ntype: line\n***/\nSELECT 1") == "\nSELECT 1")
     }

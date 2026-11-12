@@ -69,6 +69,8 @@ extension LanguageConfiguration {
                                  supportsSquareBrackets: false,
                                  supportsCurlyBrackets: false,
                                  caseInsensitiveReservedIdentifiers: true,
+                                 // keeps the previous line's indent on return and tab, e.g. inside format blocks
+                                 indentationSensitiveScoping: true,
                                  stringRegex: /\"(?:\\\"|[^\"])*+\"/,
                                  characterRegex: nil,
                                  numberRegex: numberRegex,

@@ -162,3 +162,33 @@ struct NrqlExportTests {
         #expect(try #require(NrqlExport.data(for: .pdf, document: document)).starts(with: Array("%PDF".utf8)))
     }
 }
+
+struct NrqlInterpolationTests {
+    private let results = [
+        LuaRuntime.PriorResult(
+            name: "top_app",
+            value: .table(["rows": .array([.table(["facet": .string("Shop"), "count": .number(42)])])])
+        )
+    ]
+
+    @Test func expandsExpressionsFromResults() throws {
+        let nrql = "FROM Metric WHERE appName = '{{ results.top_app.rows[1].facet }}' LIMIT {{ results.top_app.rows[1].count }}"
+
+        #expect(try NrqlInterpolation.expand(nrql, results: results) == "FROM Metric WHERE appName = 'Shop' LIMIT 42")
+        #expect(try NrqlInterpolation.expand("SELECT 1") == "SELECT 1")
+    }
+
+    @Test func reportsMissingResults() {
+        #expect(throws: NrqlInterpolation.InterpolationError.self) {
+            try NrqlInterpolation.expand("WHERE a = '{{ results.nope.rows[1].facet }}'", results: results)
+        }
+    }
+
+    @Test func formatNameAndHiddenChart() {
+        let query = NrqlQuery(from: "/***\nname: top_app\ntype: none\n***/\nSELECT 1")
+
+        #expect(query.name == "top_app")
+        #expect(query.format?.hidesChart == true)
+        #expect(query.format?.type == nil)
+    }
+}

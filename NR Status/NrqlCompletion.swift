@@ -254,13 +254,13 @@ enum NrqlCompletion {
         case .none:
             break
         case .formatKey:
-            candidates = ["title", "type", "attributes"].map {
+            candidates = ["title", "name", "type", "attributes"].map {
                 Item(name: $0, kind: .formatKey, detail: nil, insertText: "\($0): ")
             }
         case .formatValue(let key, let type):
             var values: [String] = []
             if key == "type" {
-                values = ChartType.allCases.map(\.rawValue)
+                values = ChartType.allCases.map(\.rawValue) + ["none"]
             } else if key == "attributes" {
                 values = type.map { ChartFormat.attributeNames[$0] ?? [] }
                     ?? ChartFormat.attributeNames.values.flatMap { $0 }.sorted()

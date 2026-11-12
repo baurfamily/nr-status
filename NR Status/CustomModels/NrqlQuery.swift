@@ -43,6 +43,12 @@ import LanguageSupport
     // Always change it through setState(_:) so updates happen on the main actor.
     private(set) var state: State = .idle
     
+    // the query as last sent, with `{{ }}` expressions replaced; nil before a run
+    private(set) var executedNrql: String?
+    
+    // how later cells refer to this result: `results.<name>`
+    var name: String? { format?.name }
+    
     @ObservationIgnored private var runningTask: Task<Void, Never>?
     
     var isRunning: Bool {
@@ -90,11 +96,22 @@ import LanguageSupport
     }
     
     /// Runs the query and waits for the result; see `state` for the outcome.
-    func getData() async {
+    /// `results` are the earlier cell results that `{{ }}` expressions can read.
+    func getData(results: [LuaRuntime.PriorResult] = []) async {
         await setState(.running)
         
+        let sent: String
         do {
-            let container = try await Queries().getNrqlData(query: nrql)
+            sent = try NrqlInterpolation.expand(nrql, results: results)
+        } catch {
+            await setExecuted(nil)
+            await setState(.failed(error.localizedDescription))
+            return
+        }
+        await setExecuted(sent)
+        
+        do {
+            let container = try await Queries().getNrqlData(query: sent)
             // a newer run has taken over, so don't clobber its state
             guard !Task.isCancelled else { return }
             
@@ -107,13 +124,17 @@ import LanguageSupport
     }
     
     /// Starts a run without waiting, cancelling any run still in flight.
-    func run() {
+    func run(results: [LuaRuntime.PriorResult] = []) {
         runningTask?.cancel()
-        runningTask = Task { await getData() }
+        runningTask = Task { await getData(results: results) }
     }
     
     @MainActor func setState(_ newState: State) {
         state = newState
+    }
+    
+    @MainActor private func setExecuted(_ nrql: String?) {
+        executedNrql = nrql
     }
     
     private func hash(nrql: String) -> String {

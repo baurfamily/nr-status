@@ -14,9 +14,14 @@ import Foundation
 ///
 /// With no `attributes` key, the chart keeps its defaults. When it is present,
 /// every attribute that applies to the chart type is on if listed and off if not.
+///
+/// `name` lets later cells refer to this query's result as `results.<name>`, and
+/// `type: none` hides the chart, for queries that only feed other cells.
 struct ChartFormat: Equatable, Hashable {
     var title: String?
+    var name: String?
     var type: ChartType?
+    var hidesChart = false
     var attributes: Set<String>?
 
     /// The attribute names each chart type understands; `apply` is the source of truth for what they do.
@@ -56,7 +61,10 @@ struct ChartFormat: Equatable, Hashable {
             switch key {
             case "title":
                 format.title = rawValue.isEmpty ? nil : rawValue
+            case "name":
+                format.name = rawValue.isEmpty ? nil : rawValue
             case "type":
+                format.hidesChart = value == "none"
                 format.type = ChartType(rawValue: value)
             case "attributes":
                 let names = value.split(whereSeparator: { $0 == "," || $0.isWhitespace }).map(String.init)

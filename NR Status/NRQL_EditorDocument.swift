@@ -92,14 +92,29 @@ struct NRQL_EditorDocument: FileDocument {
         if focusedCellId == id { focusedCellId = nil }
     }
 
+    /// Named results of cells that have run, for `{{ }}` expressions to read.
+    var priorResults: [LuaRuntime.PriorResult] { Self.priorResults(in: cells) }
+
+    private static func priorResults(in cells: [NrqlCell]) -> [LuaRuntime.PriorResult] {
+        cells.compactMap { cell in
+            guard let name = cell.query.name, let container = cell.query.resultContainer else { return nil }
+            return LuaRuntime.PriorResult(name: name, value: LuaResultBridge.luaValue(from: container))
+        }
+    }
+
+    /// Runs the queries one after another, so a query can read the result of one above it.
     func runAllQueries() {
-        for cell in cells where cell.isRunnable && !cell.query.isRunning {
-            cell.query.run()
+        let all = cells
+        let toRun = all.filter { $0.isRunnable && !$0.query.isRunning }
+        Task {
+            for cell in toRun {
+                await cell.query.getData(results: Self.priorResults(in: all))
+            }
         }
     }
 
     func runFocusedQuery() {
         guard let cell = focusedCell, cell.isRunnable else { return }
-        cell.query.run()
+        cell.query.run(results: priorResults)
     }
 }

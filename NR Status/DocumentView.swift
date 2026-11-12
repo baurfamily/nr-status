@@ -21,6 +21,7 @@ struct DocumentView: View {
                         cell: $cell,
                         isFocused: document.focusedCellId == cell.id,
                         onFocus: { document.focusedCellId = cell.id },
+                        onRun: { cell.query.run(results: document.priorResults) },
                         onDelete: { document.removeCell(cell.id) }
                     )
                 }
@@ -47,6 +48,7 @@ struct CellView: View {
     @Binding var cell: NrqlCell
     let isFocused: Bool
     let onFocus: () -> Void
+    let onRun: () -> Void
     let onDelete: () -> Void
 
     @State private var position: CodeEditor.Position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
@@ -123,7 +125,7 @@ struct CellView: View {
 
             Button("Run", systemImage: "play.fill") {
                 onFocus()
-                cell.query.run()
+                onRun()
             }
             .labelStyle(.iconOnly)
             .buttonStyle(.borderless)
@@ -141,6 +143,22 @@ struct CellResultView: View {
     @Binding var configurationShowing: Bool
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let sent = query.executedNrql, sent != query.nrql {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Query sent")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(sent)
+                        .font(.system(.caption, design: .monospaced))
+                        .textSelection(.enabled)
+                }
+            }
+            content
+        }
+    }
+
+    @ViewBuilder private var content: some View {
         switch query.state {
         case .idle:
             EmptyView()
@@ -148,10 +166,16 @@ struct CellResultView: View {
             ProgressView()
                 .frame(maxWidth: .infinity, minHeight: 80)
         case .loaded(let container):
-            ConfigurableChartView(resultsContainer: container, format: query.format, configurationShowing: $configurationShowing)
-                // rebuild when the format comment changes, so it applies as you type
-                .id(query.format)
-                .frame(maxWidth: .infinity, minHeight: 300)
+            if query.format?.hidesChart == true {
+                Text("\(container.data.count) rows (chart hidden)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                ConfigurableChartView(resultsContainer: container, format: query.format, configurationShowing: $configurationShowing)
+                    // rebuild when the format comment changes, so it applies as you type
+                    .id(query.format)
+                    .frame(maxWidth: .infinity, minHeight: 300)
+            }
         case .failed(let message):
             VStack(alignment: .leading) {
                 Text("The query failed")

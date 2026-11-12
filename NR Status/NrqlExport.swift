@@ -71,7 +71,7 @@ enum NrqlExport {
     }
 
     static func tableData(for cell: NrqlCell) -> TableData? {
-        guard let container = cell.query.resultContainer else { return nil }
+        guard cell.query.format?.hidesChart != true, let container = cell.query.resultContainer else { return nil }
         let config = ChartConfiguration(resultContainer: container)
         cell.query.format?.apply(to: config)
         guard config.chartType == .table else { return nil }
@@ -161,7 +161,7 @@ enum NrqlExport {
     }
 
     private static func chartPNG(for cell: NrqlCell) -> Data? {
-        guard cell.query.resultContainer != nil else { return nil }
+        guard cell.query.format?.hidesChart != true, cell.query.resultContainer != nil else { return nil }
         let renderer = ImageRenderer(content: chartView(for: cell, width: 700))
         renderer.scale = 2
         guard let image = renderer.nsImage, let tiff = image.tiffRepresentation,
@@ -228,7 +228,7 @@ enum NrqlExport {
                 let queryLines = cell.text.split(separator: "\n", omittingEmptySubsequences: false).count
                 let room = 560 - CGFloat(queryLines) * 16
                 pdfTable(table, maxRows: max(Int(room / pdfRowHeight) - 3, 3))
-            } else if cell.query.resultContainer != nil {
+            } else if cell.query.resultContainer != nil, cell.query.format?.hidesChart != true {
                 chartView(for: cell, width: 532)
             } else if let message = cell.query.errorMessage {
                 Text(message).foregroundStyle(.red)

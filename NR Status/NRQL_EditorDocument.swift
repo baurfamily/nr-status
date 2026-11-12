@@ -92,6 +92,12 @@ struct NRQL_EditorDocument: FileDocument {
         if focusedCellId == id { focusedCellId = nil }
     }
 
+    func runAllQueries() {
+        for cell in cells where cell.isRunnable && !cell.query.isRunning {
+            cell.query.run()
+        }
+    }
+
     func runFocusedQuery() {
         guard let cell = focusedCell, cell.isRunnable else { return }
         cell.query.run()

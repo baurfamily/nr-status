@@ -31,6 +31,13 @@ struct DocumentView: View {
             }
             .padding()
         }
+        .toolbar {
+            ToolbarItem {
+                Button("Run All", systemImage: "play.fill") { document.runAllQueries() }
+                    .help("Run every query in this document")
+                    .disabled(!document.cells.contains { $0.isRunnable })
+            }
+        }
     }
 }
 

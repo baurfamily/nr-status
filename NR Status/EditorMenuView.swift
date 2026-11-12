@@ -23,6 +23,9 @@ struct EditorMenuView : View {
                 }
                 document?.runFocusedQuery()
             }.keyboardShortcut("\n")
+            Button("Run all queries") {
+                document?.runAllQueries()
+            }.keyboardShortcut("\n", modifiers: [.command, .shift])
         }
     }
 }

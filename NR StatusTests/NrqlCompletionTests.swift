@@ -27,10 +27,22 @@ struct NrqlCompletionTests {
 
     @Test func suggestsClauseKeywords() async {
         #expect(await names("SELECT count(*) FROM Transaction FA|") == ["FACET"])
+        // SELECT may come before or after FROM
+        #expect(await names("FROM Transaction SELECT count(*) FA|") == ["FACET"])
+        #expect(await names("FROM Transaction SELECT count(*) WH|") == ["WHERE"])
         #expect(await names("SELECT count(*) FROM Transaction WH|") == ["WHERE"])
         #expect(await names("SELECT count(*) FROM Transaction SINCE 1 day ago TIM|") == ["TIMESERIES"])
         #expect(await names("SELECT count(*) FROM Transaction FACET name LIM|") == ["LIMIT"])
+        #expect(await names("SELECT count(*) FROM Transaction LIMIT 10 SIN|") == ["SINCE"])
         #expect(await names("SELECT count(*) FROM Transaction WHERE name = 'a' AN|") == ["AND"])
+        // FROM comes first in a query, so nothing else is offered before it
+        #expect(await names("SELECT count(*) FA|").isEmpty)
+        #expect(await names("SELECT count(*) FR|") == ["FROM"])
+        #expect(await names("FROM Transaction SE|") == ["SELECT"])
+        #expect(await names("FROM Transaction FA|").isEmpty)
+        // once-only clauses aren't offered twice
+        #expect(await names("SELECT count(*) FROM Transaction FACET name FAC|").isEmpty)
+        #expect(await names("SELECT count(*) FROM Transaction WHERE a = 1 AND b = 2 WH|") == ["WHERE"])
     }
 
     @Test func suggestsEventTypesAfterFrom() async {

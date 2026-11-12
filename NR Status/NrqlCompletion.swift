@@ -62,8 +62,6 @@ enum NrqlCompletion {
 
     static let whereKeywords = ["AND", "OR", "NOT", "IN", "LIKE", "RLIKE", "IS", "NULL", "TRUE", "FALSE"]
 
-    // clauses that can follow a WHERE or FACET
-    static let laterClauses = clauseKeywords.filter { !["SELECT", "FROM", "WHERE", "SHOW EVENT TYPES"].contains($0) }
 
     static let timeWords = [
         "ago", "seconds", "minutes", "hours", "days", "weeks", "months", "today", "yesterday", "now"
@@ -161,22 +159,50 @@ enum NrqlCompletion {
         let keyword = before[keywordRange].uppercased().split(whereSeparator: \.isWhitespace).joined(separator: " ")
         let afterKeyword = before[keywordRange.upperBound...].trimmingCharacters(in: .whitespacesAndNewlines)
 
+        // the whole query, apart from the word being typed, decides which clauses are still available
+        let others = ns.replacingCharacters(in: prefixRange, with: "")
+        let following = followingClauses(in: others)
+
         switch keyword {
         case "FROM":
             if afterKeyword.isEmpty || afterKeyword.hasSuffix(",") { return result(.events) }
-            return result(.keywords(clauseKeywords.filter { $0 != "SELECT" && $0 != "FROM" }))
+            return result(.keywords(missingCore(in: others) + following))
         case "SELECT":
-            return result(.attributes(event: event(in: text), keywords: ["FROM", "AS"]))
+            return result(.attributes(event: event(in: text), keywords: ["AS"] + missingCore(in: others) + following))
         case "WHERE":
-            return result(.attributes(event: event(in: text), keywords: whereKeywords + laterClauses))
+            return result(.attributes(event: event(in: text), keywords: whereKeywords + following))
         case "FACET", "ORDER BY":
-            return result(.attributes(event: event(in: text), keywords: ["AS", "CASES"] + laterClauses))
+            return result(.attributes(event: event(in: text), keywords: ["AS", "CASES"] + following))
         case "SINCE", "UNTIL", "COMPARE WITH", "SLIDE BY", "TIMESERIES":
-            return result(.keywords(timeWords + clauseKeywords.filter { $0 != "SELECT" && $0 != "FROM" }))
+            return result(.keywords(timeWords + following))
         case "AS", "LIMIT", "OFFSET":
-            return result(.none)
+            return result(afterKeyword.isEmpty ? .none : .keywords(missingCore(in: others) + following))
         default:
-            return result(.keywords(clauseKeywords))
+            return result(.keywords(missingCore(in: others) + following))
+        }
+    }
+
+    private static func usedClauses(in text: String) -> Set<String> {
+        let stripped = stripComments(text)
+        let matches = clause.matches(in: stripped, range: NSRange(stripped.startIndex..., in: stripped))
+        return Set(matches.compactMap { Range($0.range(at: 1), in: stripped) }.map {
+            stripped[$0].uppercased().split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        })
+    }
+
+    /// SELECT and FROM, whichever of them the query still lacks.
+    private static func missingCore(in text: String) -> [String] {
+        let used = usedClauses(in: text)
+        return ["SELECT", "FROM"].filter { !used.contains($0) }
+    }
+
+    /// Clauses that may come next. They only make sense once the query has both SELECT and FROM, and
+    /// each can appear once, except WHERE.
+    private static func followingClauses(in text: String) -> [String] {
+        let used = usedClauses(in: text)
+        guard used.isSuperset(of: ["SELECT", "FROM"]) else { return [] }
+        return clauseKeywords.filter { word in
+            !["SELECT", "FROM", "SHOW EVENT TYPES"].contains(word) && (word == "WHERE" || !used.contains(word))
         }
     }
 

@@ -226,3 +226,35 @@ struct NrqlScriptCellTests {
         #expect(query.errorMessage == nil)
     }
 }
+
+struct NrqlDependencyTests {
+    private let cells = [
+        NrqlCell(text: "/***\nname: c\n***/\nFROM A WHERE x = '{{ results.b.rows[1].facet }}'"),
+        NrqlCell(text: "/***\nname: b\n***/\nFROM B WHERE x = '{{ results.a.rows[1].facet }}'"),
+        NrqlCell(text: "/***\nname: a\n***/\nFROM C"),
+        NrqlCell(text: "```lua\nemit(results['c'].rows)\n```"),
+        NrqlCell(text: "FROM D -- results.a is not in a placeholder"),
+    ]
+
+    private func names(_ plan: [NrqlCell]) -> [String] { plan.map { $0.query.name ?? $0.query.title } }
+
+    @Test func plansDependenciesFirst() {
+        #expect(names(NrqlDependencies.plan(for: [cells[3]], in: cells, includeFinished: false)) == ["a", "b", "c", "Lua Script"])
+        #expect(NrqlDependencies.plan(for: [cells[4]], in: cells, includeFinished: false).count == 1)
+    }
+
+    @Test func runAllOrdersByDependency() {
+        let order = names(NrqlDependencies.plan(for: cells, in: cells, includeFinished: true))
+
+        #expect(order == ["a", "b", "c", "Lua Script", "NRQL Query"])
+    }
+
+    @Test func cyclesDoNotLoop() {
+        let loop = [
+            NrqlCell(text: "/***\nname: x\n***/\nFROM A WHERE a = '{{ results.y.n }}'"),
+            NrqlCell(text: "/***\nname: y\n***/\nFROM B WHERE a = '{{ results.x.n }}'"),
+        ]
+
+        #expect(NrqlDependencies.plan(for: [loop[0]], in: loop, includeFinished: false).count == 2)
+    }
+}

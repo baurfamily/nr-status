@@ -21,7 +21,8 @@ struct DocumentView: View {
                         cell: $cell,
                         isFocused: document.focusedCellId == cell.id,
                         onFocus: { document.focusedCellId = cell.id },
-                        onRun: { cell.query.run(results: document.priorResults) },
+                        onRun: { document.runCell(cell.id) },
+                        pendingTitles: document.pendingDependencies(for: cell.id).map(\.query.title),
                         onDelete: { document.removeCell(cell.id) }
                     )
                 }
@@ -54,6 +55,7 @@ struct CellView: View {
     let isFocused: Bool
     let onFocus: () -> Void
     let onRun: () -> Void
+    let pendingTitles: [String]
     let onDelete: () -> Void
 
     @State private var position: CodeEditor.Position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
@@ -145,6 +147,12 @@ struct CellView: View {
             .labelStyle(.iconOnly)
             .buttonStyle(.borderless)
             .foregroundStyle(showsChartSettings ? Color.accentColor : Color.primary)
+
+            if !pendingTitles.isEmpty {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.yellow)
+                    .help("Running this cell will also run: \(pendingTitles.joined(separator: ", "))")
+            }
 
             Button("Run", systemImage: "play.fill") {
                 onFocus()

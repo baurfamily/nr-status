@@ -32,6 +32,13 @@ enum NrqlInterpolation {
         placeholder.firstMatch(in: nrql, range: NSRange(nrql.startIndex..., in: nrql)) != nil
     }
 
+    /// The text of each `{{ }}` expression, untrimmed.
+    static func expressions(in nrql: String) -> [String] {
+        placeholder.matches(in: nrql, range: NSRange(nrql.startIndex..., in: nrql)).compactMap {
+            Range($0.range(at: 1), in: nrql).map { String(nrql[$0]) }
+        }
+    }
+
     static func expand(_ nrql: String, results: [LuaRuntime.PriorResult] = []) throws -> String {
         let ns = nrql as NSString
         var expanded = ""

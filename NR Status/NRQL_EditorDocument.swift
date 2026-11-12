@@ -107,19 +107,35 @@ struct NRQL_EditorDocument: FileDocument {
         }
     }
 
-    /// Runs the queries one after another, so a query can read the result of one above it.
+    /// Runs every query, each after the ones it reads.
     func runAllQueries() {
         let all = cells
-        let toRun = all.filter { $0.isRunnable && !$0.query.isRunning }
-        Task {
-            for cell in toRun {
-                await cell.query.getData(results: Self.priorResults(in: all))
-            }
-        }
+        let roots = all.filter { $0.isRunnable && !$0.query.isRunning }
+        run(NrqlDependencies.plan(for: roots, in: all, includeFinished: true), in: all)
     }
 
     func runFocusedQuery() {
-        guard let cell = focusedCell, cell.isRunnable else { return }
-        cell.query.run(results: priorResults)
+        guard let id = focusedCellId else { return }
+        runCell(id)
+    }
+
+    /// Runs a cell, first running any cell it reads that has no result yet.
+    func runCell(_ id: NrqlCell.ID) {
+        guard let cell = cells.first(where: { $0.id == id }), cell.isRunnable else { return }
+        run(NrqlDependencies.plan(for: [cell], in: cells, includeFinished: false), in: cells)
+    }
+
+    /// The cells that running this one would run first.
+    func pendingDependencies(for id: NrqlCell.ID) -> [NrqlCell] {
+        guard let cell = cells.first(where: { $0.id == id }) else { return [] }
+        return NrqlDependencies.plan(for: [cell], in: cells, includeFinished: false).filter { $0.id != id }
+    }
+
+    private func run(_ order: [NrqlCell], in all: [NrqlCell]) {
+        Task {
+            for cell in order {
+                await cell.query.getData(results: Self.priorResults(in: all))
+            }
+        }
     }
 }

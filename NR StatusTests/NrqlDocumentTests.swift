@@ -157,6 +157,7 @@ struct NrqlExportTests {
         let table = try #require(NrqlExport.tableData(for: document.cells[0]))
         #expect(table.rows.count == results.data.count)
         #expect(NrqlExport.html(for: document).contains("<table>"))
+        if results.data.count > 100 { #expect(NrqlExport.html(for: document).contains("Showing 100 of")) }
         #expect(!NrqlExport.html(for: document).contains("data:image/png"))
         #expect(try #require(NrqlExport.data(for: .pdf, document: document)).starts(with: Array("%PDF".utf8)))
     }

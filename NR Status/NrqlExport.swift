@@ -90,12 +90,18 @@ enum NrqlExport {
         return TableData(headers: headers, rows: rows)
     }
 
+    private static let htmlRowLimit = 100
+
     private static func htmlTable(_ table: TableData) -> String {
         let head = table.headers.map { "<th>\(escape($0))</th>" }.joined()
-        let body = table.rows.map { row in
+        let body = table.rows.prefix(htmlRowLimit).map { row in
             "<tr>" + row.map { "<td>\(escape($0))</td>" }.joined() + "</tr>"
         }.joined(separator: "\n")
-        return "<table>\n<thead><tr>\(head)</tr></thead>\n<tbody>\n\(body)\n</tbody>\n</table>\n"
+        var html = "<table>\n<thead><tr>\(head)</tr></thead>\n<tbody>\n\(body)\n</tbody>\n</table>\n"
+        if table.rows.count > htmlRowLimit {
+            html += "<p><em>Showing \(htmlRowLimit) of \(table.rows.count) rows; the table is too large to include in full.</em></p>\n"
+        }
+        return html
     }
 
     private static let pdfRowHeight: CGFloat = 18

@@ -9,86 +9,125 @@ import SwiftUI
 import CodeEditorView
 import LanguageSupport
 
-extension EnvironmentValues {
-    @Entry var codeEditorLayoutConfiguration: CodeEditor.LayoutConfiguration = CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true)
+/// A notebook-style document: each query is a cell with its results below it.
+struct DocumentView: View {
+    @Binding var document: NRQL_EditorDocument
+
+    var body: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 16) {
+                ForEach($document.cells) { $cell in
+                    CellView(
+                        cell: $cell,
+                        isFocused: document.focusedCellId == cell.id,
+                        onFocus: { document.focusedCellId = cell.id },
+                        onDelete: { document.removeCell(cell.id) }
+                    )
+                }
+                Button("Add Query", systemImage: "plus") {
+                    document.addCell(after: document.cells.last?.id)
+                }
+                .buttonStyle(.borderless)
+            }
+            .padding()
+        }
+    }
 }
 
-
-struct DocumentView: View {
+struct CellView: View {
     @Environment(\.colorScheme) private var colorScheme: ColorScheme
-    @Environment(\.codeEditorLayoutConfiguration) private var codeEditorLayoutConfiguration: CodeEditor.LayoutConfiguration
-    
-    @Binding var document: NRQL_EditorDocument
-    // local state variables removed: use the document's position and focusedQueryId
-    
+
+    @Binding var cell: NrqlCell
+    let isFocused: Bool
+    let onFocus: () -> Void
+    let onDelete: () -> Void
+
+    @State private var position: CodeEditor.Position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
+    @State private var messages: Set<TextLocated<Message>> = Set()
+
+    // the editor scrolls itself, so give it room for the lines it has
+    private var editorHeight: CGFloat {
+        CGFloat(max(cell.text.split(separator: "\n", omittingEmptySubsequences: false).count, 2)) * 18 + 16
+    }
+
     var body: some View {
-        NavigationSplitView {
+        VStack(alignment: .leading, spacing: 8) {
+            header
+
             CodeEditor(
-                text: $document.text,
-                position: $document.position,
-                messages: $document.messages,
+                text: $cell.text,
+                position: $position,
+                messages: $messages,
                 language: .nrql()
             )
-            .environment(\.codeEditorLayoutConfiguration, codeEditorLayoutConfiguration)
+            .environment(\.codeEditorLayoutConfiguration, CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true))
             .environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight))
-            .navigationSplitViewColumnWidth(min: 200, ideal: 500, max: 1000)
-        } detail: {
-                ResultsTabView(document: $document)
+            .frame(height: editorHeight)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .onChange(of: position) { onFocus() }
+
+            if !cell.isCollapsed {
+                CellResultView(query: cell.query)
+            }
+        }
+        .padding(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(isFocused ? Color.accentColor : Color.secondary.opacity(0.3), lineWidth: isFocused ? 2 : 1)
+        )
+    }
+
+    private var header: some View {
+        HStack {
+            Button(cell.isCollapsed ? "Expand results" : "Collapse results",
+                   systemImage: cell.isCollapsed ? "chevron.right" : "chevron.down") {
+                cell.isCollapsed.toggle()
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+
+            Text(cell.query.title)
+                .font(.headline)
+            Spacer()
+
+            Button("Run", systemImage: "play.fill") {
+                onFocus()
+                cell.query.run()
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+            .disabled(!cell.isRunnable || cell.query.isRunning)
+
+            Button("Delete", systemImage: "trash", action: onDelete)
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
         }
     }
 }
 
-struct ResultsTabView : View {
-    @Binding var document: NRQL_EditorDocument
-    
+struct CellResultView: View {
+    let query: NrqlQuery
+
     var body: some View {
-        if document.queries.isEmpty {
-            // Friendly placeholder when there are no queries/results
-            VStack {
-                Spacer()
-                Text("No query results")
+        switch query.state {
+        case .idle:
+            EmptyView()
+        case .running:
+            ProgressView()
+                .frame(maxWidth: .infinity, minHeight: 80)
+        case .loaded(let container):
+            ConfigurableChartView(resultsContainer: container)
+                .frame(maxWidth: .infinity, minHeight: 300)
+        case .failed(let message):
+            VStack(alignment: .leading) {
+                Text("The query failed")
                     .font(.headline)
-                    .foregroundColor(.secondary)
-                Text("Run a query in the editor to see results here.")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                Spacer()
+                Text(message)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else {
-            TabView(selection: $document.focusedQueryId) {
-                ForEach(document.queries) { docQuery in
-                    Tab(value: docQuery.id) {
-                        if let resultContainer = docQuery.query.resultContainer {
-                            ConfigurableChartView(resultsContainer: resultContainer)
-                        } else {
-                            // If a query exists but has no results yet, show placeholder
-                            VStack {
-                                Spacer()
-                                if docQuery.query.isRunning {
-                                    ProgressView()
-                                } else if let errorMessage = docQuery.query.errorMessage {
-                                    Text("The query failed")
-                                        .font(.headline)
-                                        .foregroundColor(.secondary)
-                                    Text(errorMessage)
-                                        .foregroundColor(.secondary)
-                                } else {
-                                    Text("No results for this query")
-                                        .font(.headline)
-                                        .foregroundColor(.secondary)
-                                }
-                                Spacer()
-                            }
-                        }
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .foregroundStyle(.secondary)
         }
     }
 }
-
 
 #Preview {
     DocumentView(document: .constant(NRQL_EditorDocument()))

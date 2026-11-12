@@ -47,6 +47,48 @@ struct NrqlDocumentParserTests {
     @Test func emptyTextHasNoQueries() {
         #expect(NrqlDocumentParser.parse("").isEmpty)
     }
+
+    @Test func blocksKeepCommentOnlyBlocksAndRoundTrip() {
+        let text = "// just a note\n\nSELECT 1\nFROM A\n\n\n// Two\nSELECT 2\n"
+        let blocks = NrqlDocumentParser.blocks(text)
+
+        #expect(blocks == ["// just a note", "SELECT 1\nFROM A", "// Two\nSELECT 2"])
+        #expect(NrqlDocumentParser.blocks(NrqlDocumentParser.join(blocks)) == blocks)
+    }
+
+    @Test func joinDropsBlankLinesInsideABlock() {
+        #expect(NrqlDocumentParser.join(["SELECT 1\n\nFROM A", "SELECT 2"]) == "SELECT 1\nFROM A\n\nSELECT 2\n")
+    }
+}
+
+struct NrqlDocumentCellTests {
+    @Test func documentTextRoundTripsThroughCells() {
+        let document = NRQL_EditorDocument(text: "// A\nSELECT 1\n\nSELECT 2\n")
+
+        #expect(document.cells.count == 2)
+        #expect(document.text == "// A\nSELECT 1\n\nSELECT 2\n")
+    }
+
+    @Test func editingACellChangesDocumentTextAndQuery() {
+        var document = NRQL_EditorDocument(text: "SELECT 1")
+        document.cells[0].text = "SELECT 2"
+
+        #expect(document.text == "SELECT 2\n")
+        #expect(document.cells[0].query.nrql == "SELECT 2")
+    }
+
+    @Test func addAndRemoveCells() {
+        var document = NRQL_EditorDocument(text: "SELECT 1")
+        let id = document.addCell(after: document.cells.last?.id)
+
+        #expect(document.cells.count == 2)
+        #expect(document.focusedCellId == id)
+        #expect(!document.cells[1].isRunnable)
+
+        document.removeCell(id)
+        #expect(document.cells.count == 1)
+        #expect(document.focusedCellId == nil)
+    }
 }
 
 struct NrqlQueryTests {

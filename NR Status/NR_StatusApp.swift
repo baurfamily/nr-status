@@ -20,7 +20,7 @@ extension FocusedValues {
         get { self[DocumentFocusedValueKey.self] }
         set { self[DocumentFocusedValueKey.self] = newValue }
     }
-    
+
     var query: QueryFocusedValueKey.Value? {
         get { self[QueryFocusedValueKey.self] }
         set { self[QueryFocusedValueKey.self] = newValue }
@@ -34,7 +34,7 @@ struct NRQL_EditorApp: App {
     var body: some Scene {
         WindowGroup(id: "summary-view") { SummaryView() }
         WindowGroup(id: "sample-charts") { ChartSampleView() }
-        WindowGroup(id: "nrql-viewer") { NrqlViewer() }
+        WindowGroup(id: "nrql-editor") { NrqlEditorWindow() }
         WindowGroup(id: "query-builder") { QueryBuilderView() }
         .commands {
             CommandMenu("Features") {
@@ -49,9 +49,9 @@ struct NRQL_EditorApp: App {
                     Text("Sample Charts")
                 })
                 Button(action: {
-                    openWindow(id: "nrql-viewer")
+                    openWindow(id: "nrql-editor")
                 }, label: {
-                    Text("NRQL Viewer")
+                    Text("NRQL Editor")
                 }).keyboardShortcut("n", modifiers: [ .command, .shift ])
                 Button(action: {
                     openWindow(id: "query-builder")

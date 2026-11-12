@@ -36,12 +36,15 @@ struct NrdbResultContainer : Decodable {
     var isComparable: Bool { results.data.first?.isComparable ?? false }
     
     // raw events, or any non-numeric values (strings, arrays), can't be charted
-    // meaningfully; these are best shown in a table
+    // meaningfully; these are best shown in a table. A faceted attribute is echoed
+    // back as a string field equal to the facet, which doesn't count.
     var prefersTable: Bool {
         guard !results.data.isEmpty else { return false }
         if isEvents { return true }
-        return results.data.contains {
-            !$0.stringFields.isEmpty || !$0.stringArrayFields.isEmpty || !$0.numericArrayFields.isEmpty
+        return results.data.contains { row in
+            let facetValues = Set([row.facet].compactMap { $0 } + (row.facets ?? []))
+            let hasOtherStrings = row.stringFields.values.contains { !facetValues.contains($0) }
+            return hasOtherStrings || !row.stringArrayFields.isEmpty || !row.numericArrayFields.isEmpty
         }
     }
     

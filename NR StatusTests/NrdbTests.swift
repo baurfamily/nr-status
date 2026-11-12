@@ -90,6 +90,20 @@ struct NrdbTests {
         #expect(ChartType.cases(for: strings) == [.table])
     }
 
+    @Test func facetedAttributeEchoedAsStringStillCharts() throws {
+        let faceted = try container(results: """
+        [{"beginTimeSeconds":100,"endTimeSeconds":160,"facet":"a","name":"a","count":1}]
+        """)
+        #expect(!faceted.prefersTable)
+        #expect(ChartType.cases(for: faceted).contains(.line))
+
+        let multi = try container(results: #"[{"facet":["a","b"],"name":"a","host":"b","count":1}]"#)
+        #expect(!multi.prefersTable)
+
+        let unrelated = try container(results: #"[{"facet":"a","name":"a","other":"x","count":1}]"#)
+        #expect(unrelated.prefersTable)
+    }
+
     @Test func keysetParsesPerRowAndGroupedShapes() throws {
         let rows = try container(results: #"[{"key":"duration","type":"numeric"},{"key":"name","type":"string"}]"#)
         let fromRows = Attribute.attributes(event: "Transaction", fromKeyset: rows)

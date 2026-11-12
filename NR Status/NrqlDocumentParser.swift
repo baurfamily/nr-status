@@ -16,6 +16,23 @@ enum NrqlDocumentParser {
         var text: String
     }
 
+    /// Splits text into blank-line separated blocks, keeping comment-only blocks
+    /// so a document can be rebuilt from its cells without losing anything.
+    static func blocks(_ text: String) -> [String] {
+        text.components(separatedBy: "\n\n")
+            .map { $0.trimmingCharacters(in: .newlines) }
+            .filter { !$0.isEmpty }
+    }
+
+    /// Inverse of `blocks(_:)`; blank lines inside a block would split it on the
+    /// next load, so they are dropped.
+    static func join(_ blocks: [String]) -> String {
+        let cleaned = blocks.map { block in
+            block.split(separator: "\n", omittingEmptySubsequences: true).joined(separator: "\n")
+        }
+        return cleaned.filter { !$0.isEmpty }.joined(separator: "\n\n") + "\n"
+    }
+
     static func parse(_ text: String) -> [ParsedQuery] {
         var queries: [ParsedQuery] = []
 

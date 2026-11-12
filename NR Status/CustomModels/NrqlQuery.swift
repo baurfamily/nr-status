@@ -43,6 +43,12 @@ import LanguageSupport
     // Always change it through setState(_:) so updates happen on the main actor.
     private(set) var state: State = .idle
     
+    // bumped on every successful run, so views can rebuild charts for new data
+    private(set) var runCount = 0
+    
+    // the problem with the latest quiet run, while the previous result stays on screen
+    private(set) var liveError: String?
+    
     @ObservationIgnored private var runningTask: Task<Void, Never>?
     
     var isRunning: Bool {
@@ -65,6 +71,7 @@ import LanguageSupport
     
     var title: String {
         let defaultTitle = "NRQL Query"
+        if let title = format?.title { return title }
         let withoutFormat = ChartFormat.strip(from: text)
         guard let titleString = withoutFormat.split(separator: "\n").first else { return defaultTitle }
         guard titleString.starts(with: "//") else { return defaultTitle }
@@ -89,30 +96,62 @@ import LanguageSupport
     }
     
     /// Runs the query and waits for the result; see `state` for the outcome.
-    func getData() async {
-        await setState(.running)
+    /// A quiet run (used while typing) keeps showing the previous result while it
+    /// runs, and keeps it if the new text turns out not to be valid yet.
+    func getData(quiet: Bool = false) async {
+        if !quiet { await setState(.running) }
         
         do {
             let container = try await Queries().getNrqlData(query: nrql)
             // a newer run has taken over, so don't clobber its state
             guard !Task.isCancelled else { return }
             
-            await setState(container.map { .loaded($0) } ?? .failed("The query returned no data"))
+            await setState(container.map { .loaded($0) } ?? .failed("The query returned no data"), quiet: quiet)
         } catch {
             guard !Task.isCancelled else { return }
             
-            await setState(.failed(error.localizedDescription))
+            await setState(.failed(error.localizedDescription), quiet: quiet)
         }
     }
     
     /// Starts a run without waiting, cancelling any run still in flight.
-    func run() {
+    func run(quiet: Bool = false) {
         runningTask?.cancel()
-        runningTask = Task { await getData() }
+        runningTask = Task { await getData(quiet: quiet) }
     }
     
-    @MainActor private func setState(_ newState: State) {
-        state = newState
+    @MainActor private func setState(_ newState: State, quiet: Bool = false) {
+        switch newState {
+        case .loaded:
+            runCount += 1
+            liveError = nil
+            state = newState
+        case .failed(let message) where quiet && resultContainer != nil:
+            liveError = message
+        default:
+            liveError = nil
+            state = newState
+        }
+    }
+    
+    /// Whether the text looks finished enough to be worth running while it's being typed.
+    static func looksComplete(_ nrql: String) -> Bool {
+        let text = nrql.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return false }
+        
+        let upper = text.uppercased()
+        let hasFrom = upper.range(of: #"\bFROM\s+\S"#, options: .regularExpression) != nil
+        let hasSelect = upper.range(of: #"\bSELECT\s+\S"#, options: .regularExpression) != nil
+        guard hasFrom && hasSelect else { return false }
+        
+        guard text.filter({ $0 == "(" }).count == text.filter({ $0 == ")" }).count,
+              text.filter({ $0 == "'" }).count % 2 == 0,
+              text.filter({ $0 == "\"" }).count % 2 == 0
+        else { return false }
+        
+        // ends in the middle of something
+        let dangling = #"(,|\(|=|<|>|\+|-|\*|/|\b(SELECT|FROM|WHERE|FACET|AND|OR|NOT|AS|IN|LIKE|RLIKE|IS|BY|WITH|SINCE|UNTIL|LIMIT|OFFSET|COMPARE|SLIDE|ORDER|TIMESERIES\s+AUTO\s+BY))$"#
+        return upper.range(of: dangling, options: .regularExpression) == nil
     }
     
     private func hash(nrql: String) -> String {

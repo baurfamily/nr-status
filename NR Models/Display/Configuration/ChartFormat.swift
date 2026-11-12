@@ -14,7 +14,8 @@ import Foundation
 ///
 /// With no `attributes` key, the chart keeps its defaults. When it is present,
 /// every attribute that applies to the chart type is on if listed and off if not.
-struct ChartFormat: Equatable {
+struct ChartFormat: Equatable, Hashable {
+    var title: String?
     var type: ChartType?
     var attributes: Set<String>?
 
@@ -38,16 +39,19 @@ struct ChartFormat: Equatable {
 
         var format = ChartFormat()
         for line in text[bodyRange].split(whereSeparator: \.isNewline) {
-            let parts = line.split(separator: ":", maxSplits: 1).map {
-                $0.trimmingCharacters(in: .whitespaces).lowercased()
-            }
-            guard parts.count == 2 else { continue }
+            // only the first colon separates key from value, so titles can contain colons
+            guard let colon = line.firstIndex(of: ":") else { continue }
+            let key = line[..<colon].trimmingCharacters(in: .whitespaces).lowercased()
+            let rawValue = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
+            let value = rawValue.lowercased()
 
-            switch parts[0] {
+            switch key {
+            case "title":
+                format.title = rawValue.isEmpty ? nil : rawValue
             case "type":
-                format.type = ChartType(rawValue: parts[1])
+                format.type = ChartType(rawValue: value)
             case "attributes":
-                let names = parts[1].split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+                let names = value.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
                 format.attributes = names.isEmpty ? nil : Set(names)
             default:
                 // unknown keys are left alone for later features

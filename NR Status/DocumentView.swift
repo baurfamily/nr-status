@@ -56,6 +56,7 @@ struct CellView: View {
     @State private var languageService = NrqlLanguageService()
     // the chart settings inspector is hidden until asked for
     @State private var showsChartSettings = false
+    @State private var showsSentQuery = false
 
 
     // the editor scrolls itself, so give it room for the lines it has
@@ -116,6 +117,22 @@ struct CellView: View {
                 .font(.headline)
             Spacer()
 
+            if let sent = cell.query.executedNrql {
+                Button("Query Sent", systemImage: "text.alignleft") {
+                    showsSentQuery.toggle()
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .help("Show the query that was sent")
+                .popover(isPresented: $showsSentQuery) {
+                    Text(sent)
+                        .font(.system(.body, design: .monospaced))
+                        .textSelection(.enabled)
+                        .padding()
+                        .frame(maxWidth: 480)
+                }
+            }
+
             Button("Chart Settings", systemImage: "gearshape") {
                 showsChartSettings.toggle()
             }
@@ -143,19 +160,7 @@ struct CellResultView: View {
     @Binding var configurationShowing: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let sent = query.executedNrql, sent != query.nrql {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Query sent")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text(sent)
-                        .font(.system(.caption, design: .monospaced))
-                        .textSelection(.enabled)
-                }
-            }
-            content
-        }
+        content
     }
 
     @ViewBuilder private var content: some View {

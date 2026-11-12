@@ -63,7 +63,7 @@ struct ChartFormat: Equatable, Hashable {
                 format.title = rawValue.isEmpty ? nil : rawValue
             case "name":
                 format.name = rawValue.isEmpty ? nil : rawValue
-            case "chart", "type":
+            case "chart":
                 format.hidesChart = value == "none"
                 format.type = ChartType(rawValue: value)
             case "attributes":

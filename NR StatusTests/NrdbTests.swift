@@ -105,7 +105,7 @@ struct NrdbTests {
     }
 
     @Test func formatParsesTypeAndAttributes() {
-        let format = ChartFormat.parse(from: "/***\ntype: Line\nattributes: smoothed, Points\nfuture: x\n***/\nSELECT 1")
+        let format = ChartFormat.parse(from: "/***\nchart: Line\nattributes: smoothed, Points\nfuture: x\n***/\nSELECT 1")
 
         #expect(format?.type == .line)
         #expect(format?.attributes == ["smoothed", "points"])

@@ -25,6 +25,9 @@ import LanguageSupport
     
     // this is just the functional part, minus comments
     private(set) var nrql: String
+
+    // chart settings from a doc-comment, if the text has one
+    private(set) var format: ChartFormat?
     
     static func == (lhs: NrqlQuery, rhs: NrqlQuery) -> Bool {
         lhs.text == rhs.text
@@ -62,7 +65,9 @@ import LanguageSupport
     
     var title: String {
         let defaultTitle = "NRQL Query"
-        guard let titleString = text.split(separator: "\n").first else { return defaultTitle }
+        if let title = format?.title { return title }
+        let withoutFormat = ChartFormat.strip(from: text)
+        guard let titleString = withoutFormat.split(separator: "\n").first else { return defaultTitle }
         guard titleString.starts(with: "//") else { return defaultTitle }
         
         let title = titleString.dropFirst(2).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -107,7 +112,7 @@ import LanguageSupport
         runningTask = Task { await getData() }
     }
     
-    @MainActor private func setState(_ newState: State) {
+    @MainActor func setState(_ newState: State) {
         state = newState
     }
     
@@ -116,7 +121,8 @@ import LanguageSupport
     }
     
     private func textWillUpdate(to newValue: String) {
-        let lines = newValue.split(separator: "\n").filter { !$0.starts(with: "//") }
+        format = ChartFormat.parse(from: newValue)
+        let lines = ChartFormat.strip(from: newValue).split(separator: "\n").filter { !$0.starts(with: "//") }
         let nrql = lines.joined(separator: "\n")
         if nrql != self.nrql {
             self.nrql = nrql

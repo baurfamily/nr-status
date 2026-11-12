@@ -21,18 +21,24 @@ struct ConfigurableChartView: View {
     // shown at the top of the inspector, above the chart configuration
     private var inspectorHeader = AnyView(EmptyView())
     
-    @State var configShowing: Bool = true
+    @State private var ownConfigShowing: Bool = true
+    private var externalConfigShowing: Binding<Bool>?
     @State var config: ChartConfiguration
+
+    // lets a host show and hide the inspector; without one the view manages it
+    private var configShowing: Binding<Bool> { externalConfigShowing ?? $ownConfigShowing }
     
     init(config: ChartConfiguration) {
         self.config = config
     }
    
-    init(resultsContainer: NrdbResultContainer) {
+    init(resultsContainer: NrdbResultContainer, format: ChartFormat? = nil, configurationShowing: Binding<Bool>? = nil) {
         let config = ChartConfiguration.init(
             resultContainer: resultsContainer
         )
+        format?.apply(to: config)
         self.config = config
+        self.externalConfigShowing = configurationShowing
     }
     
     func inspectorHeader<Header: View>(@ViewBuilder _ header: () -> Header) -> ConfigurableChartView {
@@ -41,7 +47,7 @@ struct ConfigurableChartView: View {
         return copy
     }
     
-    var body: some View {
+    private var chart: some View {
         Section {
             switch config.chartType {
             case .line, nil: TimeseriesChart(config: config)
@@ -52,8 +58,26 @@ struct ConfigurableChartView: View {
             case .table: TableChart(config: config)
             }
         }
-        .inspector(isPresented: $configShowing) {
-            VStack(alignment: .leading) {
+    }
+
+    /// The chart alone, with no inspector; used when rendering to an image or PDF.
+    func withoutConfiguration() -> ConfigurableChartView {
+        var copy = self
+        copy.hideConfiguration = true
+        return copy
+    }
+
+    @ViewBuilder
+    var body: some View {
+        if hideConfiguration {
+            chart
+        } else {
+            chart.inspector(isPresented: configShowing) { inspector }
+        }
+    }
+
+    private var inspector: some View {
+        VStack(alignment: .leading) {
                 inspectorHeader
                 
                 ChartSelector(availableChartTypes: availableChartTypes, selectedChartType: $config.chartType)
@@ -69,7 +93,6 @@ struct ConfigurableChartView: View {
             }
             .frame(maxHeight: .infinity, alignment: .top)
             .inspectorColumnWidth(min: 240, ideal: 300, max: 500)
-        }
     }
 }
 

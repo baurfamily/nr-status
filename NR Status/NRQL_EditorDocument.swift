@@ -7,8 +7,6 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
-import CodeEditorView
-import LanguageSupport
 
 extension UTType {
     static var nrql: UTType {
@@ -16,49 +14,42 @@ extension UTType {
     }
 }
 
-struct DocumentQuery : Identifiable {
-    var position: CodeEditor.Position
+/// One blank-line separated block of the document, shown as its own editor with
+/// the query's results beneath it. The file text is the source of truth; cells
+/// are derived from it on load and joined back together on save.
+struct NrqlCell: Identifiable {
+    let id = UUID()
+    var isCollapsed = false
+    // set on a new cell so its editor takes the keyboard once it appears
+    var focusOnAppear = false
+
+    var text: String {
+        didSet { query.text = text }
+    }
+
+    // a reference type, so running it doesn't mutate the document
     let query: NrqlQuery
-    
-    var startCharacter: Int {
-        if let position = position.selections.first {
-            return position.lowerBound
-        } else {
-            return 0
-        }
+
+    init(text: String, focusOnAppear: Bool = false) {
+        self.text = text
+        self.focusOnAppear = focusOnAppear
+        self.query = NrqlQuery(from: text)
     }
-    
-    // the resolved/unresolved suffix gives the results tab a new identity once data arrives
-    var id: String { "\(position.selections.first?.upperBound ?? 0)-\(query.resultContainer == nil ? "nil" : "resolved")" }
-    
-    init(position: CodeEditor.Position, query: NrqlQuery) {
-        self.position = position
-        self.query = query
-    }
+
+    // comment-only cells have nothing to run
+    var isRunnable: Bool { !query.nrql.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 }
 
 struct NRQL_EditorDocument: FileDocument {
-    var text: String {
-        didSet {
-            parseQueries()
-        }
-    }
-    var position: CodeEditor.Position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0) {
-        willSet {
-            if let docQuery = queryAt(newValue) {
-                focusedQueryId = docQuery.id
-            }
-        }
-    }
-    var focusedQueryId: String?
-    
-    var messages: Set<TextLocated<Message>> = Set()
-    
-    var queries: [DocumentQuery] = []
+    var cells: [NrqlCell]
+    var focusedCellId: NrqlCell.ID?
 
-    init(text: String = "// Title of query\nSELECT count(*) FROM Transactions FACET name SINCE 1 day ago TIMESERIES 15 minutes") {
-        self.text = text
-        parseQueries()
+    var text: String {
+        NrqlDocumentParser.join(cells.map(\.text))
+    }
+
+    init(text: String = "// Title of query\nFROM ") {
+        cells = Self.cells(from: text)
     }
 
     static var readableContentTypes: [UTType] { [.nrql] }
@@ -69,65 +60,46 @@ struct NRQL_EditorDocument: FileDocument {
         else {
             throw CocoaError(.fileReadCorruptFile)
         }
-        text = string
-        parseQueries()
+        cells = Self.cells(from: string)
     }
-    
-    mutating func parseQueries() {
-        let potentialQueries = NrqlDocumentParser.parse(text).map { parsed in
-            DocumentQuery(
-                position: CodeEditor.Position(
-                    selections: [parsed.range],
-                    verticalScrollPosition: Double(parsed.range.location) // I have no idea if we can get this here
-                ),
-                query: NrqlQuery(from: parsed.text)
-            )
-        }
-        
-        // this is basically just merging the arrays
-        // since an old query might have a resolved chart, we want to leave that around
-        // so we prefer to keep the old one as long as the query is the same
-        var newQueries: [DocumentQuery] = []
-        for newQuery in potentialQueries {
-            if var oldQuery = queries.first( where: { abs($0.startCharacter - newQuery.startCharacter) <= 1 }) {
-                // the query may have changed, but it's in the same basic locaiton in the file
-                // this update may be a no-op, if it changes the query then the chart will be invalidated
-                oldQuery.query.text = newQuery.query.text
-                oldQuery.position = newQuery.position
-                newQueries.append(oldQuery)
-            } else if var oldQuery = queries.first( where: { $0.query.id == newQuery.query.id } ) {
-                // the query is the same, but the title or location might have changed
-                // not sure if this will get weird if you have two idential queries in the editor???
-                // really, the position check above might work for the vast majority of cases
-                oldQuery.query.text = newQuery.query.text
-                oldQuery.position = newQuery.position
-                newQueries.append(oldQuery)
-            } else {
-                newQueries.append(newQuery)
-            }
-        }
-        
-        queries = newQueries
+
+    private static func cells(from text: String) -> [NrqlCell] {
+        NrqlDocumentParser.blocks(text).map { NrqlCell(text: $0) }
     }
-    
+
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
-        let data = text.data(using: .utf8)!
-        return .init(regularFileWithContents: data)
+        .init(regularFileWithContents: Data(text.utf8))
     }
-    
-    func queryAt(_ position: CodeEditor.Position) -> DocumentQuery? {
-        guard let range = position.selections.first else { return nil }
-        return queries.first { query in
-            guard let queryRange = query.position.selections.first else { return false }
-            return NSLocationInRange(range.lowerBound, queryRange)
+
+    var focusedCell: NrqlCell? {
+        cells.first { $0.id == focusedCellId }
+    }
+
+    @discardableResult
+    mutating func addCell(after id: NrqlCell.ID? = nil) -> NrqlCell.ID {
+        let cell = NrqlCell(text: "FROM ", focusOnAppear: true)
+        if let id, let index = cells.firstIndex(where: { $0.id == id }) {
+            cells.insert(cell, at: index + 1)
+        } else {
+            cells.append(cell)
+        }
+        focusedCellId = cell.id
+        return cell.id
+    }
+
+    mutating func removeCell(_ id: NrqlCell.ID) {
+        cells.removeAll { $0.id == id }
+        if focusedCellId == id { focusedCellId = nil }
+    }
+
+    func runAllQueries() {
+        for cell in cells where cell.isRunnable && !cell.query.isRunning {
+            cell.query.run()
         }
     }
-    
-    // the query under the cursor
-    var focusedQuery: DocumentQuery? { queryAt(position) }
-    
-    // queries are reference types, so this doesn't change the document itself
+
     func runFocusedQuery() {
-        focusedQuery?.query.run()
+        guard let cell = focusedCell, cell.isRunnable else { return }
+        cell.query.run()
     }
 }

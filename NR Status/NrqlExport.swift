@@ -62,6 +62,70 @@ enum NrqlExport {
         }
     }
 
+    // MARK: - Tables
+
+    /// Tables can't be drawn by `ImageRenderer` (they come out as a placeholder), so they're exported as plain data.
+    struct TableData {
+        var headers: [String]
+        var rows: [[String]]
+    }
+
+    static func tableData(for cell: NrqlCell) -> TableData? {
+        guard let container = cell.query.resultContainer else { return nil }
+        let config = ChartConfiguration(resultContainer: container)
+        cell.query.format?.apply(to: config)
+        guard config.chartType == .table else { return nil }
+
+        let showsTime = container.isTimeseries || container.isEvents
+        let fields = container.fieldNames
+        let headers = (showsTime ? ["Timestamp"] : []) + fields
+        let rows = container.data.map { datum -> [String] in
+            let values = fields.map { field -> String in
+                if let number = datum.numberFields[field] { return String(number) }
+                return datum.stringFields[field] ?? ""
+            }
+            let time = datum.date.map { $0.formatted(date: .abbreviated, time: .standard) } ?? ""
+            return (showsTime ? [time] : []) + values
+        }
+        return TableData(headers: headers, rows: rows)
+    }
+
+    private static func htmlTable(_ table: TableData) -> String {
+        let head = table.headers.map { "<th>\(escape($0))</th>" }.joined()
+        let body = table.rows.map { row in
+            "<tr>" + row.map { "<td>\(escape($0))</td>" }.joined() + "</tr>"
+        }.joined(separator: "\n")
+        return "<table>\n<thead><tr>\(head)</tr></thead>\n<tbody>\n\(body)\n</tbody>\n</table>\n"
+    }
+
+    private static let pdfRowHeight: CGFloat = 18
+
+    private static func pdfTable(_ table: TableData, maxRows: Int) -> some View {
+        let shown = Array(table.rows.prefix(maxRows))
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                ForEach(Array(table.headers.enumerated()), id: \.offset) { _, header in
+                    Text(header).bold().lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .frame(height: pdfRowHeight)
+            Divider()
+            ForEach(Array(shown.enumerated()), id: \.offset) { _, row in
+                HStack(spacing: 8) {
+                    ForEach(Array(row.enumerated()), id: \.offset) { _, value in
+                        Text(value).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                .frame(height: pdfRowHeight)
+            }
+            if table.rows.count > shown.count {
+                Text("Showing \(shown.count) of \(table.rows.count) rows; the table is too large to print in full.")
+                    .italic().foregroundStyle(.secondary).padding(.top, 6)
+            }
+        }
+        .font(.system(size: 10))
+    }
+
     // MARK: - Charts
 
     private static func chartView(for cell: NrqlCell, width: CGFloat) -> some View {
@@ -99,7 +163,9 @@ enum NrqlExport {
     static func html(for document: NRQL_EditorDocument) -> String {
         let sections = document.cells.map { cell -> String in
             var section = "<section>\n<h2>\(escape(cell.query.title))</h2>\n<pre>\(escape(cell.text))</pre>\n"
-            if let png = chartPNG(for: cell) {
+            if let table = tableData(for: cell) {
+                section += htmlTable(table)
+            } else if let png = chartPNG(for: cell) {
                 section += "<img alt=\"Chart\" src=\"data:image/png;base64,\(png.base64EncodedString())\">\n"
             } else if let message = cell.query.errorMessage {
                 section += "<p class=\"error\">\(escape(message))</p>\n"
@@ -115,6 +181,8 @@ enum NrqlExport {
         <style>
         body { font-family: -apple-system, sans-serif; max-width: 800px; margin: 2em auto; color: #222; }
         pre { background: #f4f4f6; padding: 0.8em; border-radius: 6px; white-space: pre-wrap; }
+        table { border-collapse: collapse; font-size: 0.85em; }
+        th, td { border-bottom: 1px solid #ddd; padding: 3px 10px; text-align: left; }
         img { max-width: 100%; }
         .error { color: #b00020; }
         section { margin-bottom: 2.5em; }
@@ -137,7 +205,12 @@ enum NrqlExport {
                 .padding(8)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color.gray.opacity(0.12))
-            if cell.query.resultContainer != nil {
+            if let table = tableData(for: cell) {
+                // what's left of the page after the title and the query text
+                let queryLines = cell.text.split(separator: "\n", omittingEmptySubsequences: false).count
+                let room = 560 - CGFloat(queryLines) * 16
+                pdfTable(table, maxRows: max(Int(room / pdfRowHeight) - 3, 3))
+            } else if cell.query.resultContainer != nil {
                 chartView(for: cell, width: 532)
             } else if let message = cell.query.errorMessage {
                 Text(message).foregroundStyle(.red)

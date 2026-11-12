@@ -148,4 +148,16 @@ struct NrqlExportTests {
         #expect(pdf.starts(with: Array("%PDF".utf8)))
         #expect(NrqlExport.html(for: document).contains("data:image/png;base64,"))
     }
+
+    @Test func exportsTablesAsData() throws {
+        let document = NRQL_EditorDocument(text: "/***\ntype: table\n***/\nSELECT * FROM Log")
+        let results = try #require(ChartSamples.sampleData(timeseries: false, size: .large))
+        document.cells[0].query.setState(.loaded(results))
+
+        let table = try #require(NrqlExport.tableData(for: document.cells[0]))
+        #expect(table.rows.count == results.data.count)
+        #expect(NrqlExport.html(for: document).contains("<table>"))
+        #expect(!NrqlExport.html(for: document).contains("data:image/png"))
+        #expect(try #require(NrqlExport.data(for: .pdf, document: document)).starts(with: Array("%PDF".utf8)))
+    }
 }

@@ -47,7 +47,7 @@ struct ConfigurableChartView: View {
         return copy
     }
     
-    var body: some View {
+    private var chart: some View {
         Section {
             switch config.chartType {
             case .line, nil: TimeseriesChart(config: config)
@@ -58,8 +58,26 @@ struct ConfigurableChartView: View {
             case .table: TableChart(config: config)
             }
         }
-        .inspector(isPresented: configShowing) {
-            VStack(alignment: .leading) {
+    }
+
+    /// The chart alone, with no inspector; used when rendering to an image or PDF.
+    func withoutConfiguration() -> ConfigurableChartView {
+        var copy = self
+        copy.hideConfiguration = true
+        return copy
+    }
+
+    @ViewBuilder
+    var body: some View {
+        if hideConfiguration {
+            chart
+        } else {
+            chart.inspector(isPresented: configShowing) { inspector }
+        }
+    }
+
+    private var inspector: some View {
+        VStack(alignment: .leading) {
                 inspectorHeader
                 
                 ChartSelector(availableChartTypes: availableChartTypes, selectedChartType: $config.chartType)
@@ -75,7 +93,6 @@ struct ConfigurableChartView: View {
             }
             .frame(maxHeight: .infinity, alignment: .top)
             .inspectorColumnWidth(min: 240, ideal: 300, max: 500)
-        }
     }
 }
 

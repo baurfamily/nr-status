@@ -138,4 +138,14 @@ struct NrqlExportTests {
         let pdf = try #require(NrqlExport.data(for: .pdf, document: document))
         #expect(pdf.starts(with: Array("%PDF".utf8)))
     }
+
+    @Test func exportsChartsOfLoadedResults() throws {
+        let document = NRQL_EditorDocument(text: "SELECT count(*) FROM Log TIMESERIES")
+        let results = try #require(ChartSamples.sampleData(size: .small))
+        document.cells[0].query.setState(.loaded(results))
+
+        let pdf = try #require(NrqlExport.data(for: .pdf, document: document))
+        #expect(pdf.starts(with: Array("%PDF".utf8)))
+        #expect(NrqlExport.html(for: document).contains("data:image/png;base64,"))
+    }
 }

@@ -70,6 +70,7 @@ enum NrqlExport {
                 ConfigurableChartView(
                     resultsContainer: container, format: cell.query.format, configurationShowing: .constant(false)
                 )
+                .withoutConfiguration()
             }
         }
         .frame(width: width, height: 300)

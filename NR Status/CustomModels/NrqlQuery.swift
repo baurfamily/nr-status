@@ -112,7 +112,7 @@ import LanguageSupport
         runningTask = Task { await getData() }
     }
     
-    @MainActor private func setState(_ newState: State) {
+    @MainActor func setState(_ newState: State) {
         state = newState
     }
     

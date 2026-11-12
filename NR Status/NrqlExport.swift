@@ -106,26 +106,38 @@ enum NrqlExport {
 
     private static let pdfRowHeight: CGFloat = 18
 
+    private static func pdfTableNote(_ table: TableData, shownRows: Int, shownColumns: Int) -> String {
+        var parts: [String] = []
+        if table.rows.count > shownRows { parts.append("\(shownRows) of \(table.rows.count) rows") }
+        if table.headers.count > shownColumns { parts.append("\(shownColumns) of \(table.headers.count) columns") }
+        return "Showing \(parts.joined(separator: " and ")); the table is too large to print in full."
+    }
+
     private static func pdfTable(_ table: TableData, maxRows: Int) -> some View {
         let shown = Array(table.rows.prefix(maxRows))
+        // Columns narrower than this can't show anything useful.
+        let columnCount = min(table.headers.count, max(Int(532 / 70), 1))
+        let headers = Array(table.headers.prefix(columnCount))
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                ForEach(Array(table.headers.enumerated()), id: \.offset) { _, header in
-                    Text(header).bold().lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+                ForEach(Array(headers.enumerated()), id: \.offset) { _, header in
+                    Text(header).bold().lineLimit(1).truncationMode(.middle)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             .frame(height: pdfRowHeight)
             Divider()
             ForEach(Array(shown.enumerated()), id: \.offset) { _, row in
                 HStack(spacing: 8) {
-                    ForEach(Array(row.enumerated()), id: \.offset) { _, value in
-                        Text(value).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+                    ForEach(Array(row.prefix(columnCount).enumerated()), id: \.offset) { _, value in
+                        Text(value).lineLimit(1).truncationMode(.middle)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
                 .frame(height: pdfRowHeight)
             }
-            if table.rows.count > shown.count {
-                Text("Showing \(shown.count) of \(table.rows.count) rows; the table is too large to print in full.")
+            if table.rows.count > shown.count || table.headers.count > columnCount {
+                Text(pdfTableNote(table, shownRows: shown.count, shownColumns: columnCount))
                     .italic().foregroundStyle(.secondary).padding(.top, 6)
             }
         }

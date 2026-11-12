@@ -32,6 +32,15 @@ enum CompletionKeyRouter {
                 return nil
             }
 
+            // Return starts a new line in the editor; only Tab commits
+            if event.keyCode == returnKey {
+                handler.keyDown(with: escapeEvent(like: event) ?? event)
+                let editor = NSApp.windows.lazy.filter { $0 !== panel }
+                    .compactMap { $0.firstResponder as? NSTextView }.first { $0.isEditable }
+                editor?.insertNewline(nil)
+                return nil
+            }
+
             handler.keyDown(with: event.keyCode == tab ? returnEvent(like: event) ?? event : event)
             return nil
         }
@@ -41,6 +50,14 @@ enum CompletionKeyRouter {
         if let table = view as? NSTableView { return table }
         for sub in view.subviews { if let found = findTable(in: sub) { return found } }
         return nil
+    }
+
+    private static func escapeEvent(like event: NSEvent) -> NSEvent? {
+        NSEvent.keyEvent(
+            with: .keyDown, location: event.locationInWindow, modifierFlags: [], timestamp: event.timestamp,
+            windowNumber: event.windowNumber, context: nil, characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}",
+            isARepeat: false, keyCode: 53
+        )
     }
 
     private static func returnEvent(like event: NSEvent) -> NSEvent? {

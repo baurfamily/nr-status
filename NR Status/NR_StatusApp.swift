@@ -28,14 +28,39 @@ extension FocusedValues {
 }
 
 /// Opens a blank document at launch instead of the file picker, unless windows were restored.
+/// If the user then opens a file, the untouched blank document is closed.
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private weak var launchDocument: NSDocument?
+    private var observer: Any?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [self] in
             let hasWindow = NSApp.windows.contains { $0.isVisible && !($0 is NSPanel) }
             guard !hasWindow else { return }
             NSApp.windows.compactMap { $0 as? NSOpenPanel }.forEach { $0.cancel(nil) }
             NSDocumentController.shared.newDocument(nil)
+            launchDocument = NSDocumentController.shared.documents.first
+            observer = NotificationCenter.default.addObserver(
+                forName: NSWindow.didBecomeMainNotification, object: nil, queue: .main
+            ) { [weak self] _ in
+                MainActor.assumeIsolated { self?.closeLaunchDocumentIfReplaced() }
+            }
         }
+    }
+
+    private func closeLaunchDocumentIfReplaced() {
+        guard let blank = launchDocument else { return stopWatching() }
+        if blank.isDocumentEdited || blank.fileURL != nil { return stopWatching() }
+        let opened = NSDocumentController.shared.documents.contains { $0 !== blank && $0.fileURL != nil }
+        guard opened else { return }
+        blank.close()
+        stopWatching()
+    }
+
+    private func stopWatching() {
+        if let observer { NotificationCenter.default.removeObserver(observer) }
+        observer = nil
+        launchDocument = nil
     }
 }
 

@@ -84,13 +84,13 @@ Sandbox: open only `base` (minus `dofile`, `loadfile`, `require`), `string`, `ta
 - Errors (syntax, runtime, timeout) show in the cell's result area with the Lua line number.
 - Loops: a script can `emit` multiple results; each gets its own chart under the cell (v2 — v1 allows one emit per cell).
 
-## Open questions for you
+## Decisions
 
-1. Is `{{ }}` interpolation + fenced script cells the right surface, or do you want only one of them in v1?
-2. Should running a cell auto-run its stale dependencies, or require Run All?
-3. Must `query()` be allowed inside scripts (powerful, and enables loops), or should scripts only transform existing cell results at first?
-4. One result per script cell for v1 — acceptable?
-5. Library: OK to add `tomsci/LuaSwift` as an SPM dependency (subject to the spike)?
+1. v1 has both `{{ }}` interpolation and fenced script cells.
+2. Running a cell runs any dependency that has no result yet. A small yellow warning triangle on the cell warns that running it will run other cells (and says how many).
+3. No `query()` in scripts for now; scripts only use results of other cells. (The `query()` step below is deferred.)
+4. A script cell supplies its result with a `return` statement or by calling the registered `emit(value)` function (`emit` wins). That result is available to other cells as `results.<name>` and is charted in the script cell itself.
+5. Library: `ChrisGVE/LuaSwift` (built-in sandbox, instruction limit, VM memory cap and cancellation). Compared with `tomsci/LuaSwift` and `SwiftyLua`; fall back to tomsci if ChrisGVE causes problems. The spike (`LuaRuntime.swift`) builds and passes its tests.
 
 ## Implementation steps (each its own commit)
 

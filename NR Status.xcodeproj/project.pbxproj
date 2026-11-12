@@ -10,6 +10,7 @@
 		3F01FD7C2CBF718600D9E068 /* CodeEditorView in Frameworks */ = {isa = PBXBuildFile; productRef = 3F01FD7B2CBF718600D9E068 /* CodeEditorView */; };
 		3F01FD7E2CBF718600D9E068 /* LanguageSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 3F01FD7D2CBF718600D9E068 /* LanguageSupport */; };
 		3F28B36F2CBB996200CCB8DD /* NR_Models.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B3652CBB996200CCB8DD /* NR_Models.framework */; };
+		3FA3FF0930A5860D00AA543D /* LuaSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 3FA3FF0830A5860D00AA543D /* LuaSwift */; };
 		3FA5BADA2CC22C5400B75771 /* HexGrid in Frameworks */ = {isa = PBXBuildFile; productRef = 3FA5BAD92CC22C5400B75771 /* HexGrid */; };
 		3FA635082CD7D4E30050F813 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B29F2CBB3CBD00CCB8DD /* WidgetKit.framework */; };
 		3FA635092CD7D4E30050F813 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B2A12CBB3CBD00CCB8DD /* SwiftUI.framework */; };
@@ -210,6 +211,7 @@
 				3FC6BEC42D79679300E38D17 /* CodeEditor in Frameworks */,
 				3FA5BADA2CC22C5400B75771 /* HexGrid in Frameworks */,
 				3F01FD7E2CBF718600D9E068 /* LanguageSupport in Frameworks */,
+				3FA3FF0930A5860D00AA543D /* LuaSwift in Frameworks */,
 				3F01FD7C2CBF718600D9E068 /* CodeEditorView in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -328,6 +330,7 @@
 				3F01FD7D2CBF718600D9E068 /* LanguageSupport */,
 				3FA5BAD92CC22C5400B75771 /* HexGrid */,
 				3FC6BEC32D79679300E38D17 /* CodeEditor */,
+				3FA3FF0830A5860D00AA543D /* LuaSwift */,
 			);
 			productName = "NRQL Editor";
 			productReference = 3F01FD252CBDFADF00D9E068 /* NR Status.app */;
@@ -493,6 +496,7 @@
 				3F7896472CA7CE1100A03646 /* XCRemoteSwiftPackageReference "HexGrid" */,
 				3F01FD7A2CBF718600D9E068 /* XCRemoteSwiftPackageReference "CodeEditorView" */,
 				3FC6BEC22D79679300E38D17 /* XCRemoteSwiftPackageReference "CodeEditor" */,
+				3FA3FF0730A5860D00AA543D /* XCRemoteSwiftPackageReference "LuaSwift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3F5714742C9EA7BC00685FEA /* Products */;
@@ -1132,6 +1136,14 @@
 				minimumVersion = 0.1.2;
 			};
 		};
+		3FA3FF0730A5860D00AA543D /* XCRemoteSwiftPackageReference "LuaSwift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ChrisGVE/LuaSwift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.6.1;
+			};
+		};
 		3FC6BEC22D79679300E38D17 /* XCRemoteSwiftPackageReference "CodeEditor" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ZeeZide/CodeEditor.git";
@@ -1152,6 +1164,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 3F01FD7A2CBF718600D9E068 /* XCRemoteSwiftPackageReference "CodeEditorView" */;
 			productName = LanguageSupport;
+		};
+		3FA3FF0830A5860D00AA543D /* LuaSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3FA3FF0730A5860D00AA543D /* XCRemoteSwiftPackageReference "LuaSwift" */;
+			productName = LuaSwift;
 		};
 		3FA5BAD92CC22C5400B75771 /* HexGrid */ = {
 			isa = XCSwiftPackageProductDependency;

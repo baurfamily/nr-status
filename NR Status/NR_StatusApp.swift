@@ -27,8 +27,21 @@ extension FocusedValues {
     }
 }
 
+/// Opens a blank document at launch instead of the file picker, unless windows were restored.
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            let hasWindow = NSApp.windows.contains { $0.isVisible && !($0 is NSPanel) }
+            guard !hasWindow else { return }
+            NSApp.windows.compactMap { $0 as? NSOpenPanel }.forEach { $0.cancel(nil) }
+            NSDocumentController.shared.newDocument(nil)
+        }
+    }
+}
+
 @main
 struct NRQL_EditorApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @Environment(\.openWindow) var openWindow
 
     var body: some Scene {

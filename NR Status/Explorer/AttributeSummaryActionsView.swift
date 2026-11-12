@@ -29,6 +29,12 @@ struct AttributeSummaryActionsView : View {
     }
     
     var body: some View {
+        ScrollView {
+            content
+        }
+    }
+
+    private var content: some View {
         VStack {
             Grid(alignment: .trailingFirstTextBaseline) {
                 GridRow {
@@ -67,7 +73,7 @@ struct AttributeSummaryActionsView : View {
                 }
                 GridRow {
                     Spacer()
-                    Toggle(isOn: makeBinding(for: "countUnique")) {
+                    Toggle(isOn: makeBinding(for: "uniqueCount")) {
                         Text("Count Unique")
                     }.toggleStyle(.titleShift)
                     SparklineChart(data: summary?.timeseriesResultsContainer?.results.data ?? [], key: "uniqueCount.\(attribute.key)")
@@ -111,9 +117,11 @@ struct AttributeSummaryActionsView : View {
             }
             if let summary {
                 AttributeSummaryView(summary: summary)
-                    .frame(maxWidth: .infinity, maxHeight: 500)
+                    .frame(maxWidth: .infinity, minHeight: 400, maxHeight: 500)
             }
-        }.task {
+        }
+        .padding(.vertical)
+        .task {
             Task {
                 self.summary = await AttributeSummary.generate(from: attribute)
             }

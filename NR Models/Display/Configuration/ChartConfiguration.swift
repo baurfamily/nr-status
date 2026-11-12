@@ -53,11 +53,22 @@ class ChartConfiguration {
     }
     
     func updateResults(_ newResultContainer: NrdbResultContainer) {
+        let wasTablePreferred = resultContainer.prefersTable
         self.resultContainer = newResultContainer
         self.allFields = SelectableField.wrap( resultContainer.fieldNames.sorted() )
         self.fields = SelectableField.wrap( newResultContainer.numberFieldNames.sorted() )
         self.facets = FacetsConfiguration(resultContainer: newResultContainer)
         self.plot = .init(fields: newResultContainer.numberFieldNames)
+        
+        // switch to a table when the data newly becomes non-chartable
+        if newResultContainer.prefersTable && !wasTablePreferred {
+            self.chartType = .table
+            return
+        }
+        
+        // the current type may not be able to render the new shape of data
+        if let chartType, chartTypes.contains(chartType) { return }
+        self.chartType = chartTypes.first
     }
 }
 

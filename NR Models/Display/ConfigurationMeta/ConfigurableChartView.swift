@@ -18,6 +18,9 @@ struct ConfigurableChartView: View {
 
     var hideConfiguration: Bool = false
     
+    // shown at the top of the inspector, above the chart configuration
+    private var inspectorHeader = AnyView(EmptyView())
+    
     @State var configShowing: Bool = true
     @State var config: ChartConfiguration
     
@@ -32,6 +35,12 @@ struct ConfigurableChartView: View {
         self.config = config
     }
     
+    func inspectorHeader<Header: View>(@ViewBuilder _ header: () -> Header) -> ConfigurableChartView {
+        var copy = self
+        copy.inspectorHeader = AnyView(header())
+        return copy
+    }
+    
     var body: some View {
         Section {
             switch config.chartType {
@@ -43,18 +52,23 @@ struct ConfigurableChartView: View {
             case .table: TableChart(config: config)
             }
         }
-        .inspectorColumnWidth(100)
         .inspector(isPresented: $configShowing) {
-            ChartSelector(availableChartTypes: availableChartTypes, selectedChartType: $config.chartType)
-            
-            switch config.chartType {
-            case .line, nil: TimeseriesChartConfigView(config: $config)
-            case .billboard: BillboardChartConfigView(config: $config)
-            case .plot: ScatterPlotConfigView(config: $config)
-            case .pie: PieChartConfigView(config: $config)
-            case .bar: BarChartConfigView(config: $config)
-            case .table: Text("No additional configuration for tables")
+            VStack(alignment: .leading) {
+                inspectorHeader
+                
+                ChartSelector(availableChartTypes: availableChartTypes, selectedChartType: $config.chartType)
+                
+                switch config.chartType {
+                case .line, nil: TimeseriesChartConfigView(config: $config)
+                case .billboard: BillboardChartConfigView(config: $config)
+                case .plot: ScatterPlotConfigView(config: $config)
+                case .pie: PieChartConfigView(config: $config)
+                case .bar: BarChartConfigView(config: $config)
+                case .table: Text("No additional configuration for tables")
+                }
             }
+            .frame(maxHeight: .infinity, alignment: .top)
+            .inspectorColumnWidth(min: 240, ideal: 300, max: 500)
         }
     }
 }

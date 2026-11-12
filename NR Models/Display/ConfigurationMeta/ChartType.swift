@@ -25,10 +25,12 @@ enum ChartType : String, CaseIterable, AppEnum {
     // want to refactor this to look at chart properties more deeply
     // for example, plot should only be used if there are at least two numeric fields
     static func cases(for resultContainer: NrdbResultContainer) -> [ChartType] {
-        if resultContainer.isTimeseries {
+        if resultContainer.prefersTable && !resultContainer.isEvents {
+            return [ .table ]
+        } else if resultContainer.isTimeseries {
             return [ .line, .table, .plot, .bar ]
         } else if resultContainer.isEvents {
-            return [ .line, .table, .plot ]
+            return [ .table, .line, .plot ]
         } else if resultContainer.isComparable {
             return [ .billboard, .line, .table ]
         } else {

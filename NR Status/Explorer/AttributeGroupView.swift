@@ -19,11 +19,10 @@ struct AttributeGroupView : View {
     }
     
     var body : some View {
-        Text(title).bold()
-        ForEach($attributes, id: \.self) { attribute in
-            if filteredAttributes.contains(attribute.wrappedValue) {
-                NavigationLink(value: attribute.wrappedValue) {
-                    AttributeListItemView(attribute: attribute.wrappedValue, query: $query)
+        Section(title) {
+            ForEach(filteredAttributes) { attribute in
+                NavigationLink(value: attribute) {
+                    AttributeListItemView(attribute: attribute, query: $query)
                 }
                 .buttonStyle(.borderless)
             }

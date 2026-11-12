@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct EventExplorer : View {
-    @Binding var query: QueryBuilder
+    @Binding var selection: String?
     
     @State var events: [String] = []
     @State var eventFilter: String = ""
@@ -20,18 +20,9 @@ struct EventExplorer : View {
     }
     
     var body: some View {
-        NavigationStack {
-            List(filteredEvents, id: \.self) { event in
-                NavigationLink(event, value: event)
-            }
-            .navigationDestination(for: String.self) {
-                AttributeExplorer(event: $0, query: $query)
-            }
-            .navigationDestination(for: Attribute.self) {
-                AttributeSummaryActionsView(attribute: $0, query: $query)
-            }
+        List(filteredEvents, id: \.self, selection: $selection) { event in
+            Text(event)
         }
-        .navigationViewStyle(.columns)
         .navigationTitle("Events")
         .task {
             if let results = try? await Queries().getNrqlData(query: "SHOW EVENT TYPES since 1 day ago") {
@@ -42,6 +33,6 @@ struct EventExplorer : View {
 }
 
 #Preview {
-    @Previewable @State var query: QueryBuilder = .init(event: "Transaction")
-    EventExplorer(query: $query)
+    @Previewable @State var selection: String?
+    EventExplorer(selection: $selection)
 }

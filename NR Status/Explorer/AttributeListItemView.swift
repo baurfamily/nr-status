@@ -111,7 +111,7 @@ struct AttributeListItemView : View {
                 Divider()
                 Group {
                     Toggle(isOn: makeBinding(for: "count")) { Text("count") }
-                    Toggle(isOn: makeBinding(for: "countUnique")) { Text("Count Unique") }
+                    Toggle(isOn: makeBinding(for: "uniqueCount")) { Text("Count Unique") }
                     
                     if attribute.type == "numeric" {
                         Divider()

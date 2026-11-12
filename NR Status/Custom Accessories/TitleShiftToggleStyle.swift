@@ -12,18 +12,25 @@ struct TitleShiftToggleStyle: ToggleStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         HStack {
-            Picker("", selection: configuration.$isOn) {
-                if configuration.isOn {
-                    Text("-").tag(false)
-                    configuration.label.tag(true)
+            let isOn = configuration.isOn
+            let labelSegment = configuration.label
+                .frame(width: 120, height: 24)
+                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 6))
+                .foregroundStyle(.white)
+            let symbolSegment = Text(isOn ? "-" : "+")
+                .frame(width: 40, height: 24)
+            HStack(spacing: 0) {
+                if isOn {
+                    symbolSegment
+                    labelSegment
                 } else {
-                    configuration.label.tag(false)
-                    Text("+").tag(true)
+                    labelSegment
+                    symbolSegment
                 }
             }
-            .pickerStyle(.segmented)
-            // animation doesn't work, probably because the use of a picker
-            // and the changes in the labels/text aren't animatable
+            .padding(2)
+            .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+            .contentShape(Rectangle())
             .onTapGesture {
                 withAnimation(.spring()) {
                     configuration.isOn.toggle()

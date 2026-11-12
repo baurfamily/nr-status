@@ -31,7 +31,8 @@ struct AttributeSummary : Identifiable{
     static var cache: [String: AttributeSummary] = [:]
     
     static func generate(from attribute: Attribute) async -> Self {
-        if let cached = cache[attribute.id] {
+        let cacheKey = "\(attribute.event):\(attribute.key)"
+        if let cached = cache[cacheKey] {
             return cached
         }
         
@@ -113,7 +114,7 @@ struct AttributeSummary : Identifiable{
                 TIMESERIES 1 hour
             """)
         }
-        cache[attribute.id] = summary
+        cache[cacheKey] = summary
         return summary
     }
 }

@@ -28,10 +28,11 @@ struct ConfigurableChartView: View {
         self.config = config
     }
    
-    init(resultsContainer: NrdbResultContainer) {
+    init(resultsContainer: NrdbResultContainer, format: ChartFormat? = nil) {
         let config = ChartConfiguration.init(
             resultContainer: resultsContainer
         )
+        format?.apply(to: config)
         self.config = config
     }
     

@@ -104,6 +104,42 @@ struct NrdbTests {
         #expect(unrelated.prefersTable)
     }
 
+    @Test func formatParsesTypeAndAttributes() {
+        let format = ChartFormat.parse(from: "/***\ntype: Line\nattributes: smoothed, Points\nfuture: x\n***/\nSELECT 1")
+
+        #expect(format?.type == .line)
+        #expect(format?.attributes == ["smoothed", "points"])
+        #expect(ChartFormat.parse(from: "SELECT 1") == nil)
+        #expect(ChartFormat.strip(from: "/***\ntype: line\n***/\nSELECT 1") == "\nSELECT 1")
+    }
+
+    @Test func formatAppliesToTimeseriesConfig() throws {
+        let timeseries = try container(results: #"[{"beginTimeSeconds":100,"endTimeSeconds":160,"count":1}]"#)
+
+        // no attributes: defaults stay, type is applied
+        var config = ChartConfiguration(resultContainer: timeseries)
+        ChartFormat.parse(from: "/***\ntype: bar\n***/")?.apply(to: config)
+        #expect(config.chartType == .bar)
+
+        // listed attributes are on, the rest off
+        config = ChartConfiguration(resultContainer: timeseries)
+        ChartFormat.parse(from: "/***\ntype: line\nattributes: points\n***/")?.apply(to: config)
+        #expect(config.timeseries.showDataPoints)
+        #expect(!config.timeseries.isSmoothed)
+        #expect(!config.timeseries.showLines)
+
+        // neither lines nor points would be invisible
+        config = ChartConfiguration(resultContainer: timeseries)
+        ChartFormat.parse(from: "/***\ntype: line\nattributes: smoothed\n***/")?.apply(to: config)
+        #expect(config.timeseries.showLines)
+        #expect(!config.timeseries.showDataPoints)
+
+        // a type the data can't show is ignored
+        config = ChartConfiguration(resultContainer: timeseries)
+        ChartFormat.parse(from: "/***\ntype: pie\n***/")?.apply(to: config)
+        #expect(config.chartType == .line)
+    }
+
     @Test func keysetParsesPerRowAndGroupedShapes() throws {
         let rows = try container(results: #"[{"key":"duration","type":"numeric"},{"key":"name","type":"string"}]"#)
         let fromRows = Attribute.attributes(event: "Transaction", fromKeyset: rows)

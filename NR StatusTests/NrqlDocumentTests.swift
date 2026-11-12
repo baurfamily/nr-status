@@ -92,6 +92,14 @@ struct NrqlDocumentCellTests {
 }
 
 struct NrqlQueryTests {
+    @Test func formatBlockIsNotPartOfTheQueryOrTitle() {
+        let query = NrqlQuery(from: "/***\ntype: line\nattributes: points\n***/\n// Title\nSELECT 1")
+
+        #expect(query.nrql == "SELECT 1")
+        #expect(query.title == "Title")
+        #expect(query.format?.type == .line)
+    }
+
     @Test func stripsCommentsAndFindsTitle() {
         let query = NrqlQuery(from: "// My title\nSELECT 1\nFROM A")
 

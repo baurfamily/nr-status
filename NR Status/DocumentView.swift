@@ -116,7 +116,7 @@ struct CellResultView: View {
             ProgressView()
                 .frame(maxWidth: .infinity, minHeight: 80)
         case .loaded(let container):
-            ConfigurableChartView(resultsContainer: container)
+            ConfigurableChartView(resultsContainer: container, format: query.format)
                 .frame(maxWidth: .infinity, minHeight: 300)
         case .failed(let message):
             VStack(alignment: .leading) {

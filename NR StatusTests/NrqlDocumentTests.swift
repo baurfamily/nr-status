@@ -99,17 +99,6 @@ struct NrqlQueryTests {
         #expect(NrqlQuery(from: "// Comment title\nSELECT 1").title == "Comment title")
     }
 
-    @Test func looksCompleteOnlyForFinishedQueries() {
-        #expect(NrqlQuery.looksComplete("SELECT count(*) FROM Transaction"))
-        #expect(NrqlQuery.looksComplete("FROM Transaction SELECT count(*) FACET name SINCE 1 day ago TIMESERIES"))
-        #expect(!NrqlQuery.looksComplete("SELECT count(*) FROM"))
-        #expect(!NrqlQuery.looksComplete("SELECT count( FROM Transaction"))
-        #expect(!NrqlQuery.looksComplete("SELECT count(*) FROM Transaction WHERE name = 'abc"))
-        #expect(!NrqlQuery.looksComplete("SELECT count(*) FROM Transaction WHERE"))
-        #expect(!NrqlQuery.looksComplete("SELECT count(*) FROM Transaction FACET"))
-        #expect(!NrqlQuery.looksComplete("// only a comment"))
-    }
-
     @Test func formatBlockIsNotPartOfTheQueryOrTitle() {
         let query = NrqlQuery(from: "/***\ntype: line\nattributes: points\n***/\n// Title\nSELECT 1")
 

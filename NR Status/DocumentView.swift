@@ -12,7 +12,6 @@ import LanguageSupport
 /// A notebook-style document: each query is a cell with its results below it.
 struct DocumentView: View {
     @Binding var document: NRQL_EditorDocument
-    @AppStorage("autoRunQueries") private var autoRun = true
 
     var body: some View {
         ScrollView {
@@ -32,10 +31,6 @@ struct DocumentView: View {
             }
             .padding()
         }
-        .toolbar {
-            Toggle("Auto-run", systemImage: "bolt", isOn: $autoRun)
-                .help("Re-run a query shortly after you stop typing, once it looks complete")
-        }
     }
 }
 
@@ -49,22 +44,7 @@ struct CellView: View {
 
     @State private var position: CodeEditor.Position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
     @State private var messages: Set<TextLocated<Message>> = Set()
-    @State private var seenNrql: String?
-    @AppStorage("autoRunQueries") private var autoRun = true
 
-    // runs shortly after typing stops, once the query looks finished; the task
-    // restarts (and so cancels the wait) whenever the query changes
-    private func autoRunWhenValid() async {
-        let nrql = cell.query.nrql
-        // opening a document shouldn't run every query in it
-        let isFirstPass = seenNrql == nil
-        seenNrql = nrql
-
-        guard !isFirstPass, autoRun, NrqlQuery.looksComplete(nrql) else { return }
-        try? await Task.sleep(for: .seconds(1))
-        guard !Task.isCancelled else { return }
-        cell.query.run(quiet: true)
-    }
 
     // the editor scrolls itself, so give it room for the lines it has
     private var editorHeight: CGFloat {
@@ -86,7 +66,6 @@ struct CellView: View {
             .frame(height: editorHeight)
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .onChange(of: position) { onFocus() }
-            .task(id: cell.query.nrql) { await autoRunWhenValid() }
 
             if !cell.isCollapsed {
                 CellResultView(query: cell.query)
@@ -138,17 +117,10 @@ struct CellResultView: View {
             ProgressView()
                 .frame(maxWidth: .infinity, minHeight: 80)
         case .loaded(let container):
-            VStack(alignment: .leading, spacing: 4) {
-                ConfigurableChartView(resultsContainer: container, format: query.format)
-                    // rebuild for new data or a changed format comment
-                    .id("\(query.runCount)-\(String(describing: query.format))")
-                    .frame(maxWidth: .infinity, minHeight: 300)
-                if let liveError = query.liveError {
-                    Label(liveError, systemImage: "exclamationmark.triangle")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
+            ConfigurableChartView(resultsContainer: container, format: query.format)
+                // rebuild when the format comment changes, so it applies as you type
+                .id(query.format)
+                .frame(maxWidth: .infinity, minHeight: 300)
         case .failed(let message):
             VStack(alignment: .leading) {
                 Text("The query failed")

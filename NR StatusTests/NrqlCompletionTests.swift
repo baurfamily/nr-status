@@ -83,9 +83,9 @@ struct NrqlCompletionTests {
 
     @Test func completesFormatBlock() async {
         #expect(await names("/***\n  ti|\n***/") == ["title"])
-        #expect(await names("/***\ntype: p|\n***/") == ["pie", "plot"])
-        #expect(await names("/***\ntype: pie\nattributes: |\n***/") == ["donut", "separated"])
-        #expect(await names("/***\ntype: plot\nattributes: x-|\n***/") == ["x-log"])
+        #expect(await names("/***\nchart: p|\n***/") == ["pie", "plot"])
+        #expect(await names("/***\nchart: pie\nattributes: |\n***/") == ["donut", "separated"])
+        #expect(await names("/***\nchart: plot\nattributes: x-|\n***/") == ["x-log"])
         #expect(await names("/***\ntitle: Fo|\n***/").isEmpty)
     }
 
@@ -94,8 +94,8 @@ struct NrqlCompletionTests {
             let loc = (marked as NSString).range(of: "|").location
             return NrqlCompletion.offersAfterSeparator(text: marked.replacingOccurrences(of: "|", with: ""), location: loc)
         }
-        #expect(offers("/***\ntype: line\nattributes: stacked, |\n***/"))
-        #expect(offers("/***\ntype: line\nattributes: stacked |\n***/"))
+        #expect(offers("/***\nchart: line\nattributes: stacked, |\n***/"))
+        #expect(offers("/***\nchart: line\nattributes: stacked |\n***/"))
         #expect(offers("SELECT count(*), |"))
         #expect(offers("SELECT count(*) FROM |"))
         #expect(!offers("SELECT count(*) |"))

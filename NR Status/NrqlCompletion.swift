@@ -89,7 +89,7 @@ enum NrqlCompletion {
         options: [.caseInsensitive]
     )
     private static let typeLine = try! NSRegularExpression(
-        pattern: #"^\s*type:\s*([A-Za-z]+)"#,
+        pattern: #"^\s*(?:chart|type):\s*([A-Za-z]+)"#,
         options: [.anchorsMatchLines, .caseInsensitive]
     )
 
@@ -254,12 +254,12 @@ enum NrqlCompletion {
         case .none:
             break
         case .formatKey:
-            candidates = ["title", "name", "type", "attributes"].map {
+            candidates = ["title", "name", "chart", "attributes"].map {
                 Item(name: $0, kind: .formatKey, detail: nil, insertText: "\($0): ")
             }
         case .formatValue(let key, let type):
             var values: [String] = []
-            if key == "type" {
+            if key == "chart" || key == "type" {
                 values = ChartType.allCases.map(\.rawValue) + ["none"]
             } else if key == "attributes" {
                 values = type.map { ChartFormat.attributeNames[$0] ?? [] }

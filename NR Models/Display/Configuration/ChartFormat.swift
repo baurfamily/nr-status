@@ -8,7 +8,7 @@ import Foundation
 /// Chart settings written in a doc-style comment at the top of a query:
 ///
 ///     /***
-///     type: line
+///     chart: line
 ///     attributes: smoothed, lines, points
 ///     ***/
 ///
@@ -16,7 +16,7 @@ import Foundation
 /// every attribute that applies to the chart type is on if listed and off if not.
 ///
 /// `name` lets later cells refer to this query's result as `results.<name>`, and
-/// `type: none` hides the chart, for queries that only feed other cells.
+/// `chart: none` hides the chart, for queries that only feed other cells.
 struct ChartFormat: Equatable, Hashable {
     var title: String?
     var name: String?
@@ -63,7 +63,7 @@ struct ChartFormat: Equatable, Hashable {
                 format.title = rawValue.isEmpty ? nil : rawValue
             case "name":
                 format.name = rawValue.isEmpty ? nil : rawValue
-            case "type":
+            case "chart", "type":
                 format.hidesChart = value == "none"
                 format.type = ChartType(rawValue: value)
             case "attributes":

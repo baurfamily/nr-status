@@ -100,7 +100,7 @@ struct NrqlQueryTests {
     }
 
     @Test func formatBlockIsNotPartOfTheQueryOrTitle() {
-        let query = NrqlQuery(from: "/***\ntype: line\nattributes: points\n***/\n// Title\nSELECT 1")
+        let query = NrqlQuery(from: "/***\nchart: line\nattributes: points\n***/\n// Title\nSELECT 1")
 
         #expect(query.nrql == "SELECT 1")
         #expect(query.title == "Title")
@@ -150,7 +150,7 @@ struct NrqlExportTests {
     }
 
     @Test func exportsTablesAsData() throws {
-        let document = NRQL_EditorDocument(text: "/***\ntype: table\n***/\nSELECT * FROM Log")
+        let document = NRQL_EditorDocument(text: "/***\nchart: table\n***/\nSELECT * FROM Log")
         let results = try #require(ChartSamples.sampleData(timeseries: false, size: .large))
         document.cells[0].query.setState(.loaded(results))
 
@@ -185,7 +185,7 @@ struct NrqlInterpolationTests {
     }
 
     @Test func formatNameAndHiddenChart() {
-        let query = NrqlQuery(from: "/***\nname: top_app\ntype: none\n***/\nSELECT 1")
+        let query = NrqlQuery(from: "/***\nname: top_app\nchart: none\n***/\nSELECT 1")
 
         #expect(query.name == "top_app")
         #expect(query.format?.hidesChart == true)

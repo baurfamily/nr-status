@@ -104,6 +104,7 @@ struct NRQL_EditorApp: App {
                 }).keyboardShortcut("e", modifiers: [ .command, .shift ])
             }
             CommandMenu("Editor") { EditorMenuView() }
+            CommandGroup(after: .importExport) { ExportMenuView() }
         }
             
         Settings {

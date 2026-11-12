@@ -95,7 +95,7 @@ Evaluate against these criteria: inline block/view embedding below a text range 
 - Investigate NerdGraph for function signatures; if unavailable, a small curated signature table.
 - Context-aware completion (after `FROM`, `SELECT`, `WHERE`, `FACET`, ...).
 
-### Phase 6: Export
+### Phase 6: Export (done: File ▸ Export for NRQL text, HTML and PDF)
 - NRQL text (concatenate cells/comments), HTML (queries + rendered charts/tables via `ImageRenderer` or SVG), PDF (`ImageRenderer`/print). Share-sheet/File > Export menu.
 
 ### Phase 7: Lua scripting (design first)

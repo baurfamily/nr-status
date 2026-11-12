@@ -123,3 +123,19 @@ struct NrqlQueryTests {
         #expect(query.nrql == "SELECT 2")
     }
 }
+
+@MainActor
+struct NrqlExportTests {
+    @Test func exportsTextHtmlAndPdf() throws {
+        let document = NRQL_EditorDocument(text: "// A & B\nSELECT 1 FROM Log WHERE x < 2")
+
+        #expect(String(data: try #require(NrqlExport.data(for: .nrql, document: document)), encoding: .utf8) == document.text)
+
+        let html = NrqlExport.html(for: document)
+        #expect(html.contains("<h2>A &amp; B</h2>"))
+        #expect(html.contains("x &lt; 2"))
+
+        let pdf = try #require(NrqlExport.data(for: .pdf, document: document))
+        #expect(pdf.starts(with: Array("%PDF".utf8)))
+    }
+}

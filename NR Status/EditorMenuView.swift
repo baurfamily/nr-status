@@ -11,6 +11,21 @@ import SwiftUI
 import CodeEditorView
 import LanguageSupport
 
+struct ExportMenuView: View {
+    @FocusedBinding(\.document) var document: NRQL_EditorDocument?
+
+    var body: some View {
+        Menu("Export") {
+            ForEach(NrqlExport.Format.allCases, id: \.self) { format in
+                Button(format.title) {
+                    if let document { NrqlExport.save(format, document: document) }
+                }
+            }
+        }
+        .disabled(document == nil)
+    }
+}
+
 struct EditorMenuView : View {
     @FocusedBinding(\.document) var document: NRQL_EditorDocument?
     @FocusedBinding(\.query) var query: NrqlQuery?

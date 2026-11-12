@@ -1,0 +1,34 @@
+// Busiest app, last week
+// name: top_app
+/***
+type: billboard
+***/
+FROM Transaction SELECT count(*) FACET appName SINCE 1 week ago LIMIT 1
+
+// Metrics for the busiest app
+// name: metrics
+/***
+type: line
+***/
+FROM Metric SELECT count(*) WHERE appName = '{{ results.top_app.rows[1].facet }}' SINCE 1 week ago TIMESERIES 1 day
+
+// Transactions for the busiest app
+// name: transactions
+FROM Transaction SELECT count(*) AS count WHERE appName = '{{ results.top_app.rows[1].facet }}' SINCE 1 week ago
+
+// Errors for the busiest app
+// name: errors
+FROM TransactionError SELECT count(*) AS count WHERE appName = '{{ results.top_app.rows[1].facet }}' SINCE 1 week ago
+
+// Transactions vs. errors
+/***
+type: bar
+***/
+```lua
+emit({
+  rows = {
+    { facet = "Transaction", count = results.transactions.rows[1].count },
+    { facet = "TransactionError", count = results.errors.rows[1].count },
+  },
+})
+```

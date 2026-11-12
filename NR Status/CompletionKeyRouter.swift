@@ -24,12 +24,23 @@ enum CompletionKeyRouter {
                   let handler = panel.contentView
             else { return event }
 
-            // the list handles moving the selection itself
-            if event.keyCode == upArrow || event.keyCode == downArrow { return event }
+            // the list should move the selection itself, but it isn't reliably first responder
+            if event.keyCode == upArrow || event.keyCode == downArrow {
+                guard let table = findTable(in: handler) else { return event }
+                if panel.firstResponder !== table { panel.makeFirstResponder(table) }
+                table.keyDown(with: event)
+                return nil
+            }
 
             handler.keyDown(with: event.keyCode == tab ? returnEvent(like: event) ?? event : event)
             return nil
         }
+    }
+
+    private static func findTable(in view: NSView) -> NSTableView? {
+        if let table = view as? NSTableView { return table }
+        for sub in view.subviews { if let found = findTable(in: sub) { return found } }
+        return nil
     }
 
     private static func returnEvent(like event: NSEvent) -> NSEvent? {

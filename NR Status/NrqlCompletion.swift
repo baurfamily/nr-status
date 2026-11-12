@@ -186,6 +186,29 @@ enum NrqlCompletion {
         return String(stripped[range])
     }
 
+    /// Whether the cursor sits where the next word is a name we can list (after a comma, `FROM `, `WHERE `, ...),
+    /// so the panel should stay up or come back after a separator is typed.
+    static func offersAfterSeparator(text: String, location: Int) -> Bool {
+        let analysis = analyse(text: text, location: location)
+        guard analysis.prefix.isEmpty else { return false }
+
+        let ns = text as NSString
+        let before = ns.substring(to: min(max(location, 0), ns.length)).trimmingCharacters(in: .whitespaces)
+
+        switch analysis.context {
+        case .formatValue(let key, _):
+            return key == "attributes" || before.hasSuffix(":")
+        case .events:
+            return true
+        case .attributes:
+            if before.hasSuffix(",") || before.hasSuffix("(") { return true }
+            let lastWord = before.split(whereSeparator: { $0.isWhitespace || $0 == "(" }).last?.uppercased()
+            return ["SELECT", "WHERE", "FACET", "BY", "AND", "OR", "NOT"].contains(lastWord ?? "")
+        case .none, .formatKey, .keywords:
+            return false
+        }
+    }
+
     // MARK: - Items
 
     static func items(

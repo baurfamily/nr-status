@@ -45,6 +45,8 @@ struct CellView: View {
     @State private var position: CodeEditor.Position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
     @State private var messages: Set<TextLocated<Message>> = Set()
     @State private var languageService = NrqlLanguageService()
+    // the chart settings inspector is hidden until asked for
+    @State private var showsChartSettings = false
 
 
     // the editor scrolls itself, so give it room for the lines it has
@@ -66,6 +68,7 @@ struct CellView: View {
                 CompletionKeyRouter.installIfNeeded()
                 languageService.setTextSource { cell.text }
             }
+            .environment(\.codeEditorSetActions, CodeEditor.SetActions { languageService.setCompletionAction($0.completions) })
             .environment(\.codeEditorLayoutConfiguration, CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true))
             .environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight))
             .frame(height: editorHeight)
@@ -73,7 +76,7 @@ struct CellView: View {
             .onChange(of: position) { onFocus() }
 
             if !cell.isCollapsed {
-                CellResultView(query: cell.query)
+                CellResultView(query: cell.query, configurationShowing: $showsChartSettings)
             }
         }
         .padding(8)
@@ -96,6 +99,13 @@ struct CellView: View {
                 .font(.headline)
             Spacer()
 
+            Button("Chart Settings", systemImage: "gearshape") {
+                showsChartSettings.toggle()
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+            .foregroundStyle(showsChartSettings ? Color.accentColor : Color.primary)
+
             Button("Run", systemImage: "play.fill") {
                 onFocus()
                 cell.query.run()
@@ -113,6 +123,7 @@ struct CellView: View {
 
 struct CellResultView: View {
     let query: NrqlQuery
+    @Binding var configurationShowing: Bool
 
     var body: some View {
         switch query.state {
@@ -122,7 +133,7 @@ struct CellResultView: View {
             ProgressView()
                 .frame(maxWidth: .infinity, minHeight: 80)
         case .loaded(let container):
-            ConfigurableChartView(resultsContainer: container, format: query.format)
+            ConfigurableChartView(resultsContainer: container, format: query.format, configurationShowing: $configurationShowing)
                 // rebuild when the format comment changes, so it applies as you type
                 .id(query.format)
                 .frame(maxWidth: .infinity, minHeight: 300)

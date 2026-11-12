@@ -21,19 +21,24 @@ struct ConfigurableChartView: View {
     // shown at the top of the inspector, above the chart configuration
     private var inspectorHeader = AnyView(EmptyView())
     
-    @State var configShowing: Bool = true
+    @State private var ownConfigShowing: Bool = true
+    private var externalConfigShowing: Binding<Bool>?
     @State var config: ChartConfiguration
+
+    // lets a host show and hide the inspector; without one the view manages it
+    private var configShowing: Binding<Bool> { externalConfigShowing ?? $ownConfigShowing }
     
     init(config: ChartConfiguration) {
         self.config = config
     }
    
-    init(resultsContainer: NrdbResultContainer, format: ChartFormat? = nil) {
+    init(resultsContainer: NrdbResultContainer, format: ChartFormat? = nil, configurationShowing: Binding<Bool>? = nil) {
         let config = ChartConfiguration.init(
             resultContainer: resultsContainer
         )
         format?.apply(to: config)
         self.config = config
+        self.externalConfigShowing = configurationShowing
     }
     
     func inspectorHeader<Header: View>(@ViewBuilder _ header: () -> Header) -> ConfigurableChartView {
@@ -53,7 +58,7 @@ struct ConfigurableChartView: View {
             case .table: TableChart(config: config)
             }
         }
-        .inspector(isPresented: $configShowing) {
+        .inspector(isPresented: configShowing) {
             VStack(alignment: .leading) {
                 inspectorHeader
                 

@@ -14,7 +14,12 @@ final class NrqlLanguageService: LanguageService {
     private var openedText = ""
     private var textSource: (() -> String)?
     private var lastChange = Date.distantPast
+    private var completionAction: (() -> Void)?
 
+    /// The editor's own "show completions" action, used to reopen the panel after a separator.
+    func setCompletionAction(_ action: (() -> Void)?) {
+        lock.withLock { completionAction = action }
+    }
     /// Set to false to only show completions when asked for explicitly.
     var popsUpWhileTyping = true
     private(set) var isOpen = false
@@ -42,6 +47,15 @@ final class NrqlLanguageService: LanguageService {
     func documentDidChange(position changeLocation: Int, changeInLength delta: Int, lineChange deltaLine: Int,
                            columnChange deltaColumn: Int, newText text: String) async throws {
         lock.withLock { lastChange = Date() }
+
+        // The editor closes its panel when a word ends. Where the next word is a name we can
+        // list, such as after a comma, bring it straight back.
+        guard delta == 1, [" ", ",", "("].contains(text) else { return }
+        let source = currentText
+        guard NrqlCompletion.offersAfterSeparator(text: source, location: changeLocation + 1) else { return }
+        try await Task.sleep(for: .milliseconds(100))
+        let action = lock.withLock { completionAction }
+        await MainActor.run { action?() }
     }
 
     func closeDocument() async throws { isOpen = false }

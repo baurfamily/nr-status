@@ -68,4 +68,17 @@ struct NrqlCompletionTests {
         #expect(await names("/***\ntype: plot\nattributes: x-|\n***/") == ["x-log"])
         #expect(await names("/***\ntitle: Fo|\n***/").isEmpty)
     }
+
+    @Test func offersAfterSeparators() {
+        func offers(_ marked: String) -> Bool {
+            let loc = (marked as NSString).range(of: "|").location
+            return NrqlCompletion.offersAfterSeparator(text: marked.replacingOccurrences(of: "|", with: ""), location: loc)
+        }
+        #expect(offers("/***\ntype: line\nattributes: stacked, |\n***/"))
+        #expect(offers("/***\ntype: line\nattributes: stacked |\n***/"))
+        #expect(offers("SELECT count(*), |"))
+        #expect(offers("SELECT count(*) FROM |"))
+        #expect(!offers("SELECT count(*) |"))
+        #expect(!offers("// note, |"))
+    }
 }

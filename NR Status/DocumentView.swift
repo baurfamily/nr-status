@@ -72,6 +72,14 @@ struct CellView: View {
             .environment(\.codeEditorLayoutConfiguration, CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true))
             .environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight))
             .frame(height: editorHeight)
+            .background(EditorFocusAnchor(focusRequested: cell.focusOnAppear) { cell.focusOnAppear = false })
+            .onAppear {
+                // a new cell starts with the cursor after its template
+                if cell.focusOnAppear {
+                    let end = (cell.text as NSString).length
+                    position = .init(selections: [NSMakeRange(end, 0)], verticalScrollPosition: 0)
+                }
+            }
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .onChange(of: position) { onFocus() }
 

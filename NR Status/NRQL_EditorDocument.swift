@@ -20,6 +20,8 @@ extension UTType {
 struct NrqlCell: Identifiable {
     let id = UUID()
     var isCollapsed = false
+    // set on a new cell so its editor takes the keyboard once it appears
+    var focusOnAppear = false
 
     var text: String {
         didSet { query.text = text }
@@ -28,8 +30,9 @@ struct NrqlCell: Identifiable {
     // a reference type, so running it doesn't mutate the document
     let query: NrqlQuery
 
-    init(text: String) {
+    init(text: String, focusOnAppear: Bool = false) {
         self.text = text
+        self.focusOnAppear = focusOnAppear
         self.query = NrqlQuery(from: text)
     }
 
@@ -45,7 +48,7 @@ struct NRQL_EditorDocument: FileDocument {
         NrqlDocumentParser.join(cells.map(\.text))
     }
 
-    init(text: String = "// Title of query\nSELECT count(*) FROM Transactions FACET name SINCE 1 day ago TIMESERIES 15 minutes") {
+    init(text: String = "// Title of query\nFROM ") {
         cells = Self.cells(from: text)
     }
 
@@ -74,7 +77,7 @@ struct NRQL_EditorDocument: FileDocument {
 
     @discardableResult
     mutating func addCell(after id: NrqlCell.ID? = nil) -> NrqlCell.ID {
-        let cell = NrqlCell(text: "")
+        let cell = NrqlCell(text: "FROM ", focusOnAppear: true)
         if let id, let index = cells.firstIndex(where: { $0.id == id }) {
             cells.insert(cell, at: index + 1)
         } else {

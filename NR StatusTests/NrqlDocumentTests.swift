@@ -83,7 +83,7 @@ struct NrqlDocumentCellTests {
 
         #expect(document.cells.count == 2)
         #expect(document.focusedCellId == id)
-        #expect(!document.cells[1].isRunnable)
+        #expect(document.cells[1].text == "FROM ")
 
         document.removeCell(id)
         #expect(document.cells.count == 1)

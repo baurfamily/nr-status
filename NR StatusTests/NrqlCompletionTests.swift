@@ -25,6 +25,14 @@ struct NrqlCompletionTests {
         return await NrqlCompletion.items(text: text, location: location, metadata: StubMetadata()).items.map(\.name)
     }
 
+    @Test func suggestsClauseKeywords() async {
+        #expect(await names("SELECT count(*) FROM Transaction FA|") == ["FACET"])
+        #expect(await names("SELECT count(*) FROM Transaction WH|") == ["WHERE"])
+        #expect(await names("SELECT count(*) FROM Transaction SINCE 1 day ago TIM|") == ["TIMESERIES"])
+        #expect(await names("SELECT count(*) FROM Transaction FACET name LIM|") == ["LIMIT"])
+        #expect(await names("SELECT count(*) FROM Transaction WHERE name = 'a' AN|") == ["AND"])
+    }
+
     @Test func suggestsEventTypesAfterFrom() async {
         #expect(await names("SELECT count(*) FROM Tra|") == ["Transaction", "TransactionError"])
         #expect(await names("SELECT count(*) FROM |").count == 3)

@@ -32,6 +32,12 @@ struct NRQL_EditorApp: App {
     @Environment(\.openWindow) var openWindow
 
     var body: some Scene {
+        // first, so File > New (Cmd-N) creates a saveable document
+        DocumentGroup(newDocument: NRQL_EditorDocument()) { file in
+            DocumentView(document: file.$document)
+                .focusedSceneValue(\.document, file.$document)
+        }
+
         WindowGroup(id: "summary-view") { SummaryView() }
         WindowGroup(id: "sample-charts") { ChartSampleView() }
         WindowGroup(id: "nrql-editor") { NrqlEditorWindow() }
@@ -62,12 +68,6 @@ struct NRQL_EditorApp: App {
             CommandMenu("Editor") { EditorMenuView() }
         }
             
-        // the NRQL viewer document stuff
-        DocumentGroup(newDocument: NRQL_EditorDocument()) { file in
-            DocumentView(document: file.$document)
-                .focusedSceneValue(\.document, file.$document)
-        }
-        
         Settings {
             PreferencesView()
         }

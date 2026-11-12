@@ -10,7 +10,7 @@ import SwiftUI
 /// A scratch notebook window (not backed by a file); use File > New for a saved document.
 struct NrqlEditorWindow : View {
     @State private var document = NRQL_EditorDocument(
-        text: "// Transactions by name\nSELECT count(*) FROM Transaction FACET name SINCE 1 day ago"
+        text: "// Title of query\nFROM "
     )
 
     var body: some View {

@@ -62,6 +62,9 @@ enum NrqlCompletion {
 
     static let whereKeywords = ["AND", "OR", "NOT", "IN", "LIKE", "RLIKE", "IS", "NULL", "TRUE", "FALSE"]
 
+    // clauses that can follow a WHERE or FACET
+    static let laterClauses = clauseKeywords.filter { !["SELECT", "FROM", "WHERE", "SHOW EVENT TYPES"].contains($0) }
+
     static let timeWords = [
         "ago", "seconds", "minutes", "hours", "days", "weeks", "months", "today", "yesterday", "now"
     ]
@@ -165,9 +168,9 @@ enum NrqlCompletion {
         case "SELECT":
             return result(.attributes(event: event(in: text), keywords: ["FROM", "AS"]))
         case "WHERE":
-            return result(.attributes(event: event(in: text), keywords: whereKeywords))
+            return result(.attributes(event: event(in: text), keywords: whereKeywords + laterClauses))
         case "FACET", "ORDER BY":
-            return result(.attributes(event: event(in: text), keywords: ["AS", "CASES"]))
+            return result(.attributes(event: event(in: text), keywords: ["AS", "CASES"] + laterClauses))
         case "SINCE", "UNTIL", "COMPARE WITH", "SLIDE BY", "TIMESERIES":
             return result(.keywords(timeWords + clauseKeywords.filter { $0 != "SELECT" && $0 != "FROM" }))
         case "AS", "LIMIT", "OFFSET":

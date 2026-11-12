@@ -25,8 +25,13 @@ struct DocumentView: View {
                         onDelete: { document.removeCell(cell.id) }
                     )
                 }
-                Button("Add Query", systemImage: "plus") {
-                    document.addCell(after: document.cells.last?.id)
+                HStack {
+                    Button("Add Query", systemImage: "plus") {
+                        document.addCell(after: document.cells.last?.id)
+                    }
+                    Button("Add Script", systemImage: "curlybraces") {
+                        document.addCell(after: document.cells.last?.id, script: true)
+                    }
                 }
                 .buttonStyle(.borderless)
             }
@@ -72,7 +77,7 @@ struct CellView: View {
                 text: $cell.text,
                 position: $position,
                 messages: $messages,
-                language: .nrql(languageService)
+                language: cell.query.isScript ? .none : .nrql(languageService)
             )
             .onAppear {
                 CompletionKeyRouter.installIfNeeded()
@@ -84,9 +89,9 @@ struct CellView: View {
             .frame(height: editorHeight)
             .background(EditorFocusAnchor(focusRequested: cell.focusOnAppear) { cell.focusOnAppear = false })
             .onAppear {
-                // a new cell starts with the cursor after its template
+                // a new cell starts with the cursor after its template; a script's goes inside the fence
                 if cell.focusOnAppear {
-                    let end = (cell.text as NSString).length
+                    let end = (cell.text as NSString).length - (cell.query.isScript ? 4 : 0)
                     position = .init(selections: [NSMakeRange(end, 0)], verticalScrollPosition: 0)
                 }
             }

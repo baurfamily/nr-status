@@ -192,3 +192,37 @@ struct NrqlInterpolationTests {
         #expect(query.format?.type == nil)
     }
 }
+
+struct NrqlScriptCellTests {
+    private let script = "/***\nname: x\n***/\n```lua\n-- Compare\n\nemit({ rows = { { facet = 'A', count = results.a.rows[1].count } } })\n```"
+
+    @Test func fencedScriptSurvivesBlankLinesAndRoundTrips() {
+        let text = "FROM A SELECT 1\n\n\(script)\n\nFROM B SELECT 2\n"
+        let blocks = NrqlDocumentParser.blocks(text)
+
+        #expect(blocks.count == 3)
+        #expect(blocks[1] == script)
+        #expect(NrqlDocumentParser.join(blocks) == text)
+    }
+
+    @Test func scriptCellIsRecognized() {
+        let query = NrqlQuery(from: script)
+
+        #expect(query.isScript)
+        #expect(query.nrql.isEmpty)
+        #expect(query.title == "Compare")
+        #expect(query.name == "x")
+        #expect(NrqlCell(text: script).isRunnable)
+    }
+
+    @Test func scriptCellProducesAResult() async {
+        let query = NrqlQuery(from: script)
+        let prior = LuaRuntime.PriorResult(
+            name: "a", value: .table(["rows": .array([.table(["count": .number(3)])])])
+        )
+        await query.getData(results: [prior])
+
+        #expect(query.resultContainer?.data.count == 1)
+        #expect(query.errorMessage == nil)
+    }
+}

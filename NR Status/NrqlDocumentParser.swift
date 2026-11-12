@@ -18,19 +18,45 @@ enum NrqlDocumentParser {
 
     /// Splits text into blank-line separated blocks, keeping comment-only blocks
     /// so a document can be rebuilt from its cells without losing anything.
+    /// Blank lines inside a ``` fence (a script cell) don't end the block.
     static func blocks(_ text: String) -> [String] {
-        text.components(separatedBy: "\n\n")
-            .map { $0.trimmingCharacters(in: .newlines) }
-            .filter { !$0.isEmpty }
+        var blocks: [String] = []
+        var current: [String] = []
+        var inFence = false
+
+        func flush() {
+            let block = current.joined(separator: "\n").trimmingCharacters(in: .newlines)
+            if !block.isEmpty { blocks.append(block) }
+            current.removeAll()
+        }
+
+        for line in text.components(separatedBy: "\n") {
+            if isFence(line) { inFence.toggle() }
+            if line.isEmpty && !inFence {
+                flush()
+            } else {
+                current.append(line)
+            }
+        }
+        flush()
+        return blocks
     }
 
     /// Inverse of `blocks(_:)`; blank lines inside a block would split it on the
-    /// next load, so they are dropped.
+    /// next load, so they are dropped, except inside a script's fence.
     static func join(_ blocks: [String]) -> String {
-        let cleaned = blocks.map { block in
-            block.split(separator: "\n", omittingEmptySubsequences: true).joined(separator: "\n")
+        let cleaned = blocks.map { block -> String in
+            var inFence = false
+            return block.components(separatedBy: "\n").filter { line in
+                if isFence(line) { inFence.toggle() }
+                return inFence || !line.isEmpty
+            }.joined(separator: "\n")
         }
         return cleaned.filter { !$0.isEmpty }.joined(separator: "\n\n") + "\n"
+    }
+
+    private static func isFence(_ line: String) -> Bool {
+        line.trimmingCharacters(in: .whitespaces).hasPrefix("```")
     }
 
     static func parse(_ text: String) -> [ParsedQuery] {

@@ -37,7 +37,10 @@ struct NrqlCell: Identifiable {
     }
 
     // comment-only cells have nothing to run
-    var isRunnable: Bool { !query.nrql.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    var isRunnable: Bool {
+        let code = query.script ?? query.nrql
+        return !code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 }
 
 struct NRQL_EditorDocument: FileDocument {
@@ -75,9 +78,11 @@ struct NRQL_EditorDocument: FileDocument {
         cells.first { $0.id == focusedCellId }
     }
 
+    static let scriptTemplate = "```lua\n\n```"
+
     @discardableResult
-    mutating func addCell(after id: NrqlCell.ID? = nil) -> NrqlCell.ID {
-        let cell = NrqlCell(text: "FROM ", focusOnAppear: true)
+    mutating func addCell(after id: NrqlCell.ID? = nil, script: Bool = false) -> NrqlCell.ID {
+        let cell = NrqlCell(text: script ? Self.scriptTemplate : "FROM ", focusOnAppear: true)
         if let id, let index = cells.firstIndex(where: { $0.id == id }) {
             cells.insert(cell, at: index + 1)
         } else {

@@ -25,6 +25,11 @@ import LanguageSupport
     
     // this is just the functional part, minus comments
     private(set) var nrql: String
+    
+    // the Lua code if this is a script cell (a ```lua fenced block); nil for a query
+    private(set) var script: String?
+    
+    var isScript: Bool { script != nil }
 
     // chart settings from a doc-comment, if the text has one
     private(set) var format: ChartFormat?
@@ -70,8 +75,14 @@ import LanguageSupport
     var id: String { hash(nrql: self.nrql) }
     
     var title: String {
-        let defaultTitle = "NRQL Query"
+        let defaultTitle = isScript ? "Lua Script" : "NRQL Query"
         if let title = format?.title { return title }
+        if let script {
+            let first = script.split(separator: "\n").first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+            guard let first, first.trimmingCharacters(in: .whitespaces).hasPrefix("--") else { return defaultTitle }
+            let title = first.drop { $0 == " " || $0 == "-" }.trimmingCharacters(in: .whitespaces)
+            return title.isEmpty ? defaultTitle : title
+        }
         let withoutFormat = ChartFormat.strip(from: text)
         guard let titleString = withoutFormat.split(separator: "\n").first else { return defaultTitle }
         guard titleString.starts(with: "//") else { return defaultTitle }
@@ -100,6 +111,12 @@ import LanguageSupport
     func getData(results: [LuaRuntime.PriorResult] = []) async {
         await setState(.running)
         
+        if let script {
+            await setExecuted(nil)
+            await setState(await Self.runScript(script, results: results))
+            return
+        }
+        
         let sent: String
         do {
             sent = try NrqlInterpolation.expand(nrql, results: results)
@@ -123,6 +140,18 @@ import LanguageSupport
         }
     }
     
+    /// Runs Lua off the main actor; the script's `emit` or `return` value becomes this cell's result.
+    private static func runScript(_ script: String, results: [LuaRuntime.PriorResult]) async -> State {
+        await Task.detached {
+            do {
+                let outcome = try LuaRuntime.run(script, results: results)
+                return State.loaded(try LuaResultBridge.container(from: outcome.value))
+            } catch {
+                return State.failed(error.localizedDescription)
+            }
+        }.value
+    }
+    
     /// Starts a run without waiting, cancelling any run still in flight.
     func run(results: [LuaRuntime.PriorResult] = []) {
         runningTask?.cancel()
@@ -143,10 +172,28 @@ import LanguageSupport
     
     private func textWillUpdate(to newValue: String) {
         format = ChartFormat.parse(from: newValue)
-        let lines = ChartFormat.strip(from: newValue).split(separator: "\n").filter { !$0.starts(with: "//") }
+        let body = ChartFormat.strip(from: newValue)
+        if let code = Self.scriptCode(in: body) {
+            script = code
+            nrql = ""
+            return
+        }
+        script = nil
+        let lines = body.split(separator: "\n").filter { !$0.starts(with: "//") }
         let nrql = lines.joined(separator: "\n")
         if nrql != self.nrql {
             self.nrql = nrql
         }
+    }
+    
+    /// The Lua between the fences if the (format-free) text is a script cell, else nil.
+    private static func scriptCode(in body: String) -> String? {
+        let lines = body.split(separator: "\n", omittingEmptySubsequences: false)
+        guard let open = lines.firstIndex(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }),
+              lines[open].trimmingCharacters(in: .whitespaces).lowercased().hasPrefix("```lua")
+        else { return nil }
+        let rest = lines[(open + 1)...]
+        let close = rest.lastIndex { $0.trimmingCharacters(in: .whitespaces) == "```" } ?? lines.endIndex
+        return lines[(open + 1)..<close].joined(separator: "\n")
     }
 }

@@ -29,7 +29,7 @@ FROM TransactionError SELECT count(*) AS count WHERE appName = '{{ results.top_a
 type: bar
 ***/
 ```lua
--- Transactions vs. errors (script cells aren't implemented yet)
+-- Transactions vs. errors
 emit({
   rows = {
     { facet = "Transaction", count = results.transactions.rows[1].count },

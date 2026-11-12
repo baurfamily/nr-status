@@ -19,6 +19,14 @@ struct ChartFormat: Equatable, Hashable {
     var type: ChartType?
     var attributes: Set<String>?
 
+    /// The attribute names each chart type understands; `apply` is the source of truth for what they do.
+    static let attributeNames: [ChartType: [String]] = [
+        .line: ["stacked", "smoothed", "lines", "points"],
+        .pie: ["donut", "separated"],
+        .bar: ["pivot"],
+        .plot: ["color-facets", "x-log", "y-log"],
+        .billboard: ["gauge"]
+    ]
     private static let block = try! NSRegularExpression(
         pattern: #"/\*\*\*(.*?)\*\*\*/"#,
         options: [.dotMatchesLineSeparators]

@@ -44,6 +44,7 @@ struct CellView: View {
 
     @State private var position: CodeEditor.Position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
     @State private var messages: Set<TextLocated<Message>> = Set()
+    @State private var languageService = NrqlLanguageService()
 
 
     // the editor scrolls itself, so give it room for the lines it has
@@ -59,8 +60,9 @@ struct CellView: View {
                 text: $cell.text,
                 position: $position,
                 messages: $messages,
-                language: .nrql()
+                language: .nrql(languageService)
             )
+            .onAppear { languageService.setTextSource { cell.text } }
             .environment(\.codeEditorLayoutConfiguration, CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true))
             .environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight))
             .frame(height: editorHeight)

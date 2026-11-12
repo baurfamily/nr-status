@@ -87,7 +87,9 @@ Evaluate against these criteria: inline block/view embedding below a text range 
 - Write back when chart config is changed in the UI (bidirectional, optional).
 - Tests for parsing and mapping to chart types.
 
-### Phase 5: Autocomplete
+### Phase 5: Autocomplete (DONE, no function signatures yet)
+- `NrqlCompletion` analyses the cell text around the cursor (after `FROM` → event types; `SELECT`/`WHERE`/`FACET` → attributes of the `FROM` event, functions and clause keywords; inside a `/***` block → format keys, chart types and attribute names). Quiet inside comments and strings.
+- `NrqlMetadata` caches `SHOW EVENT TYPES` and `keyset()` per session; `NrqlLanguageService` plugs it into the editor (one per cell, completion shows as you type or on the editor's completion shortcut).
 - Static NRQL keyword/function list (grammar-level, small and stable).
 - Dynamic: event types via NRQL `SHOW EVENT TYPES`; attributes via `keyset()` (or `SELECT keyset() FROM X`) with caching per account/event; infer event from the cell's `FROM` clause.
 - Investigate NerdGraph for function signatures; if unavailable, a small curated signature table.

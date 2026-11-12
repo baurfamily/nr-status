@@ -133,8 +133,9 @@ struct CellView: View {
                     Text(sent)
                         .font(.system(.body, design: .monospaced))
                         .textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(width: 480, alignment: .leading)
                         .padding()
-                        .frame(maxWidth: 480)
                 }
             }
 

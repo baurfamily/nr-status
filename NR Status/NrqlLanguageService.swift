@@ -15,9 +15,8 @@ final class NrqlLanguageService: LanguageService {
     private var textSource: (() -> String)?
     private var lastChange = Date.distantPast
 
-    /// The editor's completion panel takes keyboard focus when it pops up while typing, which
-    /// interrupts typing. So completions only appear when asked for explicitly.
-    var popsUpWhileTyping = false
+    /// Set to false to only show completions when asked for explicitly.
+    var popsUpWhileTyping = true
     private(set) var isOpen = false
 
     init(metadata: NrqlMetadataProviding = NrqlMetadata.shared) {

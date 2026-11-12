@@ -62,7 +62,10 @@ struct CellView: View {
                 messages: $messages,
                 language: .nrql(languageService)
             )
-            .onAppear { languageService.setTextSource { cell.text } }
+            .onAppear {
+                CompletionKeyRouter.installIfNeeded()
+                languageService.setTextSource { cell.text }
+            }
             .environment(\.codeEditorLayoutConfiguration, CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true))
             .environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight))
             .frame(height: editorHeight)

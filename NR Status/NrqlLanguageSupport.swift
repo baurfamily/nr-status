@@ -73,7 +73,7 @@ extension LanguageConfiguration {
                                  characterRegex: nil,
                                  numberRegex: numberRegex,
                                  singleLineComment: "//",
-                                 nestedComment: (open: "/*", close: "*/"),
+                                 nestedComment: (open: "/***", close: "***/"),
                                  identifierRegex: identifierRegex,
                                  operatorRegex: operatorRegex,
                                  reservedIdentifiers: nrqlReservedIdentifiers,

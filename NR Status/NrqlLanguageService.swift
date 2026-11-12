@@ -13,7 +13,11 @@ final class NrqlLanguageService: LanguageService {
     private let lock = NSLock()
     private var openedText = ""
     private var textSource: (() -> String)?
+    private var lastChange = Date.distantPast
 
+    /// The editor's completion panel takes keyboard focus when it pops up while typing, which
+    /// interrupts typing. So completions only appear when asked for explicitly.
+    var popsUpWhileTyping = false
     private(set) var isOpen = false
 
     init(metadata: NrqlMetadataProviding = NrqlMetadata.shared) {
@@ -37,7 +41,9 @@ final class NrqlLanguageService: LanguageService {
     }
 
     func documentDidChange(position changeLocation: Int, changeInLength delta: Int, lineChange deltaLine: Int,
-                           columnChange deltaColumn: Int, newText text: String) async throws {}
+                           columnChange deltaColumn: Int, newText text: String) async throws {
+        lock.withLock { lastChange = Date() }
+    }
 
     func closeDocument() async throws { isOpen = false }
 
@@ -52,6 +58,11 @@ final class NrqlLanguageService: LanguageService {
     let completionTriggerCharacters = CurrentValueSubject<[Character], Never>([])
 
     func completions(at location: Int, reason: CompletionTriggerReason) async throws -> Completions {
+        // the editor asks right after a keystroke when it wants to pop up on its own
+        if !popsUpWhileTyping, case .standard = reason,
+           lock.withLock({ Date().timeIntervalSince(lastChange) }) < 0.4 {
+            return .none
+        }
         let (items, range) = await NrqlCompletion.items(text: currentText, location: location, metadata: metadata)
         guard !items.isEmpty else { return .none }
 

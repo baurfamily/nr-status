@@ -17,7 +17,27 @@ struct LuaRuntime {
         var output: [String]
     }
 
-    static func run(_ script: String) throws -> Outcome {
+    /// Earlier cell results, available to scripts as `results.<name>` and `results[<index>]`.
+    struct PriorResult {
+        var name: String?
+        var value: LuaValue
+    }
+
+    // `results` is a plain table (so a missing name is nil) behind a read-only proxy.
+    private static let resultsPrelude = """
+    local data = __results()
+    __results = nil
+    local copy = {}
+    for index, value in ipairs(data.list) do copy[index] = value end
+    for name, value in pairs(data.named) do copy[name] = value end
+    results = setmetatable({}, {
+        __index = copy,
+        __len = function() return #data.list end,
+        __newindex = function() error("results is read-only", 2) end,
+    })
+    """
+
+    static func run(_ script: String, results: [PriorResult] = []) throws -> Outcome {
         let engine = try LuaEngine(
             configuration: LuaEngineConfiguration(sandboxed: true, vmMemoryLimit: memoryLimit)
         )
@@ -29,6 +49,17 @@ struct LuaRuntime {
             var output: [String] = []
         }
         let collected = Collected()
+
+        let resultsTable = LuaValue.table([
+            "list": .array(results.map(\.value)),
+            "named": .table(
+                results.reduce(into: [:]) { table, result in
+                    if let name = result.name { table[name] = result.value }
+                }
+            ),
+        ])
+        engine.registerFunction(name: "__results") { _ in resultsTable }
+        try engine.run(resultsPrelude)
 
         engine.registerFunction(name: "emit") { arguments in
             collected.emitted = arguments.first ?? .nil

@@ -43,4 +43,82 @@ struct LuaRuntimeTests {
     @Test func reportsSyntaxErrors() {
         #expect(throws: LuaError.self) { try LuaRuntime.run("not valid lua") }
     }
+
+    // MARK: - Result bridge
+
+    private func container(results: String, facets: String = "null") throws -> NrdbResultContainer {
+        let json = #"{"nrql":"SELECT 1","results":\#(results),"metadata":{"facets":\#(facets),"timeWindow":null}}"#
+        return try JSONDecoder().decode(NrdbResultContainer.self, from: Data(json.utf8))
+    }
+
+    @Test func bridgesResultsToLuaAndBack() throws {
+        let original = try container(
+            results: """
+            [
+              {"beginTimeSeconds":100,"endTimeSeconds":160,"facet":"a","count":1,"host":"x","bins":[1,2]},
+              {"beginTimeSeconds":160,"endTimeSeconds":220,"facet":"b","count":2,"host":"y","bins":[3]}
+            ]
+            """,
+            facets: #"["appName"]"#
+        )
+
+        let outcome = try LuaRuntime.run(
+            "emit(results.first)", results: [.init(name: "first", value: LuaResultBridge.luaValue(from: original))]
+        )
+        let copy = try LuaResultBridge.container(from: outcome.value)
+
+        #expect(copy.nrql == "SELECT 1")
+        #expect(copy.metadata.facets == ["appName"])
+        #expect(copy.data.count == 2)
+        #expect(copy.isTimeseries && copy.isFaceted)
+        #expect(copy.data[1].facet == "b")
+        #expect(copy.data[1].numberFields["count"] == 2)
+        #expect(copy.data[0].stringFields["host"] == "x")
+        #expect(copy.data[0].numericArrayFields["bins"] == [1, 2])
+        #expect(Set(copy.fieldNames) == Set(original.fieldNames))
+    }
+
+    @Test func scriptsReadPriorResultsByNameAndIndex() throws {
+        let value = LuaResultBridge.luaValue(from: try container(results: #"[{"count":7},{"count":9}]"#))
+        let prior = [LuaRuntime.PriorResult(name: "totals", value: value)]
+
+        #expect(try LuaRuntime.run("return results.totals.rows[2].count", results: prior).value.intValue == 9)
+        #expect(try LuaRuntime.run("return results[1].rows[1].count", results: prior).value.intValue == 7)
+        #expect(try LuaRuntime.run("return results.missing == nil", results: prior).value.boolValue == true)
+    }
+
+    @Test func scriptsCannotModifyResults() {
+        let prior = [LuaRuntime.PriorResult(name: "x", value: .table([:]))]
+        #expect(throws: LuaError.self) { try LuaRuntime.run("results.x = 1", results: prior) }
+    }
+
+    @Test func scriptBuiltRowsBecomeAChartableResult() throws {
+        let outcome = try LuaRuntime.run("""
+        local rows = {}
+        for i = 1, 3 do rows[#rows + 1] = { facet = i, total = i * 10 } end
+        emit({ rows = rows })
+        """)
+        let result = try LuaResultBridge.container(from: outcome.value)
+
+        #expect(result.isFaceted)
+        #expect(result.allFacets == ["1", "2", "3"])
+        #expect(result.numberFieldNames.contains("total"))
+    }
+
+    @Test func acceptsBareRowListsAndEmptyResults() throws {
+        let bare = try LuaRuntime.run("emit({ { count = 1 }, { count = 2 } })")
+        #expect(try LuaResultBridge.container(from: bare.value).data.count == 2)
+
+        let empty = try LuaRuntime.run("emit({ rows = {} })")
+        #expect(try LuaResultBridge.container(from: empty.value).data.isEmpty)
+    }
+
+    @Test func rejectsValuesThatAreNotResults() throws {
+        #expect(throws: LuaResultBridge.BridgeError.self) {
+            try LuaResultBridge.container(from: try LuaRuntime.run("return 5").value)
+        }
+        #expect(throws: LuaResultBridge.BridgeError.self) {
+            try LuaResultBridge.container(from: try LuaRuntime.run("return { rows = { 1, 2 } }").value)
+        }
+    }
 }

@@ -1,3 +1,15 @@
+# Testing the NRQL workbook
+
+## Cell types
+
+We can have three different kinds of cells
+
+* Markdown (the default)
+* NRQL
+* Lua
+
+Code cells (NRQL and Lua) are fended with standard markdown code blocks. ie: Three backticks and then `nrql` or `lua`
+
 ```nrql
 /***
   title: Busiest app, last week
@@ -39,10 +51,11 @@ FROM TransactionError SELECT count(*) AS count WHERE appName = '{{ results.top_a
 ```
 
 ```lua
-/***
+--[[
+title: Transactions vs. errors
 chart: bar
-***/
--- Transactions vs. errors
+]]
+
 emit({
   rows = {
     { facet = "Transaction", count = results.transactions.rows[1].count },

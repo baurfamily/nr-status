@@ -37,7 +37,7 @@ local r = query("FROM Transaction SELECT count(*) FACET appName LIMIT 5")
 emit(r)
 ```
 
-Fences contain no blank lines (the parser would split them); a blank line inside a script is written as `--`. Script cells render as code plus their emitted result (or `chart: none` to hide it).
+Fences are stored in the file but hidden in the editor; blank lines inside a script are fine. The chart format block (`/*** ***/`) goes inside the fence. Script cells render as code plus their emitted result (or `chart: none` to hide it). Text outside any fence is a Markdown cell, edited as plain text and rendered when focus moves to another cell.
 
 ### Cell names
 

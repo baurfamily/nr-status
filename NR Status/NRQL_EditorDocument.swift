@@ -163,6 +163,15 @@ struct NRQL_EditorDocument: FileDocument {
         }
     }
 
+    /// What a Lua expression in the given cell can read from the other cells.
+    func completionScope(excluding id: NrqlCell.ID) -> LuaCompletion.Scope {
+        let others = cells.filter { $0.id != id && $0.kind != .markdown }
+        return LuaCompletion.Scope(
+            names: others.compactMap(\.query.name),
+            results: Self.priorResults(in: others)
+        )
+    }
+
     /// Runs every query, each after the ones it reads.
     func runAllQueries() {
         let all = cells

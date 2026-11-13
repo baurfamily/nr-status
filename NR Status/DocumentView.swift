@@ -25,6 +25,7 @@ struct DocumentView: View {
                         isStale: stale.contains(cell.id),
                         readsFromBelow: readingBelow.contains(cell.id),
                         onFocus: { document.focusedCellId = cell.id },
+                        completionScope: { document.completionScope(excluding: cell.id) },
                         onRun: { document.runCell(cell.id) },
                         pendingTitles: document.pendingDependencies(for: cell.id).map(\.query.title),
                         canPerform: { document.canPerform($0, on: cell.id) },
@@ -66,6 +67,7 @@ struct CellView: View {
     let isStale: Bool
     let readsFromBelow: Bool
     let onFocus: () -> Void
+    let completionScope: () -> LuaCompletion.Scope
     let onRun: () -> Void
     let pendingTitles: [String]
     let canPerform: (NRQL_EditorDocument.CellAction) -> Bool
@@ -74,6 +76,7 @@ struct CellView: View {
     @State private var position: CodeEditor.Position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
     @State private var messages: Set<TextLocated<Message>> = Set()
     @State private var languageService = NrqlLanguageService()
+    @State private var luaService = NrqlLanguageService(language: .lua)
     // the chart settings inspector is hidden until asked for
     @State private var showsChartSettings = false
     @State private var showsSentQuery = false
@@ -151,13 +154,19 @@ struct CellView: View {
             text: Binding(get: { liveText }, set: { draft = $0 }),
             position: $position,
             messages: $messages,
-            language: cell.kind == .nrql ? .nrql(languageService) : cell.kind == .lua ? .lua() : .none
+            language: cell.kind == .nrql ? .nrql(languageService) : cell.kind == .lua ? .lua(luaService) : .none
         )
         .onAppear {
             CompletionKeyRouter.installIfNeeded()
-            languageService.setTextSource { draft ?? cell.editorText }
+            for service in [languageService, luaService] {
+                service.setTextSource { draft ?? cell.editorText }
+                service.setScopeSource(completionScope)
+            }
         }
-        .environment(\.codeEditorSetActions, CodeEditor.SetActions { languageService.setCompletionAction($0.completions) })
+        .environment(\.codeEditorSetActions, CodeEditor.SetActions {
+            languageService.setCompletionAction($0.completions)
+            luaService.setCompletionAction($0.completions)
+        })
         .environment(\.codeEditorLayoutConfiguration, CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true))
         .environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight))
         .frame(height: editorHeight)

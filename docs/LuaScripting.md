@@ -80,7 +80,7 @@ Sandbox: open only `base` (minus `dofile`, `loadfile`, `require`), `string`, `ta
 
 ## UI and editor support
 
-- Script cells use the same `CodeEditor` with Lua highlighting (Highlightr already supports it). No autocomplete in v1 beyond `results` names.
+- Script cells use the same `CodeEditor` with Lua highlighting. Completion offers keywords, the globals and standard library a script can use, local names, and `results.<name>` followed by the fields of any result that has run. The same completion works inside `{{ }}` in a query.
 - Errors (syntax, runtime, timeout) show in the cell's result area with the Lua line number.
 - Loops: a script can `emit` multiple results; each gets its own chart under the cell (v2 — v1 allows one emit per cell).
 

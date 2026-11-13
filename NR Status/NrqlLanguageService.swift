@@ -7,12 +7,17 @@ import SwiftUI
 import Combine
 import LanguageSupport
 
-/// Gives the code editor NRQL completions. One instance serves one cell.
+/// Gives the code editor completions: NRQL for query cells (and Lua inside their `{{ }}`),
+/// or Lua for script cells. One instance serves one cell.
 final class NrqlLanguageService: LanguageService {
+    enum Language { case nrql, lua }
+
     private let metadata: NrqlMetadataProviding
+    private let language: Language
     private let lock = NSLock()
     private var openedText = ""
     private var textSource: (() -> String)?
+    private var scopeSource: (() -> LuaCompletion.Scope)?
     private var lastChange = Date.distantPast
     private var completionAction: (() -> Void)?
 
@@ -24,13 +29,19 @@ final class NrqlLanguageService: LanguageService {
     var popsUpWhileTyping = true
     private(set) var isOpen = false
 
-    init(metadata: NrqlMetadataProviding = NrqlMetadata.shared) {
+    init(metadata: NrqlMetadataProviding = NrqlMetadata.shared, language: Language = .nrql) {
         self.metadata = metadata
+        self.language = language
     }
 
     /// The editor only reports edits, so completion reads the live text from here.
     func setTextSource(_ source: @escaping () -> String) {
         lock.withLock { textSource = source }
+    }
+
+    /// What the rest of the notebook offers to Lua; read on the main actor.
+    func setScopeSource(_ source: @escaping () -> LuaCompletion.Scope) {
+        lock.withLock { scopeSource = source }
     }
 
     private var currentText: String {
@@ -49,10 +60,19 @@ final class NrqlLanguageService: LanguageService {
         lock.withLock { lastChange = Date() }
 
         // The editor closes its panel when a word ends. Where the next word is a name we can
-        // list, such as after a comma, bring it straight back.
-        guard delta == 1, [" ", ",", "("].contains(text) else { return }
+        // list, such as after a comma or a dot, bring it straight back.
+        guard delta == 1 else { return }
         let source = currentText
-        guard NrqlCompletion.offersAfterSeparator(text: source, location: changeLocation + 1) else { return }
+        let next = changeLocation + 1
+        let retrigger: Bool
+        switch language {
+        case .lua:
+            retrigger = text == "."
+        case .nrql:
+            retrigger = ([" ", ",", "("].contains(text) && NrqlCompletion.offersAfterSeparator(text: source, location: next))
+                || (text == "." && LuaCompletion.interpolationStart(in: source, at: next) != nil)
+        }
+        guard retrigger else { return }
         try await Task.sleep(for: .milliseconds(100))
         let action = lock.withLock { completionAction }
         await MainActor.run { action?() }
@@ -76,7 +96,26 @@ final class NrqlLanguageService: LanguageService {
            lock.withLock({ Date().timeIntervalSince(lastChange) }) < 0.4 {
             return .none
         }
-        let (items, range) = await NrqlCompletion.items(text: currentText, location: location, metadata: metadata)
+        let text = currentText
+        let items: [NrqlCompletion.Item]
+        let range: NSRange
+        switch language {
+        case .lua:
+            let scope = await currentScope()
+            (items, range) = LuaCompletion.items(text: text, location: location, scope: scope)
+        case .nrql:
+            if let start = LuaCompletion.interpolationStart(in: text, at: location) {
+                let scope = await currentScope()
+                let expression = (text as NSString).substring(from: start)
+                let found = LuaCompletion.items(
+                    text: expression, location: location - start, scope: scope, isExpression: true
+                )
+                items = found.items
+                range = NSRange(location: found.range.location + start, length: found.range.length)
+            } else {
+                (items, range) = await NrqlCompletion.items(text: text, location: location, metadata: metadata)
+            }
+        }
         guard !items.isEmpty else { return .none }
 
         return Completions(
@@ -105,6 +144,11 @@ final class NrqlLanguageService: LanguageService {
     }
 
     // MARK: Unused features
+
+    private func currentScope() async -> LuaCompletion.Scope {
+        let source = lock.withLock { scopeSource }
+        return await MainActor.run { source?() ?? .empty }
+    }
 
     func tokens(for lineRange: Range<Int>) async throws -> [[(token: LanguageConfiguration.Token, range: NSRange)]] {
         Array(repeating: [], count: lineRange.count)

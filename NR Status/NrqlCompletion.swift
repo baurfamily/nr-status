@@ -16,7 +16,7 @@ protocol NrqlMetadataProviding: Sendable {
 /// themselves (event types and attributes) come from NRDB.
 enum NrqlCompletion {
     enum Kind: Int {
-        case formatKey, formatValue, eventType, attribute, function, keyword
+        case formatKey, formatValue, eventType, attribute, function, keyword, variable, field
 
         var label: String {
             switch self {
@@ -26,6 +26,8 @@ enum NrqlCompletion {
             case .attribute: "attribute"
             case .function: "function"
             case .keyword: "keyword"
+            case .variable: "variable"
+            case .field: "field"
             }
         }
     }

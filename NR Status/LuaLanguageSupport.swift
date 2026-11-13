@@ -21,7 +21,7 @@ extension LanguageConfiguration {
   /// Language configuration for the Lua in script cells.
   ///
   /// A leading `--[[ ]]` comment holds the chart format, so it is a comment here like any other.
-  public static func lua() -> LanguageConfiguration {
+  public static func lua(_ languageService: LanguageService? = nil) -> LanguageConfiguration {
     let numberRegex: Regex<Substring> = Regex {
       ChoiceOf {
         Regex { /0[xX]/; hexalLit; Optionally { "."; hexalLit }; Optionally { hexponentLit } }
@@ -54,6 +54,6 @@ extension LanguageConfiguration {
                                  operatorRegex: operatorRegex,
                                  reservedIdentifiers: luaKeywords,
                                  reservedOperators: luaBuiltins,
-                                 languageService: nil)
+                                 languageService: languageService)
   }
 }

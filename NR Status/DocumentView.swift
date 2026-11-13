@@ -50,6 +50,12 @@ struct DocumentView: View {
         // a click on empty space leaves the focused cell, which renders a Markdown cell
         .background(Color.clear.contentShape(Rectangle()).onTapGesture { document.focusedCellId = nil })
         .toolbar {
+            ToolbarItemGroup {
+                Button("Collapse All", systemImage: "rectangle.compress.vertical") { document.setAllCollapsed(true) }
+                    .help("Hide the query text of every cell")
+                Button("Expand All", systemImage: "rectangle.expand.vertical") { document.setAllCollapsed(false) }
+                    .help("Show the query text of every cell")
+            }
             ToolbarItem {
                 Button("Run All", systemImage: "play.fill") { document.runAllQueries() }
                     .help("Run every query in this document")

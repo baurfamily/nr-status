@@ -163,6 +163,11 @@ struct NRQL_EditorDocument: FileDocument {
         }
     }
 
+    /// Hides or shows the query text of every code cell; Markdown cells have nothing to collapse.
+    mutating func setAllCollapsed(_ collapsed: Bool) {
+        for index in cells.indices where cells[index].kind != .markdown { cells[index].isCollapsed = collapsed }
+    }
+
     /// What a Lua expression in the given cell can read from the other cells.
     func completionScope(excluding id: NrqlCell.ID) -> LuaCompletion.Scope {
         let others = cells.filter { $0.id != id && $0.kind != .markdown }

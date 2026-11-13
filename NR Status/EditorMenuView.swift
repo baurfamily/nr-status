@@ -60,6 +60,9 @@ struct EditorMenuView : View {
                 ForEach(NrqlCellKind.allCases) { cellButton($0.title, .convert($0)) }
             }
             Divider()
+            Button("Collapse All Queries") { document?.setAllCollapsed(true) }
+            Button("Expand All Queries") { document?.setAllCollapsed(false) }
+            Divider()
             cellButton("Delete Cell", .delete)
         }
     }

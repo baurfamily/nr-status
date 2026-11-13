@@ -32,11 +32,14 @@ struct DocumentView: View {
                     )
                 }
                 HStack {
+                    Button("Add Markdown", systemImage: "text.alignleft") {
+                        document.addCell(after: document.cells.last?.id, kind: .markdown)
+                    }
                     Button("Add Query", systemImage: "plus") {
                         document.addCell(after: document.cells.last?.id)
                     }
                     Button("Add Script", systemImage: "curlybraces") {
-                        document.addCell(after: document.cells.last?.id, script: true)
+                        document.addCell(after: document.cells.last?.id, kind: .lua)
                     }
                 }
                 .buttonStyle(.borderless)
@@ -99,57 +102,105 @@ struct CellView: View {
         CGFloat(max(liveText.split(separator: "\n", omittingEmptySubsequences: false).count, 2)) * 18 + 16
     }
 
+    private var isRenderedMarkdown: Bool { cell.kind == .markdown && !isFocused }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             header
 
-            CodeEditor(
-                text: Binding(get: { liveText }, set: { draft = $0 }),
-                position: $position,
-                messages: $messages,
-                language: cell.isScript ? .none : .nrql(languageService)
-            )
-            .onAppear {
-                CompletionKeyRouter.installIfNeeded()
-                languageService.setTextSource { draft ?? cell.editorText }
-            }
-            .environment(\.codeEditorSetActions, CodeEditor.SetActions { languageService.setCompletionAction($0.completions) })
-            .environment(\.codeEditorLayoutConfiguration, CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true))
-            .environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight))
-            .frame(height: editorHeight)
-            .background(EditorFocusAnchor(focusRequested: cell.focusOnAppear) { cell.focusOnAppear = false })
-            .onAppear {
-                // a new cell starts with the cursor after its template
-                if cell.focusOnAppear {
-                    let end = (cell.editorText as NSString).length
-                    position = .init(selections: [NSMakeRange(end, 0)], verticalScrollPosition: 0)
-                }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 6))
-            .onChange(of: position) { onFocus() }
-            .task(id: draft) {
-                guard let pending = draft, pending != cell.editorText else { return }
-                try? await Task.sleep(for: .milliseconds(300))
-                if !Task.isCancelled { cell.editorText = pending }
-            }
-            .onChange(of: cell.text) {
-                if let draft, draft != cell.editorText { self.draft = nil }
-                // undo/redo of the document restores whole cells without running the text observer
-                if cell.query.text != cell.text { cell.query.text = cell.text }
+            if isRenderedMarkdown {
+                renderedMarkdown
+            } else {
+                editor
             }
 
-            if !cell.isCollapsed {
+            if cell.kind != .markdown && !cell.isCollapsed {
                 CellResultView(query: cell.query, configurationShowing: $showsChartSettings)
             }
         }
         .padding(8)
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(isFocused ? Color.accentColor : Color.secondary.opacity(0.3), lineWidth: isFocused ? 2 : 1)
+                .stroke(
+                    isRenderedMarkdown ? Color.clear : isFocused ? Color.accentColor : Color.secondary.opacity(0.3),
+                    lineWidth: isFocused ? 2 : 1
+                )
         )
     }
 
+    private var renderedMarkdown: some View {
+        Group {
+            if cell.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Text("Empty Markdown cell. Click to edit.").foregroundStyle(.secondary)
+            } else {
+                MarkdownView(text: cell.text)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            cell.focusOnAppear = true
+            onFocus()
+        }
+    }
+
+    private var editor: some View {
+        CodeEditor(
+            text: Binding(get: { liveText }, set: { draft = $0 }),
+            position: $position,
+            messages: $messages,
+            language: cell.kind == .nrql ? .nrql(languageService) : .none
+        )
+        .onAppear {
+            CompletionKeyRouter.installIfNeeded()
+            languageService.setTextSource { draft ?? cell.editorText }
+        }
+        .environment(\.codeEditorSetActions, CodeEditor.SetActions { languageService.setCompletionAction($0.completions) })
+        .environment(\.codeEditorLayoutConfiguration, CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true))
+        .environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight))
+        .frame(height: editorHeight)
+        .background(EditorFocusAnchor(focusRequested: cell.focusOnAppear) { cell.focusOnAppear = false })
+        .onAppear {
+            // a new cell starts with the cursor after its template
+            if cell.focusOnAppear {
+                let end = (cell.editorText as NSString).length
+                position = .init(selections: [NSMakeRange(end, 0)], verticalScrollPosition: 0)
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .onChange(of: position) { onFocus() }
+        .task(id: draft) {
+            guard let pending = draft, pending != cell.editorText else { return }
+            try? await Task.sleep(for: .milliseconds(300))
+            if !Task.isCancelled { cell.editorText = pending }
+        }
+        .onDisappear {
+            // the editor goes away when a Markdown cell loses focus, possibly before the pause ends
+            if let pending = draft, pending != cell.editorText { cell.editorText = pending }
+            draft = nil
+        }
+        .onChange(of: cell.text) {
+            if let draft, draft != cell.editorText { self.draft = nil }
+            // undo/redo of the document restores whole cells without running the text observer
+            if cell.query.text != cell.text { cell.query.text = cell.text }
+        }
+    }
+
     private var header: some View {
+        HStack {
+            if cell.kind == .markdown {
+                if !isRenderedMarkdown {
+                    Text("Markdown").font(.headline)
+                }
+                Spacer()
+                actionsMenu
+            } else {
+                codeHeader
+            }
+        }
+    }
+
+    private var codeHeader: some View {
         HStack {
             Button(cell.isCollapsed ? "Expand results" : "Collapse results",
                    systemImage: cell.isCollapsed ? "chevron.right" : "chevron.down") {
@@ -212,26 +263,40 @@ struct CellView: View {
             .buttonStyle(.borderless)
             .disabled(!cell.isRunnable || cell.query.isRunning)
 
-            Menu("Cell Actions", systemImage: "ellipsis") {
-                Button("Add Query Above") { onAction(.addQueryAbove) }
-                Button("Add Query Below") { onAction(.addQueryBelow) }
-                Button("Add Script Above") { onAction(.addScriptAbove) }
-                Button("Add Script Below") { onAction(.addScriptBelow) }
-                Divider()
-                Button("Move Up") { onAction(.moveUp) }
-                    .disabled(!canPerform(.moveUp))
-                Button("Move Down") { onAction(.moveDown) }
-                    .disabled(!canPerform(.moveDown))
-                Divider()
-                Button(cell.isScript ? "Convert to Query" : "Convert to Script") { onAction(.convert) }
-                Divider()
-                Button("Delete", role: .destructive) { onAction(.delete) }
-            }
-            .labelStyle(.iconOnly)
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .fixedSize()
+            actionsMenu
         }
+    }
+
+    private var actionsMenu: some View {
+        Menu("Cell Actions", systemImage: "ellipsis") {
+            Menu("Add Above") {
+                ForEach(NrqlCellKind.allCases) { kind in
+                    Button(kind.title) { onAction(.add(kind, above: true)) }
+                }
+            }
+            Menu("Add Below") {
+                ForEach(NrqlCellKind.allCases) { kind in
+                    Button(kind.title) { onAction(.add(kind, above: false)) }
+                }
+            }
+            Menu("Convert To") {
+                ForEach(NrqlCellKind.allCases) { kind in
+                    Button(kind.title) { onAction(.convert(kind)) }
+                        .disabled(!canPerform(.convert(kind)))
+                }
+            }
+            Divider()
+            Button("Move Up") { onAction(.moveUp) }
+                .disabled(!canPerform(.moveUp))
+            Button("Move Down") { onAction(.moveDown) }
+                .disabled(!canPerform(.moveDown))
+            Divider()
+            Button("Delete", role: .destructive) { onAction(.delete) }
+        }
+        .labelStyle(.iconOnly)
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
     }
 }
 

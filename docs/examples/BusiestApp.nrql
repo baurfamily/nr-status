@@ -1,34 +1,47 @@
+```nrql
 /***
-name: top_app
-chart: billboard
+  title: Busiest app, last week
+  name: top_app
+  chart: billboard
 ***/
-// Busiest app, last week
-FROM Transaction SELECT count(*) FACET appName SINCE 1 week ago LIMIT 4
+FROM Transaction
+SELECT count(*)
+FACET appName
+SINCE 1 week ago
+LIMIT 4
+```
 
+```nrql
 /***
-chart: line
+  title: Metrics for the busiest app
+  chart: line
+  attributes: stacked smoothed
 ***/
-// Metrics for the busiest app
 FROM Metric SELECT count(*) WHERE appName = '{{ results.top_app.rows[1].facet }}' SINCE 1 week ago TIMESERIES 1 day
+```
 
+```nrql
 /***
 name: transactions
 chart: none
 ***/
 // Transactions for the busiest app
 FROM Transaction SELECT count(*) AS count WHERE appName = '{{ results.top_app.rows[1].facet }}' SINCE 1 week ago
+```
 
+```nrql
 /***
 name: errors
 chart: none
 ***/
 // Errors for the busiest app
 FROM TransactionError SELECT count(*) AS count WHERE appName = '{{ results.top_app.rows[1].facet }}' SINCE 1 week ago
+```
 
+```lua
 /***
 chart: bar
 ***/
-```lua
 -- Transactions vs. errors
 emit({
   rows = {
@@ -36,4 +49,8 @@ emit({
     { facet = "TransactionError", count = results.errors.rows[1].count },
   },
 })
+```
+
+```lua
+
 ```

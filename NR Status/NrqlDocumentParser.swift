@@ -16,25 +16,37 @@ enum NrqlDocumentParser {
         var text: String
     }
 
-    /// Splits text into blank-line separated blocks, keeping comment-only blocks
-    /// so a document can be rebuilt from its cells without losing anything.
-    /// Blank lines inside a ``` fence (a script cell) don't end the block.
+    /// Splits text into cells: each ```nrql or ```lua fenced block is a code cell, and
+    /// whatever lies between them is one Markdown cell (blank lines included).
+    /// Other fences, such as ```swift, are Markdown content, so a ```nrql inside one stays text.
     static func blocks(_ text: String) -> [String] {
         var blocks: [String] = []
         var current: [String] = []
-        var inFence = false
+        var inCode = false
+        var inProseFence = false
 
         func flush() {
             let block = current.joined(separator: "\n").trimmingCharacters(in: .newlines)
-            if !block.isEmpty { blocks.append(block) }
+            if !block.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { blocks.append(block) }
             current.removeAll()
         }
 
         for line in text.components(separatedBy: "\n") {
-            if isFence(line) { inFence.toggle() }
-            if line.isEmpty && !inFence {
+            if inCode {
+                current.append(line)
+                if NrqlCellKind.isClosingFence(line) {
+                    flush()
+                    inCode = false
+                }
+            } else if inProseFence {
+                current.append(line)
+                if NrqlCellKind.isClosingFence(line) { inProseFence = false }
+            } else if NrqlCellKind.fenced(by: line) != nil {
                 flush()
+                current.append(line)
+                inCode = true
             } else {
+                if NrqlCellKind.isFence(line) { inProseFence = true }
                 current.append(line)
             }
         }
@@ -42,21 +54,10 @@ enum NrqlDocumentParser {
         return blocks
     }
 
-    /// Inverse of `blocks(_:)`; blank lines inside a block would split it on the
-    /// next load, so they are dropped, except inside a script's fence.
+    /// Inverse of `blocks(_:)`.
     static func join(_ blocks: [String]) -> String {
-        let cleaned = blocks.map { block -> String in
-            var inFence = false
-            return block.components(separatedBy: "\n").filter { line in
-                if isFence(line) { inFence.toggle() }
-                return inFence || !line.isEmpty
-            }.joined(separator: "\n")
-        }
-        return cleaned.filter { !$0.isEmpty }.joined(separator: "\n\n") + "\n"
-    }
-
-    private static func isFence(_ line: String) -> Bool {
-        line.trimmingCharacters(in: .whitespaces).hasPrefix("```")
+        blocks.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .joined(separator: "\n\n") + "\n"
     }
 
     static func parse(_ text: String) -> [ParsedQuery] {

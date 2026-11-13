@@ -26,10 +26,14 @@ import LanguageSupport
     // this is just the functional part, minus comments
     private(set) var nrql: String
     
-    // the Lua code if this is a script cell (a ```lua fenced block); nil for a query
+    // the Lua code if this is a script cell; nil otherwise
     private(set) var script: String?
     
-    var isScript: Bool { script != nil }
+    // set by the cell that owns this, since the fence isn't visible to say which it is; a lone
+    // query's kind comes from the text, and text without a fence is NRQL
+    var kind: NrqlCellKind
+    
+    var isScript: Bool { kind == .lua }
 
     // chart settings from a doc-comment, if the text has one
     private(set) var format: ChartFormat?
@@ -78,6 +82,10 @@ import LanguageSupport
     var id: String { hash(nrql: self.nrql) }
     
     var title: String {
+        if kind == .markdown {
+            let heading = text.split(separator: "\n").first { $0.hasPrefix("#") }
+            return heading.map { $0.drop { $0 == "#" }.trimmingCharacters(in: .whitespaces) } ?? "Markdown"
+        }
         let defaultTitle = isScript ? "Lua Script" : "NRQL Query"
         if let title = format?.title { return title }
         if let script {
@@ -86,7 +94,7 @@ import LanguageSupport
             let title = first.drop { $0 == " " || $0 == "-" }.trimmingCharacters(in: .whitespaces)
             return title.isEmpty ? defaultTitle : title
         }
-        let withoutFormat = ChartFormat.strip(from: text)
+        let withoutFormat = ChartFormat.strip(from: kind.unwrap(text))
         guard let titleString = withoutFormat.split(separator: "\n").first else { return defaultTitle }
         guard titleString.starts(with: "//") else { return defaultTitle }
         
@@ -96,7 +104,9 @@ import LanguageSupport
         return title
     }
     
-    init(from text: String, run: Bool = false) {
+    init(from text: String, kind: NrqlCellKind? = nil, run: Bool = false) {
+        let detected = NrqlCellKind.detect(in: text)
+        self.kind = kind ?? (detected == .markdown ? .nrql : detected)
         self.nrql = ""
         self.text = text
         self.position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
@@ -175,10 +185,17 @@ import LanguageSupport
     }
     
     private func textWillUpdate(to newValue: String) {
-        format = ChartFormat.parse(from: newValue)
-        let body = ChartFormat.strip(from: newValue)
-        if let code = Self.scriptCode(in: body) {
-            script = code
+        guard kind != .markdown else {
+            format = nil
+            script = nil
+            nrql = ""
+            return
+        }
+        let code = kind.unwrap(newValue)
+        format = ChartFormat.parse(from: code)
+        let body = ChartFormat.strip(from: code)
+        if kind == .lua {
+            script = body
             nrql = ""
             return
         }
@@ -188,16 +205,5 @@ import LanguageSupport
         if nrql != self.nrql {
             self.nrql = nrql
         }
-    }
-    
-    /// The Lua between the fences if the (format-free) text is a script cell, else nil.
-    private static func scriptCode(in body: String) -> String? {
-        let lines = body.split(separator: "\n", omittingEmptySubsequences: false)
-        guard let open = lines.firstIndex(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }),
-              lines[open].trimmingCharacters(in: .whitespaces).lowercased().hasPrefix("```lua")
-        else { return nil }
-        let rest = lines[(open + 1)...]
-        let close = rest.lastIndex { $0.trimmingCharacters(in: .whitespaces) == "```" } ?? lines.endIndex
-        return lines[(open + 1)..<close].joined(separator: "\n")
     }
 }

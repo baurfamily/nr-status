@@ -180,7 +180,10 @@ enum NrqlExport {
 
     static func html(for document: NRQL_EditorDocument) -> String {
         let sections = document.cells.map { cell -> String in
-            var section = "<section>\n<h2>\(escape(cell.query.title))</h2>\n<pre>\(escape(cell.text))</pre>\n"
+            if cell.kind == .markdown {
+                return "<section>\n\(MarkdownParser.html(cell.text))\n</section>"
+            }
+            var section = "<section>\n<h2>\(escape(cell.query.title))</h2>\n<pre>\(escape(cell.editorText))</pre>\n"
             if let table = tableData(for: cell) {
                 section += htmlTable(table)
             } else if let png = chartPNG(for: cell) {
@@ -215,17 +218,30 @@ enum NrqlExport {
 
     // MARK: - PDF
 
-    private static func pageView(for cell: NrqlCell) -> some View {
+    @ViewBuilder private static func pageView(for cell: NrqlCell) -> some View {
+        if cell.kind == .markdown {
+            MarkdownView(text: cell.text)
+                .padding(40)
+                .frame(width: 612, height: 792, alignment: .topLeading)
+                .background(Color.white)
+                .foregroundStyle(Color.black)
+                .environment(\.colorScheme, .light)
+        } else {
+            codePageView(for: cell)
+        }
+    }
+
+    private static func codePageView(for cell: NrqlCell) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(cell.query.title).font(.title2.bold())
-            Text(cell.text)
+            Text(cell.editorText)
                 .font(.system(.body, design: .monospaced))
                 .padding(8)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color.gray.opacity(0.12))
             if let table = tableData(for: cell) {
                 // what's left of the page after the title and the query text
-                let queryLines = cell.text.split(separator: "\n", omittingEmptySubsequences: false).count
+                let queryLines = cell.editorText.split(separator: "\n", omittingEmptySubsequences: false).count
                 let room = 560 - CGFloat(queryLines) * 16
                 pdfTable(table, maxRows: max(Int(room / pdfRowHeight) - 3, 3))
             } else if cell.query.resultContainer != nil, cell.query.format?.hidesChart != true {

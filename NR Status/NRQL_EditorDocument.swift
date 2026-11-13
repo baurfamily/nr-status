@@ -23,38 +23,42 @@ struct NrqlCell: Identifiable {
     // set on a new cell so its editor takes the keyboard once it appears
     var focusOnAppear = false
 
-    // set by `convert`, since the fence isn't visible in the editor to say which kind a cell is
-    private(set) var isScript: Bool
+    // set at creation and by `convert`; sticky, so typing a fence doesn't change what the editor shows
+    private(set) var kind: NrqlCellKind
 
     var text: String {
         didSet { query.text = text }
     }
 
-    /// What the editor shows: the text, minus a script's fence lines.
+    /// What the editor shows: the text, minus a code cell's fence lines.
     var editorText: String {
-        get { isScript ? NrqlScriptFence.unwrap(text) : text }
-        set { text = isScript ? NrqlScriptFence.wrap(newValue) : newValue }
+        get { kind.unwrap(text) }
+        set { text = kind.wrap(newValue) }
     }
 
     // a reference type, so running it doesn't mutate the document
     let query: NrqlQuery
 
-    init(text: String, focusOnAppear: Bool = false) {
+    init(text: String, kind: NrqlCellKind? = nil, focusOnAppear: Bool = false) {
+        let kind = kind ?? NrqlCellKind.detect(in: text)
         self.text = text
+        self.kind = kind
         self.focusOnAppear = focusOnAppear
-        self.query = NrqlQuery(from: text)
-        self.isScript = query.isScript
+        self.query = NrqlQuery(from: text, kind: kind)
     }
 
-    /// Switches between a query and a script, keeping what's in the editor.
-    mutating func convert() {
+    /// Changes the kind of cell, keeping what's in the editor.
+    mutating func convert(to newKind: NrqlCellKind) {
+        guard newKind != kind else { return }
         let shown = editorText
-        isScript.toggle()
+        kind = newKind
+        query.kind = newKind
         editorText = shown
     }
 
     // comment-only cells have nothing to run
     var isRunnable: Bool {
+        guard kind != .markdown else { return false }
         let code = query.script ?? query.nrql
         return !code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
@@ -68,7 +72,7 @@ struct NRQL_EditorDocument: FileDocument {
         NrqlDocumentParser.join(cells.map(\.text))
     }
 
-    init(text: String = "// Title of query\nFROM ") {
+    init(text: String = "```nrql\n// Title of query\nFROM \n```") {
         cells = Self.cells(from: text)
     }
 
@@ -95,11 +99,9 @@ struct NRQL_EditorDocument: FileDocument {
         cells.first { $0.id == focusedCellId }
     }
 
-    static let scriptTemplate = "```lua\n\n```"
-
     @discardableResult
-    mutating func addCell(after id: NrqlCell.ID? = nil, script: Bool = false) -> NrqlCell.ID {
-        let cell = NrqlCell(text: script ? Self.scriptTemplate : "FROM ", focusOnAppear: true)
+    mutating func addCell(after id: NrqlCell.ID? = nil, kind: NrqlCellKind = .nrql) -> NrqlCell.ID {
+        let cell = NrqlCell(text: kind.template, kind: kind, focusOnAppear: true)
         if let id, let index = cells.firstIndex(where: { $0.id == id }) {
             cells.insert(cell, at: index + 1)
         } else {
@@ -110,16 +112,18 @@ struct NRQL_EditorDocument: FileDocument {
     }
 
     @discardableResult
-    mutating func addCell(before id: NrqlCell.ID, script: Bool = false) -> NrqlCell.ID {
-        let cell = NrqlCell(text: script ? Self.scriptTemplate : "FROM ", focusOnAppear: true)
+    mutating func addCell(before id: NrqlCell.ID, kind: NrqlCellKind = .nrql) -> NrqlCell.ID {
+        let cell = NrqlCell(text: kind.template, kind: kind, focusOnAppear: true)
         cells.insert(cell, at: cells.firstIndex { $0.id == id } ?? cells.endIndex)
         focusedCellId = cell.id
         return cell.id
     }
 
     /// What the cell menu (and the matching main menu items) can do to a cell.
-    enum CellAction: CaseIterable {
-        case addQueryAbove, addQueryBelow, addScriptAbove, addScriptBelow, moveUp, moveDown, convert, delete
+    enum CellAction: Equatable {
+        case add(NrqlCellKind, above: Bool)
+        case convert(NrqlCellKind)
+        case moveUp, moveDown, delete
     }
 
     func canPerform(_ action: CellAction, on id: NrqlCell.ID) -> Bool {
@@ -127,6 +131,7 @@ struct NRQL_EditorDocument: FileDocument {
         switch action {
         case .moveUp: return index > 0
         case .moveDown: return index < cells.count - 1
+        case .convert(let kind): return cells[index].kind != kind
         default: return true
         }
     }
@@ -134,13 +139,11 @@ struct NRQL_EditorDocument: FileDocument {
     mutating func perform(_ action: CellAction, on id: NrqlCell.ID) {
         guard canPerform(action, on: id), let index = cells.firstIndex(where: { $0.id == id }) else { return }
         switch action {
-        case .addQueryAbove: addCell(before: id)
-        case .addQueryBelow: addCell(after: id)
-        case .addScriptAbove: addCell(before: id, script: true)
-        case .addScriptBelow: addCell(after: id, script: true)
+        case .add(let kind, let above):
+            if above { addCell(before: id, kind: kind) } else { addCell(after: id, kind: kind) }
         case .moveUp: cells.swapAt(index, index - 1)
         case .moveDown: cells.swapAt(index, index + 1)
-        case .convert: cells[index].convert()
+        case .convert(let kind): cells[index].convert(to: kind)
         case .delete: removeCell(id)
         }
     }

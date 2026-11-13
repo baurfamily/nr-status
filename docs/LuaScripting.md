@@ -12,7 +12,7 @@ Non-goals: general-purpose scripting, file/network access, replacing NRQL as the
 
 ## Where the current code constrains us
 
-- A document is a list of `NrqlCell`s, each owning an `NrqlQuery` (`text`, `nrql`, `format`, `state`). Cells are split on blank lines (`NrqlDocumentParser`), so any new cell kind must survive that round-trip (no blank lines inside a block).
+- A document is a list of `NrqlCell`s, each owning an `NrqlQuery` (`text`, `nrql`, `format`, `state`). `NrqlDocumentParser` splits the file into cells: each ` ```nrql ` or ` ```lua ` fenced block is a code cell (blank lines allowed inside), and any text between them is one Markdown cell. A cell's `kind` (`NrqlCellKind`) is stored on the cell; the editor shows the text without its fence lines.
 - Results are `NrdbResultContainer` → `NrdbResults.Datum`. Charts, tables and export all consume that type, so a script that emits a result set should produce one too.
 - Cells run independently today (`runAllQueries` fires them all). Scripts introduce ordering.
 

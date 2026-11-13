@@ -14,6 +14,7 @@ enum NrqlDependencies {
     ]
 
     static func referencedNames(by cell: NrqlCell) -> Set<String> {
+        guard cell.kind != .markdown else { return [] }
         let code = cell.query.script ?? NrqlInterpolation.expressions(in: cell.query.nrql).joined(separator: "\n")
         let range = NSRange(code.startIndex..., in: code)
         var names = Set<String>()

@@ -43,15 +43,19 @@ struct EditorMenuView : View {
             }.keyboardShortcut("\n", modifiers: [.command, .shift])
 
             Divider()
-            cellButton("Add Query Above", .addQueryAbove)
-            cellButton("Add Query Below", .addQueryBelow)
-            cellButton("Add Script Above", .addScriptAbove)
-            cellButton("Add Script Below", .addScriptBelow)
+            Menu("Add Cell Above") {
+                ForEach(NrqlCellKind.allCases) { cellButton($0.title, .add($0, above: true)) }
+            }
+            Menu("Add Cell Below") {
+                ForEach(NrqlCellKind.allCases) { cellButton($0.title, .add($0, above: false)) }
+            }
             Divider()
             cellButton("Move Cell Up", .moveUp)
             cellButton("Move Cell Down", .moveDown)
             Divider()
-            cellButton(document?.focusedCell?.isScript == true ? "Convert Cell to Query" : "Convert Cell to Script", .convert)
+            Menu("Convert Cell To") {
+                ForEach(NrqlCellKind.allCases) { cellButton($0.title, .convert($0)) }
+            }
             Divider()
             cellButton("Delete Cell", .delete)
         }

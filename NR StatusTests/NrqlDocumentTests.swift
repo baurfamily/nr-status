@@ -259,6 +259,36 @@ struct NrqlDependencyTests {
     }
 }
 
+struct NrqlCellActionTests {
+    private func titles(_ doc: NRQL_EditorDocument) -> [String] { doc.cells.map(\.text) }
+
+    @Test func addsAboveAndBelow() {
+        var doc = NRQL_EditorDocument(text: "FROM A\n\nFROM B")
+        let b = doc.cells[1].id
+        doc.perform(.addScriptAbove, on: b)
+        doc.perform(.addQueryBelow, on: b)
+        #expect(titles(doc) == ["FROM A", NRQL_EditorDocument.scriptTemplate, "FROM B", "FROM "])
+        #expect(doc.focusedCellId == doc.cells[3].id)
+    }
+
+    @Test func addsAtTop() {
+        var doc = NRQL_EditorDocument(text: "FROM A")
+        doc.perform(.addQueryAbove, on: doc.cells[0].id)
+        #expect(titles(doc) == ["FROM ", "FROM A"])
+    }
+
+    @Test func movesWithinBounds() {
+        var doc = NRQL_EditorDocument(text: "FROM A\n\nFROM B\n\nFROM C")
+        let a = doc.cells[0].id, c = doc.cells[2].id
+        #expect(!doc.canPerform(.moveUp, on: a))
+        #expect(!doc.canPerform(.moveDown, on: c))
+        doc.perform(.moveDown, on: a)
+        #expect(titles(doc) == ["FROM B", "FROM A", "FROM C"])
+        doc.perform(.moveUp, on: c)
+        #expect(titles(doc) == ["FROM B", "FROM C", "FROM A"])
+    }
+}
+
 struct NrqlStaleTests {
     @Test func cellIsStaleWhenADependencyRunsAgain() async {
         let a = NrqlCell(text: "/***\nname: a\n***/\n```lua\nreturn { { n = 1 } }\n```")

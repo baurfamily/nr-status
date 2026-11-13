@@ -41,6 +41,25 @@ struct EditorMenuView : View {
             Button("Run all queries") {
                 document?.runAllQueries()
             }.keyboardShortcut("\n", modifiers: [.command, .shift])
+
+            Divider()
+            cellButton("Add Query Above", .addQueryAbove)
+            cellButton("Add Query Below", .addQueryBelow)
+            cellButton("Add Script Above", .addScriptAbove)
+            cellButton("Add Script Below", .addScriptBelow)
+            Divider()
+            cellButton("Move Cell Up", .moveUp)
+            cellButton("Move Cell Down", .moveDown)
+            Divider()
+            cellButton("Delete Cell", .delete)
         }
+    }
+
+    // acts on the cell with focus, like the cell's own menu
+    private func cellButton(_ title: String, _ action: NRQL_EditorDocument.CellAction) -> some View {
+        Button(title) {
+            if let id = document?.focusedCellId { document?.perform(action, on: id) }
+        }
+        .disabled(document?.focusedCellId.map { document?.canPerform(action, on: $0) ?? false } != true)
     }
 }

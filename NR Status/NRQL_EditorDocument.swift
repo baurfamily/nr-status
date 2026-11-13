@@ -92,6 +92,41 @@ struct NRQL_EditorDocument: FileDocument {
         return cell.id
     }
 
+    @discardableResult
+    mutating func addCell(before id: NrqlCell.ID, script: Bool = false) -> NrqlCell.ID {
+        let cell = NrqlCell(text: script ? Self.scriptTemplate : "FROM ", focusOnAppear: true)
+        cells.insert(cell, at: cells.firstIndex { $0.id == id } ?? cells.endIndex)
+        focusedCellId = cell.id
+        return cell.id
+    }
+
+    /// What the cell menu (and the matching main menu items) can do to a cell.
+    enum CellAction: CaseIterable {
+        case addQueryAbove, addQueryBelow, addScriptAbove, addScriptBelow, moveUp, moveDown, delete
+    }
+
+    func canPerform(_ action: CellAction, on id: NrqlCell.ID) -> Bool {
+        guard let index = cells.firstIndex(where: { $0.id == id }) else { return false }
+        switch action {
+        case .moveUp: return index > 0
+        case .moveDown: return index < cells.count - 1
+        default: return true
+        }
+    }
+
+    mutating func perform(_ action: CellAction, on id: NrqlCell.ID) {
+        guard canPerform(action, on: id), let index = cells.firstIndex(where: { $0.id == id }) else { return }
+        switch action {
+        case .addQueryAbove: addCell(before: id)
+        case .addQueryBelow: addCell(after: id)
+        case .addScriptAbove: addCell(before: id, script: true)
+        case .addScriptBelow: addCell(after: id, script: true)
+        case .moveUp: cells.swapAt(index, index - 1)
+        case .moveDown: cells.swapAt(index, index + 1)
+        case .delete: removeCell(id)
+        }
+    }
+
     mutating func removeCell(_ id: NrqlCell.ID) {
         cells.removeAll { $0.id == id }
         if focusedCellId == id { focusedCellId = nil }

@@ -25,7 +25,8 @@ struct DocumentView: View {
                         onFocus: { document.focusedCellId = cell.id },
                         onRun: { document.runCell(cell.id) },
                         pendingTitles: document.pendingDependencies(for: cell.id).map(\.query.title),
-                        onDelete: { document.removeCell(cell.id) }
+                        canPerform: { document.canPerform($0, on: cell.id) },
+                        onAction: { document.perform($0, on: cell.id) }
                     )
                 }
                 HStack {
@@ -59,7 +60,8 @@ struct CellView: View {
     let onFocus: () -> Void
     let onRun: () -> Void
     let pendingTitles: [String]
-    let onDelete: () -> Void
+    let canPerform: (NRQL_EditorDocument.CellAction) -> Bool
+    let onAction: (NRQL_EditorDocument.CellAction) -> Void
 
     @State private var position: CodeEditor.Position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
     @State private var messages: Set<TextLocated<Message>> = Set()
@@ -204,9 +206,23 @@ struct CellView: View {
             .buttonStyle(.borderless)
             .disabled(!cell.isRunnable || cell.query.isRunning)
 
-            Button("Delete", systemImage: "trash", action: onDelete)
-                .labelStyle(.iconOnly)
-                .buttonStyle(.borderless)
+            Menu("Cell Actions", systemImage: "ellipsis") {
+                Button("Add Query Above") { onAction(.addQueryAbove) }
+                Button("Add Query Below") { onAction(.addQueryBelow) }
+                Button("Add Script Above") { onAction(.addScriptAbove) }
+                Button("Add Script Below") { onAction(.addScriptBelow) }
+                Divider()
+                Button("Move Up") { onAction(.moveUp) }
+                    .disabled(!canPerform(.moveUp))
+                Button("Move Down") { onAction(.moveDown) }
+                    .disabled(!canPerform(.moveDown))
+                Divider()
+                Button("Delete", role: .destructive) { onAction(.delete) }
+            }
+            .labelStyle(.iconOnly)
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
         }
     }
 }

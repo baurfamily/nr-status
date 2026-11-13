@@ -1,0 +1,77 @@
+# Testing the NRQL workbook
+
+## Cell types
+
+We can have three different kinds of cells
+
+* Markdown (the default)
+* NRQL
+* Lua
+
+Code cells (NRQL and Lua) are fended with standard markdown code blocks. ie: Three backticks and then `nrql` or `lua`
+
+```nrql
+/***
+  title: Busiest app, last week
+  name: top_app
+  chart: billboard
+***/
+FROM Transaction
+SELECT count(*)
+FACET appName
+SINCE 1 week ago
+LIMIT 4
+```
+
+```nrql
+/***
+  title: Metrics for the busiest app
+  chart: line
+  attributes: stacked smoothed
+***/
+FROM Metric SELECT count(*) WHERE appName = '{{ results.top_app.rows[1].facet }}' SINCE 1 week ago TIMESERIES 1 day
+```
+
+```nrql
+/***
+title: Transactions for the busiest app
+name: transactions
+chart: none
+***/
+
+FROM Transaction SELECT count(*) AS count WHERE appName = '{{ results.top_app.rows[1].facet }}' SINCE 1 week ago
+```
+
+```nrql
+/***
+title: Errors for the busiest app
+name: errors
+chart: none
+***/
+
+FROM TransactionError SELECT count(*) AS count WHERE appName = '{{ results.top_app.rows[1].facet }}' SINCE 1 week ago
+```
+
+## Running lua scripts
+
+In this exmaple, two previous results (which have hidden graphs, but still run and save results) are referenced to build a result from the independent data sets.
+
+The `emit` function is used to push data into the chartting system.
+
+```lua
+--[[
+title: Transactions vs. errors
+chart: bar
+]]
+
+emit({
+  rows = {
+    { facet = "Transaction", count = results.transactions.rows[1].count },
+    { facet = "TransactionError", count = results.errors.rows[1].count },
+  },
+})
+```
+
+```lua
+
+```

@@ -16,21 +16,48 @@ enum NrqlDocumentParser {
         var text: String
     }
 
-    /// Splits text into blank-line separated blocks, keeping comment-only blocks
-    /// so a document can be rebuilt from its cells without losing anything.
+    /// Splits text into cells: each ```nrql or ```lua fenced block is a code cell, and
+    /// whatever lies between them is one Markdown cell (blank lines included).
+    /// Other fences, such as ```swift, are Markdown content, so a ```nrql inside one stays text.
     static func blocks(_ text: String) -> [String] {
-        text.components(separatedBy: "\n\n")
-            .map { $0.trimmingCharacters(in: .newlines) }
-            .filter { !$0.isEmpty }
+        var blocks: [String] = []
+        var current: [String] = []
+        var inCode = false
+        var inProseFence = false
+
+        func flush() {
+            let block = current.joined(separator: "\n").trimmingCharacters(in: .newlines)
+            if !block.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { blocks.append(block) }
+            current.removeAll()
+        }
+
+        for line in text.components(separatedBy: "\n") {
+            if inCode {
+                current.append(line)
+                if NrqlCellKind.isClosingFence(line) {
+                    flush()
+                    inCode = false
+                }
+            } else if inProseFence {
+                current.append(line)
+                if NrqlCellKind.isClosingFence(line) { inProseFence = false }
+            } else if NrqlCellKind.fenced(by: line) != nil {
+                flush()
+                current.append(line)
+                inCode = true
+            } else {
+                if NrqlCellKind.isFence(line) { inProseFence = true }
+                current.append(line)
+            }
+        }
+        flush()
+        return blocks
     }
 
-    /// Inverse of `blocks(_:)`; blank lines inside a block would split it on the
-    /// next load, so they are dropped.
+    /// Inverse of `blocks(_:)`.
     static func join(_ blocks: [String]) -> String {
-        let cleaned = blocks.map { block in
-            block.split(separator: "\n", omittingEmptySubsequences: true).joined(separator: "\n")
-        }
-        return cleaned.filter { !$0.isEmpty }.joined(separator: "\n\n") + "\n"
+        blocks.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .joined(separator: "\n\n") + "\n"
     }
 
     static func parse(_ text: String) -> [ParsedQuery] {

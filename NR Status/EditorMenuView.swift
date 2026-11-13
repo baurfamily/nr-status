@@ -18,7 +18,10 @@ struct ExportMenuView: View {
         Menu("Export") {
             ForEach(NrqlExport.Format.allCases, id: \.self) { format in
                 Button(format.title) {
-                    if let document { NrqlExport.save(format, document: document) }
+                    guard let document else { return }
+                    let name = NSDocumentController.shared.currentDocument?.displayName ?? "Queries"
+                    let baseName = (name as NSString).deletingPathExtension
+                    NrqlExport.save(format, document: document, suggestedName: baseName)
                 }
             }
         }
@@ -41,6 +44,34 @@ struct EditorMenuView : View {
             Button("Run all queries") {
                 document?.runAllQueries()
             }.keyboardShortcut("\n", modifiers: [.command, .shift])
+
+            Divider()
+            Menu("Add Cell Above") {
+                ForEach(NrqlCellKind.allCases) { cellButton($0.title, .add($0, above: true)) }
+            }
+            Menu("Add Cell Below") {
+                ForEach(NrqlCellKind.allCases) { cellButton($0.title, .add($0, above: false)) }
+            }
+            Divider()
+            cellButton("Move Cell Up", .moveUp)
+            cellButton("Move Cell Down", .moveDown)
+            Divider()
+            Menu("Convert Cell To") {
+                ForEach(NrqlCellKind.allCases) { cellButton($0.title, .convert($0)) }
+            }
+            Divider()
+            Button("Collapse All Queries") { document?.setAllCollapsed(true) }
+            Button("Expand All Queries") { document?.setAllCollapsed(false) }
+            Divider()
+            cellButton("Delete Cell", .delete)
         }
+    }
+
+    // acts on the cell with focus, like the cell's own menu
+    private func cellButton(_ title: String, _ action: NRQL_EditorDocument.CellAction) -> some View {
+        Button(title) {
+            if let id = document?.focusedCellId { document?.perform(action, on: id) }
+        }
+        .disabled(document?.focusedCellId.map { document?.canPerform(action, on: $0) ?? false } != true)
     }
 }

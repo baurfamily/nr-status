@@ -7,16 +7,15 @@ import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
 
-/// Writes a document out as plain NRQL, HTML (queries with the charts of any loaded results) or PDF.
+/// Writes a document out as HTML (queries with the charts of any loaded results) or PDF.
 /// Queries that haven't been run are exported as text only.
 @MainActor
 enum NrqlExport {
     enum Format: CaseIterable {
-        case nrql, html, pdf
+        case html, pdf
 
         var title: String {
             switch self {
-            case .nrql: "NRQL Text…"
             case .html: "HTML…"
             case .pdf: "PDF…"
             }
@@ -24,7 +23,6 @@ enum NrqlExport {
 
         var contentType: UTType {
             switch self {
-            case .nrql: .plainText
             case .html: .html
             case .pdf: .pdf
             }
@@ -32,7 +30,6 @@ enum NrqlExport {
 
         var fileExtension: String {
             switch self {
-            case .nrql: "nrql"
             case .html: "html"
             case .pdf: "pdf"
             }
@@ -41,7 +38,6 @@ enum NrqlExport {
 
     static func data(for format: Format, document: NRQL_EditorDocument) -> Data? {
         switch format {
-        case .nrql: Data(document.text.utf8)
         case .html: Data(html(for: document).utf8)
         case .pdf: pdf(for: document)
         }
@@ -71,7 +67,7 @@ enum NrqlExport {
     }
 
     static func tableData(for cell: NrqlCell) -> TableData? {
-        guard let container = cell.query.resultContainer else { return nil }
+        guard cell.query.format?.hidesChart != true, let container = cell.query.resultContainer else { return nil }
         let config = ChartConfiguration(resultContainer: container)
         cell.query.format?.apply(to: config)
         guard config.chartType == .table else { return nil }
@@ -161,7 +157,7 @@ enum NrqlExport {
     }
 
     private static func chartPNG(for cell: NrqlCell) -> Data? {
-        guard cell.query.resultContainer != nil else { return nil }
+        guard cell.query.format?.hidesChart != true, cell.query.resultContainer != nil else { return nil }
         let renderer = ImageRenderer(content: chartView(for: cell, width: 700))
         renderer.scale = 2
         guard let image = renderer.nsImage, let tiff = image.tiffRepresentation,
@@ -180,7 +176,10 @@ enum NrqlExport {
 
     static func html(for document: NRQL_EditorDocument) -> String {
         let sections = document.cells.map { cell -> String in
-            var section = "<section>\n<h2>\(escape(cell.query.title))</h2>\n<pre>\(escape(cell.text))</pre>\n"
+            if cell.kind == .markdown {
+                return "<section>\n\(MarkdownParser.html(cell.text))\n</section>"
+            }
+            var section = "<section>\n<h2>\(escape(cell.query.title))</h2>\n<pre>\(escape(queryText(for: cell)))</pre>\n"
             if let table = tableData(for: cell) {
                 section += htmlTable(table)
             } else if let png = chartPNG(for: cell) {
@@ -215,49 +214,104 @@ enum NrqlExport {
 
     // MARK: - PDF
 
-    private static func pageView(for cell: NrqlCell) -> some View {
+    private static let pageSize = CGSize(width: 612, height: 792)
+    private static let pageMargin: CGFloat = 40
+    private static let blockSpacing: CGFloat = 16
+
+    /// A piece of the document that is placed on a page as a unit.
+    private struct PDFBlock {
+        var view: AnyView
+        var keepWithNext = false
+    }
+
+    private static func pdfBlocks(for cell: NrqlCell) -> [PDFBlock] {
+        if cell.kind == .markdown {
+            return MarkdownParser.blocks(cell.text).map { block in
+                var isHeading = false
+                if case .heading = block { isHeading = true }
+                return PDFBlock(view: AnyView(MarkdownView(blocks: [block])), keepWithNext: isHeading)
+            }
+        }
+        return [PDFBlock(view: AnyView(codeBlockView(for: cell)))]
+    }
+
+    /// The query as the PDF shows it; the chart settings are already visible in the chart.
+    private static func queryText(for cell: NrqlCell) -> String {
+        ChartFormat.strip(from: cell.editorText, lua: cell.kind == .lua)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func codeBlockView(for cell: NrqlCell) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(cell.query.title).font(.title2.bold())
-            Text(cell.text)
+            Text(queryText(for: cell))
                 .font(.system(.body, design: .monospaced))
                 .padding(8)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color.gray.opacity(0.12))
             if let table = tableData(for: cell) {
                 // what's left of the page after the title and the query text
-                let queryLines = cell.text.split(separator: "\n", omittingEmptySubsequences: false).count
+                let queryLines = queryText(for: cell).split(separator: "\n", omittingEmptySubsequences: false).count
                 let room = 560 - CGFloat(queryLines) * 16
                 pdfTable(table, maxRows: max(Int(room / pdfRowHeight) - 3, 3))
-            } else if cell.query.resultContainer != nil {
+            } else if cell.query.resultContainer != nil, cell.query.format?.hidesChart != true {
                 chartView(for: cell, width: 532)
             } else if let message = cell.query.errorMessage {
                 Text(message).foregroundStyle(.red)
             }
-            Spacer(minLength: 0)
         }
-        .padding(40)
-        .frame(width: 612, height: 792, alignment: .topLeading)
-        .background(Color.white)
-        .foregroundStyle(Color.black)
-        .environment(\.colorScheme, .light)
     }
 
-    /// One US Letter page per query.
+    private static func pdfRenderer(_ block: PDFBlock) -> ImageRenderer<some View> {
+        ImageRenderer(
+            content: block.view
+                .frame(width: pageSize.width - pageMargin * 2, alignment: .topLeading)
+                .fixedSize(horizontal: false, vertical: true)
+                .background(Color.white)
+                .foregroundStyle(Color.black)
+                .environment(\.colorScheme, .light)
+        )
+    }
+
+    private static func pdfHeight(of block: PDFBlock) -> CGFloat {
+        var height: CGFloat = 0
+        pdfRenderer(block).render { size, _ in height = size.height }
+        return height
+    }
+
+    /// Letter pages; blocks flow down the page and only start a new one when the next block doesn't fit.
+    /// A heading stays with the block after it, and a query stays with its chart.
     static func pdf(for document: NRQL_EditorDocument) -> Data? {
         let output = NSMutableData()
-        var box = CGRect(x: 0, y: 0, width: 612, height: 792)
+        var box = CGRect(origin: .zero, size: pageSize)
         guard let consumer = CGDataConsumer(data: output as CFMutableData),
               let context = CGContext(consumer: consumer, mediaBox: &box, nil)
         else { return nil }
 
-        for cell in document.cells {
-            let renderer = ImageRenderer(content: pageView(for: cell))
-            renderer.render { _, draw in
+        let blocks = document.cells.flatMap(pdfBlocks(for:))
+        let heights = blocks.map(pdfHeight(of:))
+        let contentHeight = pageSize.height - pageMargin * 2
+
+        var y: CGFloat = 0
+        var pageOpen = false
+        for (index, block) in blocks.enumerated() {
+            var needed = heights[index]
+            if block.keepWithNext, index + 1 < blocks.count { needed += blockSpacing + heights[index + 1] }
+            if !pageOpen || (y > 0 && y + needed > contentHeight) {
+                if pageOpen { context.endPDFPage() }
                 context.beginPDFPage(nil)
-                draw(context)
-                context.endPDFPage()
+                context.setFillColor(CGColor(gray: 1, alpha: 1))
+                context.fill(box)
+                pageOpen = true
+                y = 0
             }
+            context.saveGState()
+            context.translateBy(x: pageMargin, y: pageSize.height - pageMargin - y - heights[index])
+            pdfRenderer(block).render { _, draw in draw(context) }
+            context.restoreGState()
+            y += heights[index] + blockSpacing
         }
+        if pageOpen { context.endPDFPage() }
         context.closePDF()
         return output as Data
     }

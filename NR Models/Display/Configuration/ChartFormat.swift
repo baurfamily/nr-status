@@ -8,15 +8,26 @@ import Foundation
 /// Chart settings written in a doc-style comment at the top of a query:
 ///
 ///     /***
-///     type: line
+///     chart: line
 ///     attributes: smoothed, lines, points
 ///     ***/
 ///
+/// A script cell writes the same keys in a Lua comment that opens the script:
+///
+///     --[[
+///     chart: bar
+///     ]]
+///
 /// With no `attributes` key, the chart keeps its defaults. When it is present,
 /// every attribute that applies to the chart type is on if listed and off if not.
+///
+/// `name` lets later cells refer to this query's result as `results.<name>`, and
+/// `chart: none` hides the chart, for queries that only feed other cells.
 struct ChartFormat: Equatable, Hashable {
     var title: String?
+    var name: String?
     var type: ChartType?
+    var hidesChart = false
     var attributes: Set<String>?
 
     /// The attribute names each chart type understands; `apply` is the source of truth for what they do.
@@ -31,17 +42,23 @@ struct ChartFormat: Equatable, Hashable {
         pattern: #"/\*\*\*(.*?)\*\*\*/"#,
         options: [.dotMatchesLineSeparators]
     )
+    // in a Lua cell the format is the comment that opens the script
+    private static let luaBlock = try! NSRegularExpression(
+        pattern: #"\A\s*--\[\[(.*?)\]\]"#,
+        options: [.dotMatchesLineSeparators]
+    )
 
-    /// The query text with any format block removed.
-    static func strip(from text: String) -> String {
+    /// The text with any format block removed; `lua` looks for a leading `--[[ ]]` comment instead.
+    static func strip(from text: String, lua: Bool = false) -> String {
         let range = NSRange(text.startIndex..., in: text)
-        return block.stringByReplacingMatches(in: text, range: range, withTemplate: "")
+        let pattern = lua ? luaBlock : block
+        return pattern.stringByReplacingMatches(in: text, range: range, withTemplate: "")
     }
 
     /// Reads the first format block in the text; nil if there isn't one.
-    static func parse(from text: String) -> ChartFormat? {
+    static func parse(from text: String, lua: Bool = false) -> ChartFormat? {
         let range = NSRange(text.startIndex..., in: text)
-        guard let match = block.firstMatch(in: text, range: range),
+        guard let match = (lua ? luaBlock : block).firstMatch(in: text, range: range),
               let bodyRange = Range(match.range(at: 1), in: text)
         else { return nil }
 
@@ -56,7 +73,10 @@ struct ChartFormat: Equatable, Hashable {
             switch key {
             case "title":
                 format.title = rawValue.isEmpty ? nil : rawValue
-            case "type":
+            case "name":
+                format.name = rawValue.isEmpty ? nil : rawValue
+            case "chart":
+                format.hidesChart = value == "none"
                 format.type = ChartType(rawValue: value)
             case "attributes":
                 let names = value.split(whereSeparator: { $0 == "," || $0.isWhitespace }).map(String.init)

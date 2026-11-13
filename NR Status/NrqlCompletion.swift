@@ -16,7 +16,7 @@ protocol NrqlMetadataProviding: Sendable {
 /// themselves (event types and attributes) come from NRDB.
 enum NrqlCompletion {
     enum Kind: Int {
-        case formatKey, formatValue, eventType, attribute, function, keyword
+        case formatKey, formatValue, eventType, attribute, function, keyword, variable, field
 
         var label: String {
             switch self {
@@ -26,6 +26,8 @@ enum NrqlCompletion {
             case .attribute: "attribute"
             case .function: "function"
             case .keyword: "keyword"
+            case .variable: "variable"
+            case .field: "field"
             }
         }
     }
@@ -89,7 +91,7 @@ enum NrqlCompletion {
         options: [.caseInsensitive]
     )
     private static let typeLine = try! NSRegularExpression(
-        pattern: #"^\s*type:\s*([A-Za-z]+)"#,
+        pattern: #"^\s*chart:\s*([A-Za-z]+)"#,
         options: [.anchorsMatchLines, .caseInsensitive]
     )
 
@@ -254,13 +256,13 @@ enum NrqlCompletion {
         case .none:
             break
         case .formatKey:
-            candidates = ["title", "type", "attributes"].map {
+            candidates = ["title", "name", "chart", "attributes"].map {
                 Item(name: $0, kind: .formatKey, detail: nil, insertText: "\($0): ")
             }
         case .formatValue(let key, let type):
             var values: [String] = []
-            if key == "type" {
-                values = ChartType.allCases.map(\.rawValue)
+            if key == "chart" {
+                values = ChartType.allCases.map(\.rawValue) + ["none"]
             } else if key == "attributes" {
                 values = type.map { ChartFormat.attributeNames[$0] ?? [] }
                     ?? ChartFormat.attributeNames.values.flatMap { $0 }.sorted()

@@ -183,7 +183,7 @@ enum NrqlExport {
             if cell.kind == .markdown {
                 return "<section>\n\(MarkdownParser.html(cell.text))\n</section>"
             }
-            var section = "<section>\n<h2>\(escape(cell.query.title))</h2>\n<pre>\(escape(cell.editorText))</pre>\n"
+            var section = "<section>\n<h2>\(escape(cell.query.title))</h2>\n<pre>\(escape(queryText(for: cell)))</pre>\n"
             if let table = tableData(for: cell) {
                 section += htmlTable(table)
             } else if let png = chartPNG(for: cell) {

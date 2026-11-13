@@ -34,21 +34,29 @@ FROM Metric SELECT count(*) WHERE appName = '{{ results.top_app.rows[1].facet }}
 
 ```nrql
 /***
+title: Transactions for the busiest app
 name: transactions
 chart: none
 ***/
-// Transactions for the busiest app
+
 FROM Transaction SELECT count(*) AS count WHERE appName = '{{ results.top_app.rows[1].facet }}' SINCE 1 week ago
 ```
 
 ```nrql
 /***
+title: Errors for the busiest app
 name: errors
 chart: none
 ***/
-// Errors for the busiest app
+
 FROM TransactionError SELECT count(*) AS count WHERE appName = '{{ results.top_app.rows[1].facet }}' SINCE 1 week ago
 ```
+
+## Running lua scripts
+
+In this exmaple, two previous results (which have hidden graphs, but still run and save results) are referenced to build a result from the independent data sets.
+
+The `emit` function is used to push data into the chartting system.
 
 ```lua
 --[[

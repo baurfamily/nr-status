@@ -46,6 +46,8 @@ struct DocumentView: View {
             }
             .padding()
         }
+        // a click on empty space leaves the focused cell, which renders a Markdown cell
+        .background(Color.clear.contentShape(Rectangle()).onTapGesture { document.focusedCellId = nil })
         .toolbar {
             ToolbarItem {
                 Button("Run All", systemImage: "play.fill") { document.runAllQueries() }

@@ -94,7 +94,7 @@ import LanguageSupport
             let title = first.drop { $0 == " " || $0 == "-" }.trimmingCharacters(in: .whitespaces)
             return title.isEmpty ? defaultTitle : title
         }
-        let withoutFormat = ChartFormat.strip(from: kind.unwrap(text))
+        let withoutFormat = ChartFormat.strip(from: kind.unwrap(text), lua: kind == .lua)
         guard let titleString = withoutFormat.split(separator: "\n").first else { return defaultTitle }
         guard titleString.starts(with: "//") else { return defaultTitle }
         
@@ -192,8 +192,8 @@ import LanguageSupport
             return
         }
         let code = kind.unwrap(newValue)
-        format = ChartFormat.parse(from: code)
-        let body = ChartFormat.strip(from: code)
+        format = ChartFormat.parse(from: code, lua: kind == .lua)
+        let body = ChartFormat.strip(from: code, lua: kind == .lua)
         if kind == .lua {
             script = body
             nrql = ""

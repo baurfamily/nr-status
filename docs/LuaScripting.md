@@ -37,7 +37,7 @@ local r = query("FROM Transaction SELECT count(*) FACET appName LIMIT 5")
 emit(r)
 ```
 
-Fences are stored in the file but hidden in the editor; blank lines inside a script are fine. The chart format block (`/*** ***/`) goes inside the fence. Script cells render as code plus their emitted result (or `chart: none` to hide it). Text outside any fence is a Markdown cell, edited as plain text and rendered when focus moves to another cell.
+The chart format goes in a Lua comment that opens the script (`--[[ title: …  chart: bar ]]`); NRQL cells keep `/*** ***/`. Fences are stored in the file but hidden in the editor; blank lines inside a script are fine. Script cells render as code plus their emitted result (or `chart: none` to hide it). Text outside any fence is a Markdown cell, edited as plain text and rendered when focus moves to another cell.
 
 ### Cell names
 

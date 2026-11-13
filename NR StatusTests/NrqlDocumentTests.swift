@@ -219,7 +219,7 @@ struct NrqlInterpolationTests {
 }
 
 struct NrqlScriptCellTests {
-    private let script = "```lua\n/***\nname: x\n***/\n-- Compare\n\nemit({ rows = { { facet = 'A', count = results.a.rows[1].count } } })\n```"
+    private let script = "```lua\n--[[\nname: x\n]]\n-- Compare\n\nemit({ rows = { { facet = 'A', count = results.a.rows[1].count } } })\n```"
 
     @Test func fencedScriptSurvivesBlankLinesAndRoundTrips() {
         let text = "```nrql\nFROM A SELECT 1\n```\n\n\(script)\n\n```nrql\nFROM B SELECT 2\n```\n"
@@ -238,6 +238,15 @@ struct NrqlScriptCellTests {
         #expect(query.title == "Compare")
         #expect(query.name == "x")
         #expect(NrqlCell(text: script).isRunnable)
+    }
+
+    @Test func luaFormatIsALeadingComment() {
+        let query = NrqlQuery(from: "```lua\n--[[\ntitle: T\nchart: bar\n]]\n--[[ later ]]\nreturn 1\n```")
+
+        #expect(query.format?.type == .bar)
+        #expect(query.title == "T")
+        #expect(query.script?.contains("--[[ later ]]") == true)
+        #expect(NrqlQuery(from: "```lua\nreturn 1 --[[ chart: bar ]]\n```").format == nil)
     }
 
     @Test func scriptCellProducesAResult() async {
@@ -286,12 +295,12 @@ struct NrqlDependencyTests {
 
 struct NrqlCellActionTests {
     @Test func scriptCellsHideTheirFence() {
-        let stored = "```lua\n/*** name: x ***/\nlocal a = 1\n\nreturn a\n```"
+        let stored = "```lua\n--[[ name: x ]]\nlocal a = 1\n\nreturn a\n```"
         var cell = NrqlCell(text: stored)
         #expect(cell.kind == .lua)
-        #expect(cell.editorText == "/*** name: x ***/\nlocal a = 1\n\nreturn a")
-        cell.editorText = "/*** name: x ***/\nreturn 2"
-        #expect(cell.text == "```lua\n/*** name: x ***/\nreturn 2\n```")
+        #expect(cell.editorText == "--[[ name: x ]]\nlocal a = 1\n\nreturn a")
+        cell.editorText = "--[[ name: x ]]\nreturn 2"
+        #expect(cell.text == "```lua\n--[[ name: x ]]\nreturn 2\n```")
         #expect(cell.query.script?.contains("return 2") == true)
         #expect(cell.query.name == "x")
     }
@@ -381,8 +390,8 @@ struct MarkdownParserTests {
 
 struct NrqlStaleTests {
     @Test func cellIsStaleWhenADependencyRunsAgain() async {
-        let a = NrqlCell(text: "```lua\n/***\nname: a\n***/\nreturn { { n = 1 } }\n```")
-        let b = NrqlCell(text: "```lua\n/***\nname: b\n***/\nreturn { { n = results.a.rows[1].n } }\n```")
+        let a = NrqlCell(text: "```lua\n--[[\nname: a\n]]\nreturn { { n = 1 } }\n```")
+        let b = NrqlCell(text: "```lua\n--[[\nname: b\n]]\nreturn { { n = results.a.rows[1].n } }\n```")
         let c = NrqlCell(text: "```lua\nreturn { { n = results.b.rows[1].n } }\n```")
         let cells = [a, b, c]
 

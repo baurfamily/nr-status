@@ -149,7 +149,7 @@ struct CellView: View {
             text: Binding(get: { liveText }, set: { draft = $0 }),
             position: $position,
             messages: $messages,
-            language: cell.kind == .nrql ? .nrql(languageService) : .none
+            language: cell.kind == .nrql ? .nrql(languageService) : cell.kind == .lua ? .lua() : .none
         )
         .onAppear {
             CompletionKeyRouter.installIfNeeded()

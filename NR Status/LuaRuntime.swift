@@ -37,7 +37,16 @@ struct LuaRuntime {
     })
     """
 
+    // The Lua engine isn't safe to run from several threads at once, so runs take turns.
+    private static let runLock = NSLock()
+
     static func run(_ script: String, results: [PriorResult] = []) throws -> Outcome {
+        runLock.lock()
+        defer { runLock.unlock() }
+        return try runLocked(script, results: results)
+    }
+
+    private static func runLocked(_ script: String, results: [PriorResult]) throws -> Outcome {
         let engine = try LuaEngine(
             configuration: LuaEngineConfiguration(sandboxed: true, vmMemoryLimit: memoryLimit)
         )

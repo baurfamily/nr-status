@@ -258,3 +258,24 @@ struct NrqlDependencyTests {
         #expect(NrqlDependencies.plan(for: [loop[0]], in: loop, includeFinished: false).count == 2)
     }
 }
+
+struct NrqlStaleTests {
+    @Test func cellIsStaleWhenADependencyRunsAgain() async {
+        let a = NrqlCell(text: "/***\nname: a\n***/\n```lua\nreturn { { n = 1 } }\n```")
+        let b = NrqlCell(text: "/***\nname: b\n***/\n```lua\nreturn { { n = results.a.rows[1].n } }\n```")
+        let c = NrqlCell(text: "```lua\nreturn { { n = results.b.rows[1].n } }\n```")
+        let cells = [a, b, c]
+
+        #expect(NrqlDependencies.staleCells(in: cells).isEmpty)
+
+        for cell in cells {
+            let prior = [LuaRuntime.PriorResult(name: "a", value: .table(["rows": .array([.table(["n": .number(1)])])])),
+                         LuaRuntime.PriorResult(name: "b", value: .table(["rows": .array([.table(["n": .number(1)])])]))]
+            await cell.query.getData(results: prior)
+        }
+        #expect(NrqlDependencies.staleCells(in: cells).isEmpty)
+
+        await a.query.getData()
+        #expect(NrqlDependencies.staleCells(in: cells) == [b.id, c.id])
+    }
+}

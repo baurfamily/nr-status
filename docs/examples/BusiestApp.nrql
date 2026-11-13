@@ -3,7 +3,7 @@ name: top_app
 chart: billboard
 ***/
 // Busiest app, last week
-FROM Transaction SELECT count(*) FACET appName SINCE 1 week ago LIMIT 1
+FROM Transaction SELECT count(*) FACET appName SINCE 1 week ago LIMIT 4
 
 /***
 chart: line

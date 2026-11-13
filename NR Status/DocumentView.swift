@@ -14,12 +14,14 @@ struct DocumentView: View {
     @Binding var document: NRQL_EditorDocument
 
     var body: some View {
-        ScrollView {
+        let stale = document.staleCellIds
+        return ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
                 ForEach($document.cells) { $cell in
                     CellView(
                         cell: $cell,
                         isFocused: document.focusedCellId == cell.id,
+                        isStale: stale.contains(cell.id),
                         onFocus: { document.focusedCellId = cell.id },
                         onRun: { document.runCell(cell.id) },
                         pendingTitles: document.pendingDependencies(for: cell.id).map(\.query.title),
@@ -53,6 +55,7 @@ struct CellView: View {
 
     @Binding var cell: NrqlCell
     let isFocused: Bool
+    let isStale: Bool
     let onFocus: () -> Void
     let onRun: () -> Void
     let pendingTitles: [String]
@@ -147,6 +150,12 @@ struct CellView: View {
             .labelStyle(.iconOnly)
             .buttonStyle(.borderless)
             .foregroundStyle(showsChartSettings ? Color.accentColor : Color.primary)
+
+            if isStale {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .foregroundStyle(.orange)
+                    .help("Out of date: a cell this one reads has run since. Run it to refresh.")
+            }
 
             if !pendingTitles.isEmpty {
                 Image(systemName: "exclamationmark.triangle.fill")

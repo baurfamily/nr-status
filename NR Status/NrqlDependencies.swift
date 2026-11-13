@@ -25,6 +25,44 @@ enum NrqlDependencies {
         return names
     }
 
+    /// The cells whose results `cell` reads.
+    static func dependencies(of cell: NrqlCell, in cells: [NrqlCell]) -> [NrqlCell] {
+        referencedNames(by: cell).sorted().compactMap { name in
+            cells.first { $0.query.name == name && $0.id != cell.id }
+        }
+    }
+
+    /// Cells whose result is out of date: a cell they read has produced a newer
+    /// result since they ran, or is itself out of date.
+    static func staleCells(in cells: [NrqlCell]) -> Set<NrqlCell.ID> {
+        var stale = Set<NrqlCell.ID>()
+        var resolved = Set<NrqlCell.ID>()
+
+        func check(_ cell: NrqlCell, path: inout Set<NrqlCell.ID>) -> Bool {
+            if resolved.contains(cell.id) { return stale.contains(cell.id) }
+            guard path.insert(cell.id).inserted else { return false }
+            defer { path.remove(cell.id) }
+
+            var isStale = false
+            if let loadedAt = cell.query.loadedAt {
+                for dependency in dependencies(of: cell, in: cells) {
+                    let dependencyStale = check(dependency, path: &path)
+                    let newer = dependency.query.loadedAt.map { $0 > loadedAt } ?? false
+                    if dependencyStale || newer { isStale = true }
+                }
+            }
+            resolved.insert(cell.id)
+            if isStale { stale.insert(cell.id) }
+            return isStale
+        }
+
+        for cell in cells {
+            var path = Set<NrqlCell.ID>()
+            _ = check(cell, path: &path)
+        }
+        return stale
+    }
+
     /// The cells to run, dependencies first, so that `roots` can read what they need.
     /// With `includeFinished` false, a dependency that already has a result (and
     /// whatever it depends on) is left alone; the roots themselves always run.
@@ -35,8 +73,7 @@ enum NrqlDependencies {
         func visit(_ cell: NrqlCell) {
             // a cycle ends here; the cell then reports the missing result itself
             guard visited.insert(cell.id).inserted else { return }
-            for name in referencedNames(by: cell).sorted() {
-                guard let dependency = cells.first(where: { $0.query.name == name && $0.id != cell.id }) else { continue }
+            for dependency in dependencies(of: cell, in: cells) {
                 if !includeFinished && dependency.query.resultContainer != nil { continue }
                 visit(dependency)
             }

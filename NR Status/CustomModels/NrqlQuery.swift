@@ -48,6 +48,9 @@ import LanguageSupport
     // Always change it through setState(_:) so updates happen on the main actor.
     private(set) var state: State = .idle
     
+    // when the current result arrived; cells reading this one compare against it
+    private(set) var loadedAt: Date?
+    
     // the query as last sent, with `{{ }}` expressions replaced; nil before a run
     private(set) var executedNrql: String?
     
@@ -159,6 +162,7 @@ import LanguageSupport
     }
     
     @MainActor func setState(_ newState: State) {
+        if case .loaded = newState { loadedAt = Date() }
         state = newState
     }
     

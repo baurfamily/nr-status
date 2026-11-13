@@ -125,6 +125,9 @@ struct NRQL_EditorDocument: FileDocument {
         run(NrqlDependencies.plan(for: [cell], in: cells, includeFinished: false), in: cells)
     }
 
+    /// Cells showing a result that a cell they read has since replaced.
+    var staleCellIds: Set<NrqlCell.ID> { NrqlDependencies.staleCells(in: cells) }
+
     /// The cells that running this one would run first.
     func pendingDependencies(for id: NrqlCell.ID) -> [NrqlCell] {
         guard let cell = cells.first(where: { $0.id == id }) else { return [] }

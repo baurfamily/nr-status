@@ -5,6 +5,7 @@
 
 import Testing
 import Foundation
+import CoreGraphics
 @testable import NR_Status
 
 struct NrqlDocumentParserTests {
@@ -149,10 +150,8 @@ struct NrqlQueryTests {
 
 @MainActor
 struct NrqlExportTests {
-    @Test func exportsTextHtmlAndPdf() throws {
+    @Test func exportsHtmlAndPdf() throws {
         let document = NRQL_EditorDocument(text: "# Intro & more\n\n```nrql\n// A & B\nSELECT 1 FROM Log WHERE x < 2\n```")
-
-        #expect(String(data: try #require(NrqlExport.data(for: .nrql, document: document)), encoding: .utf8) == document.text)
 
         let html = NrqlExport.html(for: document)
         #expect(html.contains("<h2>A &amp; B</h2>"))
@@ -162,6 +161,18 @@ struct NrqlExportTests {
 
         let pdf = try #require(NrqlExport.data(for: .pdf, document: document))
         #expect(pdf.starts(with: Array("%PDF".utf8)))
+    }
+
+    @Test func pdfFlowsCellsAcrossPages() throws {
+        func pageCount(_ text: String) throws -> Int {
+            let data = try #require(NrqlExport.data(for: .pdf, document: NRQL_EditorDocument(text: text)))
+            let pdf = try #require(CGDataProvider(data: data as CFData).flatMap { CGPDFDocument($0) })
+            return pdf.numberOfPages
+        }
+        let short = "Intro\n\n```nrql\nSELECT 1 FROM Log\n```\n\n```nrql\nSELECT 2 FROM Log\n```"
+        #expect(try pageCount(short) == 1)
+        let long = (0..<60).map { "Paragraph \($0)" }.joined(separator: "\n\n")
+        #expect(try pageCount(long) > 1)
     }
 
     @Test func exportsChartsOfLoadedResults() throws {

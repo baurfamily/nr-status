@@ -20,7 +20,8 @@ struct ExportMenuView: View {
                 Button(format.title) {
                     guard let document else { return }
                     let name = NSDocumentController.shared.currentDocument?.displayName ?? "Queries"
-                    NrqlExport.save(format, document: document, suggestedName: name)
+                    let baseName = (name as NSString).deletingPathExtension
+                    NrqlExport.save(format, document: document, suggestedName: baseName)
                 }
             }
         }

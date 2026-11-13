@@ -136,11 +136,14 @@ enum MarkdownParser {
 
 /// Renders Markdown text.
 struct MarkdownView: View {
-    let text: String
+    let blocks: [MarkdownBlock]
+
+    init(text: String) { blocks = MarkdownParser.blocks(text) }
+    init(blocks: [MarkdownBlock]) { self.blocks = blocks }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            ForEach(Array(MarkdownParser.blocks(text).enumerated()), id: \.offset) { _, block in
+            ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
                 view(for: block)
             }
         }

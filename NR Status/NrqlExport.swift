@@ -231,17 +231,23 @@ enum NrqlExport {
         }
     }
 
+    /// The query as the PDF shows it; the chart settings are already visible in the chart.
+    private static func queryText(for cell: NrqlCell) -> String {
+        ChartFormat.strip(from: cell.editorText, lua: cell.kind == .lua)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private static func codePageView(for cell: NrqlCell) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(cell.query.title).font(.title2.bold())
-            Text(cell.editorText)
+            Text(queryText(for: cell))
                 .font(.system(.body, design: .monospaced))
                 .padding(8)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color.gray.opacity(0.12))
             if let table = tableData(for: cell) {
                 // what's left of the page after the title and the query text
-                let queryLines = cell.editorText.split(separator: "\n", omittingEmptySubsequences: false).count
+                let queryLines = queryText(for: cell).split(separator: "\n", omittingEmptySubsequences: false).count
                 let room = 560 - CGFloat(queryLines) * 16
                 pdfTable(table, maxRows: max(Int(room / pdfRowHeight) - 3, 3))
             } else if cell.query.resultContainer != nil, cell.query.format?.hidesChart != true {

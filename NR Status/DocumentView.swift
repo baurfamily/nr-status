@@ -112,11 +112,11 @@ struct CellView: View {
 
             if isRenderedMarkdown {
                 renderedMarkdown
-            } else {
+            } else if !cell.isCollapsed || cell.kind == .markdown {
                 editor
             }
 
-            if cell.kind != .markdown && !cell.isCollapsed {
+            if cell.kind != .markdown {
                 CellResultView(query: cell.query, configurationShowing: $showsChartSettings)
             }
         }
@@ -204,7 +204,7 @@ struct CellView: View {
 
     private var codeHeader: some View {
         HStack {
-            Button(cell.isCollapsed ? "Expand results" : "Collapse results",
+            Button(cell.isCollapsed ? "Show query" : "Hide query",
                    systemImage: cell.isCollapsed ? "chevron.right" : "chevron.down") {
                 cell.isCollapsed.toggle()
             }

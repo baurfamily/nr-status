@@ -67,6 +67,18 @@ struct CellView: View {
     // the chart settings inspector is hidden until asked for
     @State private var showsChartSettings = false
     @State private var showsSentQuery = false
+    @State private var showsWarnings = false
+
+    private var warnings: [String] {
+        var messages: [String] = []
+        if isStale {
+            messages.append("Out of date: a cell this one reads has run since. Run this cell to refresh it.")
+        }
+        if !pendingTitles.isEmpty {
+            messages.append("Running this cell will also run: \(pendingTitles.joined(separator: ", "))")
+        }
+        return messages
+    }
 
 
     // the editor scrolls itself, so give it room for the lines it has
@@ -151,16 +163,22 @@ struct CellView: View {
             .buttonStyle(.borderless)
             .foregroundStyle(showsChartSettings ? Color.accentColor : Color.primary)
 
-            if isStale {
-                Image(systemName: "arrow.triangle.2.circlepath")
-                    .foregroundStyle(.orange)
-                    .help("Out of date: a cell this one reads has run since. Run it to refresh.")
-            }
-
-            if !pendingTitles.isEmpty {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.yellow)
-                    .help("Running this cell will also run: \(pendingTitles.joined(separator: ", "))")
+            if !warnings.isEmpty {
+                Button("Warnings", systemImage: "exclamationmark.triangle.fill") {
+                    showsWarnings.toggle()
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .foregroundStyle(.yellow)
+                .help(warnings.joined(separator: "\n"))
+                .popover(isPresented: $showsWarnings) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(warnings, id: \.self) { Text($0) }
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(width: 320, alignment: .leading)
+                    .padding()
+                }
             }
 
             Button("Run", systemImage: "play.fill") {

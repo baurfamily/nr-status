@@ -23,8 +23,17 @@ struct NrqlCell: Identifiable {
     // set on a new cell so its editor takes the keyboard once it appears
     var focusOnAppear = false
 
+    // set by `convert`, since the fence isn't visible in the editor to say which kind a cell is
+    private(set) var isScript: Bool
+
     var text: String {
         didSet { query.text = text }
+    }
+
+    /// What the editor shows: the text, minus a script's fence lines.
+    var editorText: String {
+        get { isScript ? NrqlScriptFence.unwrap(text) : text }
+        set { text = isScript ? NrqlScriptFence.wrap(newValue) : newValue }
     }
 
     // a reference type, so running it doesn't mutate the document
@@ -34,6 +43,14 @@ struct NrqlCell: Identifiable {
         self.text = text
         self.focusOnAppear = focusOnAppear
         self.query = NrqlQuery(from: text)
+        self.isScript = query.isScript
+    }
+
+    /// Switches between a query and a script, keeping what's in the editor.
+    mutating func convert() {
+        let shown = editorText
+        isScript.toggle()
+        editorText = shown
     }
 
     // comment-only cells have nothing to run
@@ -102,7 +119,7 @@ struct NRQL_EditorDocument: FileDocument {
 
     /// What the cell menu (and the matching main menu items) can do to a cell.
     enum CellAction: CaseIterable {
-        case addQueryAbove, addQueryBelow, addScriptAbove, addScriptBelow, moveUp, moveDown, delete
+        case addQueryAbove, addQueryBelow, addScriptAbove, addScriptBelow, moveUp, moveDown, convert, delete
     }
 
     func canPerform(_ action: CellAction, on id: NrqlCell.ID) -> Bool {
@@ -123,6 +140,7 @@ struct NRQL_EditorDocument: FileDocument {
         case .addScriptBelow: addCell(after: id, script: true)
         case .moveUp: cells.swapAt(index, index - 1)
         case .moveDown: cells.swapAt(index, index + 1)
+        case .convert: cells[index].convert()
         case .delete: removeCell(id)
         }
     }

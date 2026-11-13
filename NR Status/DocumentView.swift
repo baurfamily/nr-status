@@ -77,7 +77,7 @@ struct CellView: View {
     // keystroke doesn't refresh the editor (which would break its undo coalescing)
     @State private var draft: String?
 
-    private var liveText: String { draft ?? cell.text }
+    private var liveText: String { draft ?? cell.editorText }
 
     private var warnings: [String] {
         var messages: [String] = []
@@ -107,11 +107,11 @@ struct CellView: View {
                 text: Binding(get: { liveText }, set: { draft = $0 }),
                 position: $position,
                 messages: $messages,
-                language: cell.query.isScript ? .none : .nrql(languageService)
+                language: cell.isScript ? .none : .nrql(languageService)
             )
             .onAppear {
                 CompletionKeyRouter.installIfNeeded()
-                languageService.setTextSource { draft ?? cell.text }
+                languageService.setTextSource { draft ?? cell.editorText }
             }
             .environment(\.codeEditorSetActions, CodeEditor.SetActions { languageService.setCompletionAction($0.completions) })
             .environment(\.codeEditorLayoutConfiguration, CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true))
@@ -119,21 +119,21 @@ struct CellView: View {
             .frame(height: editorHeight)
             .background(EditorFocusAnchor(focusRequested: cell.focusOnAppear) { cell.focusOnAppear = false })
             .onAppear {
-                // a new cell starts with the cursor after its template; a script's goes inside the fence
+                // a new cell starts with the cursor after its template
                 if cell.focusOnAppear {
-                    let end = (cell.text as NSString).length - (cell.query.isScript ? 4 : 0)
+                    let end = (cell.editorText as NSString).length
                     position = .init(selections: [NSMakeRange(end, 0)], verticalScrollPosition: 0)
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .onChange(of: position) { onFocus() }
             .task(id: draft) {
-                guard let pending = draft, pending != cell.text else { return }
+                guard let pending = draft, pending != cell.editorText else { return }
                 try? await Task.sleep(for: .milliseconds(300))
-                if !Task.isCancelled { cell.text = pending }
+                if !Task.isCancelled { cell.editorText = pending }
             }
             .onChange(of: cell.text) {
-                if let draft, draft != cell.text { self.draft = nil }
+                if let draft, draft != cell.editorText { self.draft = nil }
                 // undo/redo of the document restores whole cells without running the text observer
                 if cell.query.text != cell.text { cell.query.text = cell.text }
             }
@@ -222,6 +222,8 @@ struct CellView: View {
                     .disabled(!canPerform(.moveUp))
                 Button("Move Down") { onAction(.moveDown) }
                     .disabled(!canPerform(.moveDown))
+                Divider()
+                Button(cell.isScript ? "Convert to Query" : "Convert to Script") { onAction(.convert) }
                 Divider()
                 Button("Delete", role: .destructive) { onAction(.delete) }
             }

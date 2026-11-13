@@ -51,6 +51,8 @@ struct EditorMenuView : View {
             cellButton("Move Cell Up", .moveUp)
             cellButton("Move Cell Down", .moveDown)
             Divider()
+            cellButton(document?.focusedCell?.isScript == true ? "Convert Cell to Query" : "Convert Cell to Script", .convert)
+            Divider()
             cellButton("Delete Cell", .delete)
         }
     }

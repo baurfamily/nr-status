@@ -260,6 +260,32 @@ struct NrqlDependencyTests {
 }
 
 struct NrqlCellActionTests {
+    @Test func scriptCellsHideTheirFence() {
+        let stored = "/*** name: x ***/\n```lua\nlocal a = 1\n\nreturn a\n```"
+        var cell = NrqlCell(text: stored)
+        #expect(cell.isScript)
+        #expect(cell.editorText == "/*** name: x ***/\nlocal a = 1\n\nreturn a")
+        cell.editorText = "/*** name: x ***/\nreturn 2"
+        #expect(cell.text == "/*** name: x ***/\n```lua\nreturn 2\n```")
+        #expect(cell.query.script == "return 2")
+    }
+
+    @Test func emptyScriptRoundTrips() {
+        var cell = NrqlCell(text: NRQL_EditorDocument.scriptTemplate)
+        #expect(cell.editorText == "")
+        cell.editorText = ""
+        #expect(cell.text == NRQL_EditorDocument.scriptTemplate)
+    }
+
+    @Test func convertsBetweenKinds() {
+        var doc = NRQL_EditorDocument(text: "FROM A")
+        let id = doc.cells[0].id
+        doc.perform(.convert, on: id)
+        #expect(doc.cells[0].isScript && doc.cells[0].text == "```lua\nFROM A\n```")
+        doc.perform(.convert, on: id)
+        #expect(!doc.cells[0].isScript && doc.cells[0].text == "FROM A")
+    }
+
     @Test func flagsCellsReadingResultsFromBelow() {
         let doc = NRQL_EditorDocument(text: """
             SELECT 1 FROM A WHERE x = '{{ results.later.v }}'

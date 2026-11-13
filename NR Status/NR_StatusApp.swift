@@ -76,22 +76,10 @@ struct NRQL_EditorApp: App {
                 .focusedSceneValue(\.document, file.$document)
         }
 
-        WindowGroup(id: "summary-view") { SummaryView() }
-        WindowGroup(id: "sample-charts") { ChartSampleView() }
         WindowGroup(id: "nrql-editor") { NrqlEditorWindow() }
         WindowGroup(id: "query-builder") { QueryBuilderView() }
         .commands {
             CommandMenu("Features") {
-                Button(action: {
-                    openWindow(id: "summary-view")
-                }, label: {
-                    Text("Summary View")
-                })
-                Button(action: {
-                    openWindow(id: "sample-charts")
-                }, label: {
-                    Text("Sample Charts")
-                })
                 Button(action: {
                     openWindow(id: "nrql-editor")
                 }, label: {

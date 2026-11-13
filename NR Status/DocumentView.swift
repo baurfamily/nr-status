@@ -68,6 +68,11 @@ struct CellView: View {
     @State private var showsChartSettings = false
     @State private var showsSentQuery = false
     @State private var showsWarnings = false
+    // what the editor shows while typing; copied into the document after a pause so each
+    // keystroke doesn't refresh the editor (which would break its undo coalescing)
+    @State private var draft: String?
+
+    private var liveText: String { draft ?? cell.text }
 
     private var warnings: [String] {
         var messages: [String] = []
@@ -83,7 +88,7 @@ struct CellView: View {
 
     // the editor scrolls itself, so give it room for the lines it has
     private var editorHeight: CGFloat {
-        CGFloat(max(cell.text.split(separator: "\n", omittingEmptySubsequences: false).count, 2)) * 18 + 16
+        CGFloat(max(liveText.split(separator: "\n", omittingEmptySubsequences: false).count, 2)) * 18 + 16
     }
 
     var body: some View {
@@ -91,14 +96,14 @@ struct CellView: View {
             header
 
             CodeEditor(
-                text: $cell.text,
+                text: Binding(get: { liveText }, set: { draft = $0 }),
                 position: $position,
                 messages: $messages,
                 language: cell.query.isScript ? .none : .nrql(languageService)
             )
             .onAppear {
                 CompletionKeyRouter.installIfNeeded()
-                languageService.setTextSource { cell.text }
+                languageService.setTextSource { draft ?? cell.text }
             }
             .environment(\.codeEditorSetActions, CodeEditor.SetActions { languageService.setCompletionAction($0.completions) })
             .environment(\.codeEditorLayoutConfiguration, CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true))
@@ -114,6 +119,16 @@ struct CellView: View {
             }
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .onChange(of: position) { onFocus() }
+            .task(id: draft) {
+                guard let pending = draft, pending != cell.text else { return }
+                try? await Task.sleep(for: .milliseconds(300))
+                if !Task.isCancelled { cell.text = pending }
+            }
+            .onChange(of: cell.text) {
+                if let draft, draft != cell.text { self.draft = nil }
+                // undo/redo of the document restores whole cells without running the text observer
+                if cell.query.text != cell.text { cell.query.text = cell.text }
+            }
 
             if !cell.isCollapsed {
                 CellResultView(query: cell.query, configurationShowing: $showsChartSettings)

@@ -15,6 +15,7 @@ struct DocumentView: View {
 
     var body: some View {
         let stale = document.staleCellIds
+        let readingBelow = document.readingBelowCellIds
         return ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
                 ForEach($document.cells) { $cell in
@@ -22,6 +23,7 @@ struct DocumentView: View {
                         cell: $cell,
                         isFocused: document.focusedCellId == cell.id,
                         isStale: stale.contains(cell.id),
+                        readsFromBelow: readingBelow.contains(cell.id),
                         onFocus: { document.focusedCellId = cell.id },
                         onRun: { document.runCell(cell.id) },
                         pendingTitles: document.pendingDependencies(for: cell.id).map(\.query.title),
@@ -57,6 +59,7 @@ struct CellView: View {
     @Binding var cell: NrqlCell
     let isFocused: Bool
     let isStale: Bool
+    let readsFromBelow: Bool
     let onFocus: () -> Void
     let onRun: () -> Void
     let pendingTitles: [String]
@@ -83,6 +86,9 @@ struct CellView: View {
         }
         if !pendingTitles.isEmpty {
             messages.append("Running this cell will also run: \(pendingTitles.joined(separator: ", "))")
+        }
+        if readsFromBelow {
+            messages.append("Reads results from a cell below; consider moving it.")
         }
         return messages
     }

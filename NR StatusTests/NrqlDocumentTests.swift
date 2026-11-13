@@ -260,6 +260,16 @@ struct NrqlDependencyTests {
 }
 
 struct NrqlCellActionTests {
+    @Test func flagsCellsReadingResultsFromBelow() {
+        let doc = NRQL_EditorDocument(text: """
+            SELECT 1 FROM A WHERE x = '{{ results.later.v }}'
+
+            /*** name: later ***/
+            SELECT 2 FROM B
+            """)
+        #expect(doc.readingBelowCellIds == [doc.cells[0].id])
+    }
+
     private func titles(_ doc: NRQL_EditorDocument) -> [String] { doc.cells.map(\.text) }
 
     @Test func addsAboveAndBelow() {

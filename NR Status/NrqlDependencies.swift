@@ -32,6 +32,18 @@ enum NrqlDependencies {
         }
     }
 
+    /// Cells that read the result of a cell placed after them.
+    static func cellsReadingBelow(in cells: [NrqlCell]) -> Set<NrqlCell.ID> {
+        var result = Set<NrqlCell.ID>()
+        for (index, cell) in cells.enumerated() {
+            let below = Set(cells[(index + 1)...].map(\.id))
+            if dependencies(of: cell, in: cells).contains(where: { below.contains($0.id) }) {
+                result.insert(cell.id)
+            }
+        }
+        return result
+    }
+
     /// Cells whose result is out of date: a cell they read has produced a newer
     /// result since they ran, or is itself out of date.
     static func staleCells(in cells: [NrqlCell]) -> Set<NrqlCell.ID> {

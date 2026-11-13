@@ -18,7 +18,9 @@ struct ExportMenuView: View {
         Menu("Export") {
             ForEach(NrqlExport.Format.allCases, id: \.self) { format in
                 Button(format.title) {
-                    if let document { NrqlExport.save(format, document: document) }
+                    guard let document else { return }
+                    let name = NSDocumentController.shared.currentDocument?.displayName ?? "Queries"
+                    NrqlExport.save(format, document: document, suggestedName: name)
                 }
             }
         }

@@ -34,6 +34,18 @@ struct DocumentView: View {
                 configurationError = error.localizedDescription
             }
         }
+        .onChange(of: document.cells.map(\.id)) { previous, current in
+            if let id = NerdgraphDocumentation.shared.source?.cursor.cellID,
+               previous.contains(id), !current.contains(id) {
+                NerdgraphDocumentation.shared.clear(cellID: id)
+            }
+        }
+        .onDisappear {
+            if let id = NerdgraphDocumentation.shared.source?.cursor.cellID,
+               document.cells.contains(where: { $0.id == id }) {
+                NerdgraphDocumentation.shared.clear(cellID: id)
+            }
+        }
         .alert("Document Configuration", isPresented: Binding(
             get: { configurationError != nil },
             set: { if !$0 { configurationError = nil } }
@@ -59,7 +71,11 @@ struct DocumentView: View {
                         isStale: stale.contains(cell.id),
                         readsFromBelow: readingBelow.contains(cell.id),
                         onFocus: { document.focusedCellId = cell.id },
-                        completionScope: { document.completionScope(excluding: cell.id) },
+                        completionScope: {
+                            var scope = document.completionScope(excluding: cell.id)
+                            scope.revision += String(describing: profileSettings)
+                            return scope
+                        },
                         connectionSource: { document.connection },
                         onRun: { document.runCell(cell.id) },
                         pendingTitles: document.pendingDependencies(for: cell.id, stale: stale).map(\.query.title),
@@ -76,6 +92,9 @@ struct DocumentView: View {
                     }
                     Button("Add Script", systemImage: "curlybraces") {
                         document.addCell(after: document.cells.last?.id, kind: .lua)
+                    }
+                    Button("Add Nerdgraph", systemImage: "point.3.connected.trianglepath.dotted") {
+                        document.addCell(after: document.cells.last?.id, kind: .nerdgraph)
                     }
                 }
                 .buttonStyle(.borderless)
@@ -220,6 +239,7 @@ struct DocumentView: View {
 
 struct CellView: View {
     @Environment(\.colorScheme) private var colorScheme: ColorScheme
+    @Environment(\.openWindow) private var openWindow
 
     @Binding var cell: NrqlCell
     let isFocused: Bool
@@ -238,6 +258,10 @@ struct CellView: View {
     @State private var languageService = NrqlLanguageService()
     @State private var luaService = NrqlLanguageService(language: .lua)
     @State private var configService = NrqlLanguageService(language: .config)
+    @State private var graphqlService = NrqlLanguageService(language: .graphql)
+    @State private var variablesService = NrqlLanguageService(language: .variables)
+    @State private var variablesPosition: CodeEditor.Position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
+    @State private var graphqlCompletionError: String?
     // the chart settings inspector is hidden until asked for
     @State private var showsChartSettings = false
     @State private var showsSentQuery = false
@@ -245,6 +269,8 @@ struct CellView: View {
     // what the editor shows while typing; copied into the document after a pause so each
     // keystroke doesn't refresh the editor (which would break its undo coalescing)
     @State private var draft: String?
+    @State private var markdownText: String?
+    @State private var markdownError: String?
 
     private var liveText: String { draft ?? cell.editorText }
 
@@ -274,7 +300,21 @@ struct CellView: View {
         VStack(alignment: .leading, spacing: 8) {
             header
 
-            if isRenderedMarkdown {
+            if cell.kind == .nerdgraph {
+                HStack(alignment: .top, spacing: 16) {
+                    if !cell.isCollapsed {
+                        nerdgraphEditors
+                            .frame(maxWidth: .infinity)
+                    }
+                    if cell.query.showsResultPane {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("JSON Results").font(.caption).foregroundStyle(.secondary)
+                            CellResultView(query: cell.query, configurationShowing: $showsChartSettings)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+            } else if isRenderedMarkdown {
                 renderedMarkdown
             } else if !cell.isCollapsed || cell.kind == .markdown {
                 editor
@@ -285,6 +325,15 @@ struct CellView: View {
             }
         }
         .padding(8)
+        .onChange(of: cell.kind) {
+            draft = nil
+            if cell.kind != .nerdgraph { NerdgraphDocumentation.shared.clear(cellID: cell.id) }
+        }
+        .onChange(of: isFocused) { if isFocused { followGraphqlDocumentation() } }
+        .onChange(of: liveText) { if isFocused { followGraphqlDocumentation() } }
+        .onChange(of: String(describing: connectionSource())) {
+            if NerdgraphDocumentation.shared.source?.cursor.cellID == cell.id { followGraphqlDocumentation() }
+        }
         .overlay(
             RoundedRectangle(cornerRadius: 8)
                 .stroke(
@@ -294,12 +343,141 @@ struct CellView: View {
         )
     }
 
+    private var nerdgraphEditors: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("GraphQL").font(.caption).foregroundStyle(.secondary)
+            nerdgraphEditor(variables: false)
+            Text("Variables (JSON; {{ Lua expression }})").font(.caption).foregroundStyle(.secondary)
+            nerdgraphEditor(variables: true)
+            if let graphqlCompletionError {
+                Label("Completion unavailable: \(graphqlCompletionError)", systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+        }
+        .task(id: draft) {
+            guard let pending = draft, pending != cell.editorText else { return }
+            try? await Task.sleep(for: .milliseconds(300))
+            if !Task.isCancelled { cell.editorText = pending }
+        }
+        .onDisappear {
+            if let pending = draft, pending != cell.editorText { cell.editorText = pending }
+            draft = nil
+        }
+        .onChange(of: cell.text) {
+            if let draft, draft != cell.editorText { self.draft = nil }
+            if cell.query.text != cell.text { cell.query.text = cell.text }
+        }
+    }
+
+    private func nerdgraphEditor(variables: Bool) -> some View {
+        let source = NerdgraphCellSource(editorText: liveText)
+        let text = variables ? source.variables : source.query
+        let service = variables ? variablesService : graphqlService
+        return CodeEditor(
+            text: Binding(get: {
+                let source = NerdgraphCellSource(editorText: liveText)
+                return variables ? source.variables : source.query
+            }, set: { value in
+                var source = NerdgraphCellSource(editorText: liveText)
+                if variables {
+                    source.variables = value
+                    source.hasVariables = true
+                } else {
+                    source.query = value
+                }
+                draft = source.editorText
+                cell.query.text = source.storedText
+            }),
+            position: variables ? $variablesPosition : $position,
+            messages: $messages,
+            language: variables ? .graphqlVariables(service) : .graphql(service)
+        )
+        .onAppear {
+            CompletionKeyRouter.installIfNeeded()
+            service.setTextSource {
+                let source = NerdgraphCellSource(editorText: draft ?? cell.editorText)
+                return variables ? source.variables : source.query
+            }
+            service.setScopeSource(completionScope)
+            service.setConnectionSource(connectionSource)
+            if !variables { service.setCompletionErrorHandler { graphqlCompletionError = $0 } }
+            if isFocused { followGraphqlDocumentation() }
+        }
+        .environment(\.codeEditorSetActions, CodeEditor.SetActions { service.setCompletionAction($0.completions) })
+        .environment(\.codeEditorLayoutConfiguration, CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true))
+        .environment(\.codeEditorTheme, colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight)
+        .frame(height: CGFloat(max(text.components(separatedBy: "\n").count, 3)) * 18 + 16)
+        .background(EditorFocusAnchor(focusRequested: !variables && cell.focusOnAppear) { cell.focusOnAppear = false })
+        .onChange(of: variables ? variablesPosition : position) {
+            onFocus()
+            followGraphqlDocumentation()
+        }
+        .simultaneousGesture(TapGesture().onEnded {
+            onFocus()
+            followGraphqlDocumentation()
+        })
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+
+    private func insertGraphqlField(_ name: String) {
+        var source = NerdgraphCellSource(editorText: liveText)
+        let text = source.query as NSString
+        let selection = position.selections.first ?? NSRange(location: text.length, length: 0)
+        guard selection.location != NSNotFound, NSMaxRange(selection) <= text.length else {
+            graphqlCompletionError = "Place the cursor in the GraphQL editor before inserting a field."
+            return
+        }
+        source.query = text.replacingCharacters(in: selection, with: name)
+        draft = source.editorText
+        cell.query.text = source.storedText
+        position = .init(selections: [NSRange(location: selection.location + name.utf16.count, length: 0)], verticalScrollPosition: position.verticalScrollPosition)
+        cell.focusOnAppear = true
+        onFocus()
+    }
+
+    private func followGraphqlDocumentation() {
+        guard cell.kind == .nerdgraph else { return }
+        let source = NerdgraphCellSource(editorText: liveText)
+        NerdgraphDocumentation.shared.source = .init(
+            cursor: .init(cellID: cell.id, text: source.query, location: position.selections.first?.location ?? 0),
+            loadID: cell.id.uuidString + source.metadata + String(describing: connectionSource()),
+            load: { try await graphqlService.graphqlSchema() },
+            onInsert: insertGraphqlField
+        )
+    }
+
     private var renderedMarkdown: some View {
-        Group {
-            if cell.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        let scope = completionScope()
+        let text = liveText
+        let interpolates = NrqlInterpolation.containsPlaceholders(text)
+        return Group {
+            if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Text("Empty Markdown cell. Click to edit.").foregroundStyle(.secondary)
+            } else if let markdownError, interpolates {
+                Text(markdownError).foregroundStyle(.red).textSelection(.enabled)
+            } else if !interpolates {
+                MarkdownView(text: text)
+            } else if let markdownText {
+                MarkdownView(text: markdownText)
             } else {
-                MarkdownView(text: cell.text)
+                ProgressView("Rendering Markdown...")
+            }
+        }
+        .task(id: text + scope.revision + String(describing: connectionSource())) {
+            markdownText = nil
+            markdownError = nil
+            guard interpolates else { return }
+            do {
+                let config = try connectionSource().get().effectiveConfiguration(profiles: NerdgraphProfiles.shared.load())
+                let expanded = try await Task.detached {
+                    try NrqlInterpolation.expand(text, results: scope.results, config: config)
+                }.value
+                guard !Task.isCancelled else { return }
+                markdownText = expanded
+            } catch {
+                guard !Task.isCancelled else { return }
+                markdownError = error.localizedDescription
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -404,13 +582,13 @@ struct CellView: View {
                 .font(.headline)
             Spacer()
 
-            if let sent = cell.query.executedNrql {
-                Button("Query Sent", systemImage: "text.alignleft") {
+            if let sent = cell.kind == .nerdgraph ? cell.query.executedVariables : cell.query.executedNrql {
+                Button(cell.kind == .nerdgraph ? "Variables Sent" : "Query Sent", systemImage: "text.alignleft") {
                     showsSentQuery.toggle()
                 }
                 .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)
-                .help("Show the query that was sent")
+                .help(cell.kind == .nerdgraph ? "Show the interpolated variables that were sent" : "Show the query that was sent")
                 .popover(isPresented: $showsSentQuery) {
                     Text(sent)
                         .font(.system(.body, design: .monospaced))
@@ -421,12 +599,25 @@ struct CellView: View {
                 }
             }
 
-            Button("Chart Settings", systemImage: "gearshape") {
-                showsChartSettings.toggle()
+            if cell.kind != .nerdgraph {
+                if cell.query.format?.showsJSON != true {
+                    Button("Chart Settings", systemImage: "gearshape") {
+                        showsChartSettings.toggle()
+                    }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(showsChartSettings ? Color.accentColor : Color.primary)
+                }
+            } else {
+                Button("Nerdgraph Documentation", systemImage: "questionmark.circle") {
+                    onFocus()
+                    followGraphqlDocumentation()
+                    openWindow(id: "graphql-documentation")
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .help("Open Nerdgraph documentation for the current query position")
             }
-            .labelStyle(.iconOnly)
-            .buttonStyle(.borderless)
-            .foregroundStyle(showsChartSettings ? Color.accentColor : Color.primary)
 
             if !warnings.isEmpty {
                 Button("Warnings", systemImage: "exclamationmark.triangle.fill") {
@@ -500,6 +691,19 @@ struct CellResultView: View {
     }
 
     @ViewBuilder private var content: some View {
+        if let json = query.displayedJSON {
+            switch json {
+            case .success(let value):
+                JSONResultView(value: value)
+            case .failure(let error):
+                Text(error.localizedDescription).foregroundStyle(.red).textSelection(.enabled)
+            }
+        } else {
+            resultContent
+        }
+    }
+
+    @ViewBuilder private var resultContent: some View {
         switch query.state {
         case .idle:
             EmptyView()
@@ -516,6 +720,12 @@ struct CellResultView: View {
                     // rebuild when the format comment changes, so it applies as you type
                     .id(query.format)
                     .frame(maxWidth: .infinity, minHeight: 300)
+            }
+        case .jsonLoaded(let value):
+            ForEach(Array(value.graphQLErrors.enumerated()), id: \.offset) { _, message in
+                Label(message, systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.red)
+                    .textSelection(.enabled)
             }
         case .failed(let message):
             HStack(alignment: .top, spacing: 8) {

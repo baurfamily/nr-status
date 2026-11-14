@@ -77,6 +77,10 @@ struct NRQL_EditorApp: App {
         }
 
         WindowGroup(id: "nrql-editor") { NrqlEditorWindow() }
+        Window("Nerdgraph Documentation", id: "graphql-documentation") {
+            NerdgraphSchemaView(documentation: .shared)
+        }
+        .defaultSize(width: 800, height: 600)
         WindowGroup(id: "query-builder") { QueryBuilderView() }
         .commands {
             CommandMenu("Features") {

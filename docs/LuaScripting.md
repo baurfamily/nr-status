@@ -32,22 +32,28 @@ Evaluated before the query is sent; the value is converted to a string (tables o
 **2. Script cells: a ` ```lua ` fenced block**
 
 ```lua
--- name: top_apps
+--[[ var: top_apps ]]
 local r = query("FROM Transaction SELECT count(*) FACET appName LIMIT 5")
 emit(r)
 ```
 
 The chart format goes in a Lua comment that opens the script (`--[[ title: …  chart: bar ]]`); NRQL cells keep `/*** ***/`. Fences are stored in the file but hidden in the editor; blank lines inside a script are fine. Script cells render as code plus their emitted result (or `chart: none` to hide it). Text outside any fence is a Markdown cell, edited as plain text and rendered when focus moves to another cell.
 
-### Cell names
+### Result variables
 
-A leading `// name: top_apps` comment (NRQL cells) or `-- name:` (Lua cells) names a cell. `results` is a table keyed by both name and 1-based cell index: `results.top_apps`, `results[1]`.
+Use `var: top_apps` inside an NRQL `/*** ... ***/` metadata block, a leading
+Lua `--[[ ... ]]` block, or a leading GraphQL `# var: top_apps` comment to bind
+the cell's result. `title` controls the displayed heading independently.
+`results` is a table keyed by both the configured variable and 1-based result
+index: `results.top_apps`, `results[1]`. The old `name` config key is not recognized.
 
 ## Lua API (small and explicit)
 
 | Function | Purpose |
 |---|---|
 | `results.<name>` / `results[i]` | Read-only result of an earlier cell. |
+| `config.accounts` / `config.api_key` | Snapshot of the effective document account list (1-based) and saved API key name, including inherited defaults. Available in scripts and interpolation; never includes the secret key. |
+| `config.appName` | Data declared by `var appName = "Foo"` in the document config. Declarations are evaluated in order and are not bare globals. |
 | `query(nrql)` | Run an NRQL string, return a result table. Async on the Swift side; Lua sees a blocking call (coroutine-based). |
 | `emit(result)` | Make this cell's result the given table; it flows through the chart pipeline. |
 | `names(result)`, `column(result, field)`, `values(...)` | Helpers for building `IN (...)` lists etc. |

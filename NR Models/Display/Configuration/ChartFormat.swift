@@ -21,13 +21,15 @@ import Foundation
 /// With no `attributes` key, the chart keeps its defaults. When it is present,
 /// every attribute that applies to the chart type is on if listed and off if not.
 ///
-/// `name` lets later cells refer to this query's result as `results.<name>`, and
+/// `var` lets later cells refer to this query's result as `results.<name>`, and
 /// `chart: none` hides the chart, for queries that only feed other cells.
+/// `chart: json` displays the result data as JSON instead of a chart.
 struct ChartFormat: Equatable, Hashable {
     var title: String?
     var name: String?
     var type: ChartType?
     var hidesChart = false
+    var showsJSON = false
     var attributes: Set<String>?
 
     /// The attribute names each chart type understands; `apply` is the source of truth for what they do.
@@ -62,8 +64,12 @@ struct ChartFormat: Equatable, Hashable {
               let bodyRange = Range(match.range(at: 1), in: text)
         else { return nil }
 
+        return parseMetadata(String(text[bodyRange]))
+    }
+
+    static func parseMetadata(_ body: String) -> ChartFormat {
         var format = ChartFormat()
-        for line in text[bodyRange].split(whereSeparator: \.isNewline) {
+        for line in body.split(whereSeparator: \.isNewline) {
             // only the first colon separates key from value, so titles can contain colons
             guard let colon = line.firstIndex(of: ":") else { continue }
             let key = line[..<colon].trimmingCharacters(in: .whitespaces).lowercased()
@@ -73,10 +79,11 @@ struct ChartFormat: Equatable, Hashable {
             switch key {
             case "title":
                 format.title = rawValue.isEmpty ? nil : rawValue
-            case "name":
+            case "var":
                 format.name = rawValue.isEmpty ? nil : rawValue
             case "chart":
                 format.hidesChart = value == "none"
+                format.showsJSON = value == "json"
                 format.type = ChartType(rawValue: value)
             case "attributes":
                 let names = value.split(whereSeparator: { $0 == "," || $0.isWhitespace }).map(String.init)

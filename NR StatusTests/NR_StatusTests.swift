@@ -29,6 +29,177 @@ final class StubURLProtocol: URLProtocol {
 
 @Suite(.serialized)
 struct NerdgraphClientTests {
+    @MainActor @Test func multipleResultBindingsExportValuesAndReportMissingPaths() async throws {
+        let suite = "NR Status extracted bindings test \(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        let profiles = NerdgraphProfiles(
+            defaults: defaults, legacyStore: KeychainStore(label: suite + " legacy", accessGroup: nil),
+            labelPrefix: suite, accessGroup: nil
+        )
+        let profile = NerdgraphProfile(name: "GraphQL")
+        try profiles.save(profile, apiKey: "test-key", makeDefault: true)
+        defer {
+            profiles.keychain(for: profile).remove()
+            defaults.removePersistentDomain(forName: suite)
+        }
+        let response = #"{"data":{"actor":{"entitySearch":{"results":{"entities":[{"name":"Foo","tags":[{"key":"a"},{"key":"b"}]}]}}}}}"#
+        StubURLProtocol.handler = { _ in (200, Data(response.utf8)) }
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [StubURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer { session.invalidateAndCancel() }
+        let document = NRQL_EditorDocument(text: """
+            ```graphql
+            # var: response
+            # var: entity = data.actor.entitySearch.results.entities[1]
+            # var: tagCount = #data.actor.entitySearch.results.entities[1].tags
+            { actor { entitySearch(query: "name = 'Foo'") { results { entities { name tags { key } } } } } }
+            ```
+
+            ```lua
+            return { rows = { { name = results.entity.name, count = results.tagCount } } }
+            ```
+            """)
+        let query = document.cells[0].query
+        await query.getData(profiles: profiles, session: session)
+        #expect(query.errorMessage == nil)
+        #expect(document.priorResults.map(\.name) == ["response", "entity", "tagCount"])
+        #expect(try LuaRuntime.run(
+            "return response == nil and entity == nil and tagCount == nil", results: document.priorResults
+        ).value.boolValue == true)
+        await document.cells[1].query.getData(results: document.priorResults, profiles: profiles)
+        #expect(document.cells[1].query.resultContainer?.data.first?.numberFields["count"] == 2)
+        #expect(document.cells[1].query.resultContainer?.data.first?.stringFields["name"] == "Foo")
+        let original = query.text
+        query.text = query.text.replacingOccurrences(of: "tagCount = #data.actor.entitySearch.results.entities[1].tags",
+                                                     with: "tagCount = 7")
+        #expect(document.staleCellIds(profiles: try profiles.load()) == Set(document.cells.map(\.id)))
+        query.text = original
+        query.text = query.text.replacingOccurrences(of: "tagCount =", with: "renamedCount =")
+        #expect(NrqlDependencies.dependencies(of: document.cells[1], in: document.cells).map(\.id) == [document.cells[0].id])
+        #expect(document.staleCellIds(profiles: try profiles.load()) == Set(document.cells.map(\.id)))
+        query.text = original
+        query.text = query.text.replacingOccurrences(of: "entity = data.actor.entitySearch.results.entities[1]",
+                                                     with: "entity = data.actor.entitySearch.results.entities[9]")
+        await query.getData(profiles: profiles, session: session)
+        #expect(query.errorMessage?.contains("Nerdgraph variable 'entity'") == true)
+        #expect(query.namedResults.isEmpty)
+        query.clearResults()
+        #expect(query.loadedBindings == nil)
+    }
+
+    @MainActor @Test func graphqlConfigUsesDocumentAccountsRatherThanCellOverrides() async throws {
+        let suite = "NR Status GraphQL config test \(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        let profiles = NerdgraphProfiles(
+            defaults: defaults, legacyStore: KeychainStore(label: suite + " legacy", accessGroup: nil),
+            labelPrefix: suite, accessGroup: nil
+        )
+        let profile = NerdgraphProfile(name: "GraphQL", preferredAccountIds: [12, 34])
+        try profiles.save(profile, apiKey: "test-key", makeDefault: true)
+        defer {
+            profiles.keychain(for: profile).remove()
+            defaults.removePersistentDomain(forName: suite)
+        }
+        StubURLProtocol.handler = { _ in (200, Data(#"{"data":{}}"#.utf8)) }
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [StubURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer { session.invalidateAndCancel() }
+        let query = NrqlQuery(from: """
+            ```graphql
+            # accounts: 99
+            query($id: Int!) { actor { account(id: $id) { id } } }
+            ```
+            ```variables
+            {"id": {{ config.accounts[1] }}}
+            ```
+            """)
+        await query.getData(defaults: NrqlConnection(accountIds: [42, 17]), profiles: profiles, session: session)
+        #expect(query.errorMessage == nil)
+        let sent = try #require(query.executedVariables)
+        #expect(try JSONDecoder().decode(JSONValue.self, from: Data(sent.utf8)) == .object(["id": .number(42)]))
+        #expect(query.loadedDocumentConfig == NrqlConnection(apiKeyName: "GraphQL", accountIds: [42, 17]))
+        #expect(query.loadedConnection?.accountIds.isEmpty == true)
+    }
+
+    @MainActor @Test func executesGraphqlWithNamedKeyWithoutAccountsAndPreservesPartialErrors() async throws {
+        let suite = "NR Status Nerdgraph test \(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        let profiles = NerdgraphProfiles(
+            defaults: defaults, legacyStore: KeychainStore(label: suite + " legacy", accessGroup: nil),
+            labelPrefix: suite, accessGroup: nil
+        )
+        let profile = NerdgraphProfile(name: "GraphQL", host: "\(UUID().uuidString).example.com")
+        try profiles.save(profile, apiKey: "test-key", makeDefault: true)
+        defer {
+            profiles.keychain(for: profile).remove()
+            defaults.removePersistentDomain(forName: suite)
+        }
+        nonisolated(unsafe) var captured: URLRequest?
+        let response = #"{"data":{"customField":{"id":42}},"errors":[{"message":"partial error","path":["other"]}],"extensions":{"trace":"ok"}}"#
+        StubURLProtocol.handler = {
+            captured = $0
+            return (200, Data(response.utf8))
+        }
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [StubURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer { session.invalidateAndCancel() }
+        let query = NrqlQuery(from: """
+            ```graphql
+            # api_key: GraphQL
+            # var: custom
+            query($id: Int!) { customField(id: $id, text: "{{ literal }}") { id } }
+            ```
+            ```variables
+            {"id": {{ 6 * 7 }}}
+            ```
+            """)
+        await query.getData(defaults: NrqlConnection(apiKeyName: "Unavailable"), profiles: profiles, session: session)
+        #expect(query.errorMessage == nil)
+        #expect(query.jsonResult?["data"]?["customField"]?["id"] == .number(42))
+        #expect(query.jsonResult?.graphQLErrors == ["partial error"])
+        #expect(query.jsonResult?["extensions"]?["trace"] == .string("ok"))
+        #expect(query.executedNrql?.contains("{{ literal }}") == true)
+        #expect(query.executedNrql?.hasPrefix("# api_key: GraphQL\n# var: custom\n") == true)
+        #expect(query.loadedConnection?.accountIds.isEmpty == true)
+        let request = try #require(captured)
+        #expect(request.value(forHTTPHeaderField: "api-key") == "test-key")
+        #expect(request.url?.host == profile.host)
+        let body: Data
+        if let data = request.httpBody { body = data }
+        else {
+            let stream = try #require(request.httpBodyStream)
+            stream.open()
+            defer { stream.close() }
+            var data = Data()
+            var buffer = [UInt8](repeating: 0, count: 1024)
+            while stream.hasBytesAvailable {
+                let count = stream.read(&buffer, maxLength: buffer.count)
+                guard count > 0 else { break }
+                data.append(contentsOf: buffer.prefix(count))
+            }
+            body = data
+        }
+        let payload = try JSONDecoder().decode(JSONValue.self, from: body)
+        #expect(payload["variables"] == .object(["id": .number(42)]))
+        #expect(payload["query"] == .string(try #require(query.executedNrql)))
+        let sentVariables = try #require(query.executedVariables)
+        #expect(try JSONDecoder().decode(JSONValue.self, from: Data(sentVariables.utf8)) == payload["variables"])
+        #expect(!sentVariables.contains("{{"))
+        query.text = query.text.replacingOccurrences(of: "6 * 7", with: "results.missing.id")
+        #expect(query.executedVariables == sentVariables)
+        await query.getData(profiles: profiles, session: session)
+        #expect(query.errorMessage != nil)
+        #expect(query.executedVariables == nil)
+        query.text = query.text.replacingOccurrences(of: "results.missing.id", with: "6 * 7")
+        await query.getData(profiles: profiles, session: session)
+        #expect(query.executedVariables == sentVariables)
+        query.clearResults()
+        #expect(query.executedVariables == nil)
+    }
+
     private func makeClient() -> NerdgraphClient {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [StubURLProtocol.self]
@@ -132,6 +303,35 @@ struct NerdgraphClientTests {
         #expect(try await metadata.eventTypes(config: changed) == ["Event4"])
         #expect(try await metadata.eventTypes(config: original) == ["Event1"])
         #expect(requestCount == 4)
+    }
+
+    @Test func schemaCacheUsesEffectiveKeyAndHostAndReportsIntrospectionErrors() async throws {
+        nonisolated(unsafe) var requestCount = 0
+        StubURLProtocol.handler = { _ in
+            requestCount += 1
+            return (200, Data(#"{"data":{"__schema":{"queryType":{"name":"Query"},"types":[]}}}"#.utf8))
+        }
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [StubURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer { session.invalidateAndCancel() }
+        let store = NerdgraphSchemaStore(session: session)
+        let config = NerdgraphConfig(host: "first.example.com", apiKey: "first-key", accountIds: "")
+        #expect(try await store.schema(config: config).queryType.name == "Query")
+        _ = try await store.schema(config: config)
+        #expect(requestCount == 1)
+        var changed = config
+        changed.apiKey = "second-key"
+        _ = try await store.schema(config: changed)
+        changed.host = "second.example.com"
+        _ = try await store.schema(config: changed)
+        #expect(requestCount == 3)
+        StubURLProtocol.handler = { _ in
+            (200, Data(#"{"errors":[{"message":"Introspection unavailable"}]}"#.utf8))
+        }
+        await #expect(throws: NerdgraphClient.ClientError.self) {
+            _ = try await store.schema(config: config)
+        }
     }
 
     @Test func throwsOnGraphQLErrorWithoutData() async {

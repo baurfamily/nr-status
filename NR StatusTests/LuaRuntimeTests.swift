@@ -24,6 +24,51 @@ struct LuaRuntimeTests {
         #expect(outcome.output == ["a\t1"])
     }
 
+    @Test func configProvidesOrderedAccountsAndNonSecretKeyName() throws {
+        let config = NrqlConnection(apiKeyName: "Production", accountIds: [42, 17])
+        let outcome = try LuaRuntime.run(
+            "return { first = config.accounts[1], count = #config.accounts, key = config.api_key }", config: config
+        )
+        #expect(outcome.value.tableValue?["first"]?.intValue == 42)
+        #expect(outcome.value.tableValue?["count"]?.intValue == 2)
+        #expect(outcome.value.tableValue?["key"]?.stringValue == "Production")
+        #expect(try LuaRuntime.run("return #config.accounts").value.intValue == 0)
+        #expect(try LuaRuntime.run("return config.api_key == nil").value.boolValue == true)
+        _ = try LuaRuntime.run("config.accounts[1] = 999", config: config)
+        #expect(try LuaRuntime.run("return config.accounts[1]", config: config).value.intValue == 42)
+    }
+
+    @Test func documentVariablesAreConfigFieldsOnly() throws {
+        let config = try NrqlConnection.parseDocumentConfig("""
+            /***
+            var appName = "Foo"
+            var: title = config.appName .. " report"
+            var filter = { enabled = true, ids = {42, 17} }
+            ***/
+            """)
+        let value = try LuaRuntime.run(
+            "return { name = config.appName, title = config.title, id = config.filter.ids[1], enabled = config.filter.enabled }",
+            config: config
+        ).value
+        #expect(value.tableValue?["name"]?.stringValue == "Foo")
+        #expect(value.tableValue?["title"]?.stringValue == "Foo report")
+        #expect(value.tableValue?["id"]?.intValue == 42)
+        #expect(value.tableValue?["enabled"]?.boolValue == true)
+        #expect(try LuaRuntime.run("return appName == nil and filter == nil", config: config).value.boolValue == true)
+        #expect(throws: (any Error).self) {
+            try LuaRuntime.run("return config.appName", config: NrqlConnection(variables: [
+                .init(name: "appName", expression: "missing.value")
+            ]))
+        }
+    }
+
+    @Test(arguments: ["var:", "var accounts = {}", "var api_key = {}", "var bad-name = 1", "var appName =", "var appName = 1\nvar appName = 2"])
+    func rejectsInvalidDocumentDeclarations(_ declaration: String) {
+        #expect(throws: NrqlConnection.ConfigurationError.self) {
+            try NrqlConnection.parseDocumentConfig("/***\n\(declaration)\n***/")
+        }
+    }
+
     @Test func sandboxRemovesIOAndLoad() throws {
         #expect(try LuaRuntime.run("return io == nil").value.boolValue == true)
         #expect(try LuaRuntime.run("return load == nil").value.boolValue == true)

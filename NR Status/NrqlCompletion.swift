@@ -110,7 +110,7 @@ enum NrqlCompletion {
         return CharacterSet.alphanumerics.contains(scalar) || char == 0x5F || char == 0x2E || (allowingDash && char == 0x2D)
     }
 
-    static func analyse(text: String, location: Int, configuration: Bool = false) -> Analysis {
+    static func analyse(text: String, location: Int, configuration: Bool = false, graphql: Bool = false) -> Analysis {
         let ns = text as NSString
         let cursor = min(max(location, 0), ns.length)
         let upToCursor = ns.substring(to: cursor)
@@ -120,7 +120,14 @@ enum NrqlCompletion {
         let close = upToCursor.range(of: "*/", options: .backwards)
         var blockStart: String.Index?
         if let open, close == nil || close!.lowerBound < open.lowerBound { blockStart = open.lowerBound }
-        let isFormatBlock = blockStart.map { upToCursor[$0...].hasPrefix("/***") } ?? false
+        let lines = upToCursor.components(separatedBy: "\n")
+        let isGraphQLMetadata = graphql
+            && lines.dropLast().allSatisfy {
+                let trimmed = $0.trimmingCharacters(in: .whitespaces)
+                return trimmed.isEmpty || trimmed.hasPrefix("#")
+            }
+            && lines.last?.trimmingCharacters(in: .whitespaces).hasPrefix("#") == true
+        let isFormatBlock = isGraphQLMetadata || (!graphql && (blockStart.map { upToCursor[$0...].hasPrefix("/***") } ?? false))
 
         var start = cursor
         while start > 0, isWordCharacter(ns.character(at: start - 1), allowingDash: isFormatBlock) { start -= 1 }
@@ -134,10 +141,12 @@ enum NrqlCompletion {
         let lineStart = ns.lineRange(for: NSRange(location: start, length: 0)).location
         let lineBeforePrefix = ns.substring(with: NSRange(location: lineStart, length: start - lineStart))
 
-        if blockStart != nil {
+        if blockStart != nil || isGraphQLMetadata {
             guard isFormatBlock else { return result(.none) }
             if let colon = lineBeforePrefix.firstIndex(of: ":") {
-                let key = lineBeforePrefix[..<colon].trimmingCharacters(in: .whitespaces).lowercased()
+                var key = lineBeforePrefix[..<colon].trimmingCharacters(in: .whitespaces).lowercased()
+                if isGraphQLMetadata { key = key.dropFirst().trimmingCharacters(in: .whitespaces) }
+                if isGraphQLMetadata, key == "api_key" { key = "api-key" }
                 if key == "api-key" {
                     // A saved name may contain spaces; replace the whole value, not just its last word.
                     let valueStart = lineBeforePrefix.index(after: colon)
@@ -152,7 +161,9 @@ enum NrqlCompletion {
                     .flatMap { ChartType(rawValue: block[$0].lowercased()) }
                 return result(.formatValue(key: key, type: type))
             }
-            return result(lineBeforePrefix.trimmingCharacters(in: .whitespaces).isEmpty ? .formatKey : .none)
+            var before = lineBeforePrefix.trimmingCharacters(in: .whitespaces)
+            if isGraphQLMetadata { before = before.dropFirst().trimmingCharacters(in: .whitespaces) }
+            return result(before.isEmpty ? .formatKey : .none)
         }
 
         if configuration { return result(.none) }
@@ -254,9 +265,9 @@ enum NrqlCompletion {
 
     static func items(
         text: String, location: Int, metadata: NrqlMetadataProviding,
-        profiles: [NerdgraphProfile] = [], defaultKeyName: String? = nil, configuration: Bool = false
+        profiles: [NerdgraphProfile] = [], defaultKeyName: String? = nil, configuration: Bool = false, graphql: Bool = false
     ) async -> (items: [Item], range: NSRange) {
-        let analysis = analyse(text: text, location: location, configuration: configuration)
+        let analysis = analyse(text: text, location: location, configuration: configuration, graphql: graphql)
         var candidates: [Item] = []
 
         func keywordItems(_ words: [String]) -> [Item] {
@@ -267,14 +278,15 @@ enum NrqlCompletion {
         case .none:
             break
         case .formatKey:
-            let keys = configuration ? ["api-key", "accounts", "author", "description"] : ["title", "name", "chart", "attributes", "api-key", "accounts"]
+            let keys = graphql ? ["title", "var", "api-key", "chart"]
+                : configuration ? ["api-key", "accounts", "author", "description", "var"] : ["title", "var", "chart", "attributes", "api-key", "accounts"]
             candidates = keys.map {
-                Item(name: $0, kind: .formatKey, detail: nil, insertText: "\($0): ")
+                Item(name: $0, kind: .formatKey, detail: nil, insertText: configuration && !graphql && $0 == "var" ? "var " : "\($0): ")
             }
         case .formatValue(let key, let type):
             var values: [String] = []
             if key == "chart" {
-                values = ChartType.allCases.map(\.rawValue) + ["none"]
+                values = graphql ? ["json", "none"] : ChartType.allCases.map(\.rawValue) + ["json", "none"]
             } else if key == "attributes" {
                 values = type.map { ChartFormat.attributeNames[$0] ?? [] }
                     ?? ChartFormat.attributeNames.values.flatMap { $0 }.sorted()

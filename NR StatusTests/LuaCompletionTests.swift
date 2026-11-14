@@ -44,6 +44,16 @@ struct LuaCompletionTests {
         #expect(names("results.to|") == ["top_app"])
     }
 
+    @Test func offersDocumentConfigInScriptsAndExpressions() {
+        #expect(names("con|") == ["config"])
+        #expect(names("con|", expression: true) == ["config"])
+        #expect(names("config.|") == ["accounts", "api_key"])
+        #expect(names("config.acc|", expression: true) == ["accounts"])
+        let scope = LuaCompletion.Scope(variables: ["appName"])
+        #expect(LuaCompletion.items(text: "app", location: 3, scope: scope).items.isEmpty)
+        #expect(LuaCompletion.items(text: "config.app", location: 10, scope: scope).items.map(\.name) == ["appName"])
+    }
+
     @Test func offersFieldsOfLoadedResults() {
         #expect(names("results.top_app.|") == ["columns", "nrql", "rows"])
         #expect(names("results.top_app.rows[1].|") == ["count", "facet"])

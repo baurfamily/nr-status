@@ -278,7 +278,7 @@ enum NrqlCompletion {
         case .none:
             break
         case .formatKey:
-            let keys = graphql ? ["title", "var", "api-key"]
+            let keys = graphql ? ["title", "var", "api-key", "chart"]
                 : configuration ? ["api-key", "accounts", "author", "description", "var"] : ["title", "var", "chart", "attributes", "api-key", "accounts"]
             candidates = keys.map {
                 Item(name: $0, kind: .formatKey, detail: nil, insertText: configuration && !graphql && $0 == "var" ? "var " : "\($0): ")
@@ -286,7 +286,7 @@ enum NrqlCompletion {
         case .formatValue(let key, let type):
             var values: [String] = []
             if key == "chart" {
-                values = ChartType.allCases.map(\.rawValue) + ["none"]
+                values = graphql ? ["json", "none"] : ChartType.allCases.map(\.rawValue) + ["json", "none"]
             } else if key == "attributes" {
                 values = type.map { ChartFormat.attributeNames[$0] ?? [] }
                     ?? ChartFormat.attributeNames.values.flatMap { $0 }.sorted()

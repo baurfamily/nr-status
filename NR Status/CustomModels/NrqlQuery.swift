@@ -101,6 +101,18 @@ import LanguageSupport
 
     var hasResult: Bool { resultContainer != nil || jsonResult != nil }
 
+    var showsResultPane: Bool {
+        kind != .nerdgraph || format?.hidesChart != true || isRunning || errorMessage != nil
+            || jsonResult?.graphQLErrors.isEmpty == false
+    }
+
+    var displayedJSON: Result<JSONValue, Error>? {
+        guard format?.hidesChart != true else { return nil }
+        if let jsonResult { return .success(jsonResult) }
+        guard format?.showsJSON == true, let container = resultContainer else { return nil }
+        return Result { try JSONValue(luaValue: LuaResultBridge.rowsValue(from: container)) }
+    }
+
     var variables: String {
         kind == .nerdgraph ? NerdgraphCellSource(stored: text).variables : ""
     }

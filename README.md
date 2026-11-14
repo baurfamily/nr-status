@@ -131,6 +131,16 @@ GraphQL errors remain visible alongside partial data, including the full
 The **Variables Sent** button shows the last request's interpolated variables
 as formatted JSON, rather than repeating the literal GraphQL query.
 
+Nerdgraph defaults to `chart: json`. Add `# chart: none` to hide its result pane
+while keeping variable bindings available to other cells. Execution errors and
+GraphQL errors remain visible even when the result data is hidden.
+NRQL and Lua cells can also use `chart: json` in their metadata comments to
+display results in the searchable JSON viewer instead of a chart. Their JSON
+contains only the result rows as an array, without the query text, column list,
+or result metadata. Lua variable bindings still use `{ nrql, columns, rows, facets }`;
+changing display mode does not require rerunning the cell or change its bindings.
+HTML and PDF exports respect these display modes.
+
 GraphQL uses the same saved API keys and document defaults as NRQL, but does
 not require or inherit account IDs. Supply account IDs as GraphQL arguments
 or variables when the selected operation needs them. Leading `#` comments

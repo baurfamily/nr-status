@@ -107,6 +107,12 @@ struct NerdgraphCompletionTests {
         for query in ["{ actor {\n# var: ", "/***\nvar: "] {
             #expect(NrqlCompletion.analyse(text: query, location: query.utf16.count, configuration: true, graphql: true).context == .none)
         }
+        let chart = "# chart: "
+        let charts = await NrqlCompletion.items(
+            text: chart, location: chart.utf16.count, metadata: NrqlCompletionTests.StubMetadata(),
+            configuration: true, graphql: true
+        )
+        #expect(charts.items.map(\.name) == ["json", "none"])
     }
 
     @Test func documentationFollowsFieldsArgumentsAndSelectionTypes() throws {
@@ -220,6 +226,7 @@ struct NrqlCompletionTests {
         #expect(await names("/***\n  va|\n***/") == ["var"])
         #expect(await names("/***\n  na|\n***/").isEmpty)
         #expect(await names("/***\nchart: p|\n***/") == ["pie", "plot"])
+        #expect(await names("/***\nchart: j|\n***/") == ["json"])
         #expect(await names("/***\nchart: pie\nattributes: |\n***/") == ["donut", "separated"])
         #expect(await names("/***\nchart: plot\nattributes: x-|\n***/") == ["x-log"])
         #expect(await names("/***\ntitle: Fo|\n***/").isEmpty)

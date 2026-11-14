@@ -306,11 +306,13 @@ struct CellView: View {
                         nerdgraphEditors
                             .frame(maxWidth: .infinity)
                     }
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("JSON Results").font(.caption).foregroundStyle(.secondary)
-                        CellResultView(query: cell.query, configurationShowing: $showsChartSettings)
+                    if cell.query.showsResultPane {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("JSON Results").font(.caption).foregroundStyle(.secondary)
+                            CellResultView(query: cell.query, configurationShowing: $showsChartSettings)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             } else if isRenderedMarkdown {
                 renderedMarkdown
@@ -598,12 +600,14 @@ struct CellView: View {
             }
 
             if cell.kind != .nerdgraph {
-                Button("Chart Settings", systemImage: "gearshape") {
-                    showsChartSettings.toggle()
+                if cell.query.format?.showsJSON != true {
+                    Button("Chart Settings", systemImage: "gearshape") {
+                        showsChartSettings.toggle()
+                    }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(showsChartSettings ? Color.accentColor : Color.primary)
                 }
-                .labelStyle(.iconOnly)
-                .buttonStyle(.borderless)
-                .foregroundStyle(showsChartSettings ? Color.accentColor : Color.primary)
             } else {
                 Button("Nerdgraph Documentation", systemImage: "questionmark.circle") {
                     onFocus()
@@ -687,6 +691,19 @@ struct CellResultView: View {
     }
 
     @ViewBuilder private var content: some View {
+        if let json = query.displayedJSON {
+            switch json {
+            case .success(let value):
+                JSONResultView(value: value)
+            case .failure(let error):
+                Text(error.localizedDescription).foregroundStyle(.red).textSelection(.enabled)
+            }
+        } else {
+            resultContent
+        }
+    }
+
+    @ViewBuilder private var resultContent: some View {
         switch query.state {
         case .idle:
             EmptyView()
@@ -705,7 +722,11 @@ struct CellResultView: View {
                     .frame(maxWidth: .infinity, minHeight: 300)
             }
         case .jsonLoaded(let value):
-            JSONResultView(value: value)
+            ForEach(Array(value.graphQLErrors.enumerated()), id: \.offset) { _, message in
+                Label(message, systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.red)
+                    .textSelection(.enabled)
+            }
         case .failed(let message):
             HStack(alignment: .top, spacing: 8) {
                 Image(systemName: "xmark.octagon.fill")

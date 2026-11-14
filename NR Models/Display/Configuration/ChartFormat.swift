@@ -23,11 +23,13 @@ import Foundation
 ///
 /// `var` lets later cells refer to this query's result as `results.<name>`, and
 /// `chart: none` hides the chart, for queries that only feed other cells.
+/// `chart: json` displays the result data as JSON instead of a chart.
 struct ChartFormat: Equatable, Hashable {
     var title: String?
     var name: String?
     var type: ChartType?
     var hidesChart = false
+    var showsJSON = false
     var attributes: Set<String>?
 
     /// The attribute names each chart type understands; `apply` is the source of truth for what they do.
@@ -81,6 +83,7 @@ struct ChartFormat: Equatable, Hashable {
                 format.name = rawValue.isEmpty ? nil : rawValue
             case "chart":
                 format.hidesChart = value == "none"
+                format.showsJSON = value == "json"
                 format.type = ChartType(rawValue: value)
             case "attributes":
                 let names = value.split(whereSeparator: { $0 == "," || $0.isWhitespace }).map(String.init)

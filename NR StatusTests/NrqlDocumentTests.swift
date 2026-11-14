@@ -123,6 +123,64 @@ struct NrqlDocumentParserTests {
 
 @MainActor
 struct NerdgraphCellTests {
+    @Test func jsonAndNoneDisplayModesPreserveLoadedNRQLBindings() throws {
+        let container = try JSONDecoder().decode(NrdbResultContainer.self, from: Data("""
+            {"nrql":"SELECT 7", "results":[{"count":7,"name":"Foo","values":[1,2]}],
+             "metadata":{"facets":null,"timeWindow":null}}
+            """.utf8))
+        let cell = NrqlCell(text: "```nrql\n/***\nvar: source\nchart: json\n***/\nSELECT 7\n```")
+        let query = cell.query
+        query.setState(.loaded(container))
+        let json = try #require(query.displayedJSON).get()
+        #expect(json == .array([.object([
+            "count": .number(7), "name": .string("Foo"), "values": .array([.number(1), .number(2)])
+        ])]))
+        #expect(query.namedResults.first?.name == "source")
+        #expect(NrqlExport.tableData(for: cell) == nil)
+        var document = NRQL_EditorDocument()
+        document.cells = [cell]
+        let html = NrqlExport.html(for: document)
+        #expect(html.contains(try json.encodedText(pretty: true)))
+        #expect(!html.contains("\"rows\"") && !html.contains("\"columns\""))
+        #expect(!html.contains("data:image/png"))
+        query.text = query.text.replacingOccurrences(of: "chart: json", with: "chart: none")
+        #expect(query.displayedJSON == nil)
+        #expect(query.hasResult)
+        #expect(query.namedResults.first?.name == "source")
+        #expect(query.resultContainer?.data.first?.numberFields["count"] == 7)
+        query.text = query.text.replacingOccurrences(of: "chart: none", with: "chart: json")
+        #expect(try #require(query.displayedJSON).get() == json)
+    }
+
+    @Test func emptyNRQLJSONDisplaysAnEmptyArray() throws {
+        let container = try JSONDecoder().decode(NrdbResultContainer.self, from: Data("""
+            {"nrql":"SELECT name FROM Transaction", "results":[],
+             "metadata":{"facets":null,"timeWindow":null}}
+            """.utf8))
+        let query = NrqlQuery(from: "```nrql\n/***\nchart: json\n***/\nSELECT name FROM Transaction\n```")
+        query.setState(.loaded(container))
+        #expect(try #require(query.displayedJSON).get() == .array([]))
+    }
+
+    @Test func hiddenNerdgraphResultsKeepBindingsAndExposeErrors() throws {
+        let query = NrqlQuery(from: "```graphql\n# var: response\n{ actor { user { name } } }\n```")
+        let value = JSONValue.object(["data": .object(["name": .string("Foo")])])
+        query.setState(.jsonLoaded(value))
+        #expect(try #require(query.displayedJSON).get() == value)
+        query.text = query.text.replacingOccurrences(of: "# var: response", with: "# var: response\n# chart: none")
+        #expect(!query.showsResultPane)
+        #expect(query.displayedJSON == nil)
+        #expect(query.hasResult)
+        #expect(query.namedResults.first?.name == "response")
+        query.setState(.jsonLoaded(.object(["data": .null, "errors": .array([.object(["message": .string("Partial error")])])])))
+        #expect(query.showsResultPane)
+        #expect(query.displayedJSON == nil)
+        query.setState(.failed("Failed"))
+        #expect(query.showsResultPane)
+        query.setState(.running)
+        #expect(query.showsResultPane)
+    }
+
     @Test func parsesMultipleWholeResponseAndExtractedBindings() throws {
         let source = NerdgraphCellSource(editorText: """
             # var: response

@@ -28,6 +28,12 @@ LIMIT 4
 FROM Metric SELECT count(*) WHERE appName = '{{ results.top_app.rows[1].facet }}' SINCE 1 week ago TIMESERIES 1 day
 ```
 
+## Hidden results
+
+Since we can bind resulsts for later use, it's possible that you may want to run a query to use later but not care about seeing that intermediate result.
+
+In those caess, you can use `chart: none`. If you also collapse the query section, only the cell header will be shown in the document.
+
 ```nrql
 /***
 title: Transactions for the busiest app
@@ -38,14 +44,18 @@ chart: none
 FROM Transaction SELECT count(*) AS count WHERE appName = '{{ results.top_app.rows[1].facet }}' SINCE 1 week ago
 ```
 
+## Seeing "raw" NRQL results
+
+Alternatively, you may not need to see a chart visualized, but rather would like to see the data yourself in-line. For that you can use the `json` chart type.
+
 ```nrql
 /***
 title: Errors for the busiest app
 var: errors
-chart: none
+chart: json
 ***/
 
-FROM TransactionError SELECT count(*) AS count WHERE appName = '{{ results.top_app.rows[1].facet }}' SINCE 1 week ago
+FROM TransactionError SELECT count(*) WHERE appName = '{{ results.top_app.rows[1].facet }}' SINCE 1 week ago
 ```
 
 ## Running lua scripts
@@ -68,11 +78,16 @@ emit({
 })
 ```
 
+## Running Nerdgraph queries
+
+We can run arbitrary Nerdgraph queries with a light GraphQL editor. Binding of results can be done generically with a `var: var_name` keyword or can be done with a short lua `key = value` accessor. 
+
 ```graphql
 
 # title: Entity Search
 # var: entity_search
 # var: entities = data.actor.entitySearch.results.entities
+# chart: none
 query FindEntity($account_id: Int!, $query: String) {
   actor {
     account(id: $account_id) { name }
@@ -110,9 +125,9 @@ emit({
 })
 ```
 
-### Using config variables
+## Using config variables
 
-This query example shows how to use config block and global variables. In the config block, variables can be added which can be referred to as either `config.var_name` or simply `var_name`.
+This query example shows how to use config block and global variables. In the config block, variables can be added which can be referred to as `config.var_name`
 
 There are two intrinsic config variables as well:
 * `config.accounts` (array, remember lua in 1-indexed!)
@@ -139,6 +154,6 @@ query FindEntity($account_id: Int!, $query: String) {
 ```variables
 {
   "account_id": {{config.accounts[1]}},
-  "query": "name = '{{ main_app }}'"
+  "query": "name = '{{ config.main_app }}'"
 }
 ```

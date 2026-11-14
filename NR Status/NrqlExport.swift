@@ -67,7 +67,8 @@ enum NrqlExport {
     }
 
     static func tableData(for cell: NrqlCell) -> TableData? {
-        guard cell.query.format?.hidesChart != true, let container = cell.query.resultContainer else { return nil }
+        guard cell.query.format?.hidesChart != true, cell.query.format?.showsJSON != true,
+              let container = cell.query.resultContainer else { return nil }
         let config = ChartConfiguration(resultContainer: container)
         cell.query.format?.apply(to: config)
         guard config.chartType == .table else { return nil }
@@ -157,7 +158,8 @@ enum NrqlExport {
     }
 
     private static func chartPNG(for cell: NrqlCell) -> Data? {
-        guard cell.query.format?.hidesChart != true, cell.query.resultContainer != nil else { return nil }
+        guard cell.query.format?.hidesChart != true, cell.query.format?.showsJSON != true,
+              cell.query.resultContainer != nil else { return nil }
         let renderer = ImageRenderer(content: chartView(for: cell, width: 700))
         renderer.scale = 2
         guard let image = renderer.nsImage, let tiff = image.tiffRepresentation,
@@ -184,12 +186,20 @@ enum NrqlExport {
                 }
             }
             var section = "<section>\n<h2>\(escape(cell.query.title))</h2>\n<pre>\(escape(queryText(for: cell)))</pre>\n"
-            if let table = tableData(for: cell) {
+            if let json = cell.query.displayedJSON {
+                do {
+                    section += "<pre>\(escape(try json.get().encodedText(pretty: true)))</pre>\n"
+                } catch {
+                    section += "<p class=\"error\">\(escape(error.localizedDescription))</p>\n"
+                }
+            } else if let table = tableData(for: cell) {
                 section += htmlTable(table)
             } else if let png = chartPNG(for: cell) {
                 section += "<img alt=\"Chart\" src=\"data:image/png;base64,\(png.base64EncodedString())\">\n"
             } else if let message = cell.query.errorMessage {
                 section += "<p class=\"error\">\(escape(message))</p>\n"
+            } else if let errors = cell.query.jsonResult?.graphQLErrors {
+                section += errors.map { "<p class=\"error\">\(escape($0))</p>\n" }.joined()
             }
             return section + "</section>"
         }
@@ -257,7 +267,14 @@ enum NrqlExport {
                 .padding(8)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color.gray.opacity(0.12))
-            if let table = tableData(for: cell) {
+            if let json = cell.query.displayedJSON {
+                switch json.flatMap({ value in Result { try value.encodedText(pretty: true) } }) {
+                case .success(let text):
+                    Text(text).font(.system(.body, design: .monospaced))
+                case .failure(let error):
+                    Text(error.localizedDescription).foregroundStyle(.red)
+                }
+            } else if let table = tableData(for: cell) {
                 // what's left of the page after the title and the query text
                 let queryLines = queryText(for: cell).split(separator: "\n", omittingEmptySubsequences: false).count
                 let room = 560 - CGFloat(queryLines) * 16
@@ -266,6 +283,10 @@ enum NrqlExport {
                 chartView(for: cell, width: 532)
             } else if let message = cell.query.errorMessage {
                 Text(message).foregroundStyle(.red)
+            } else if let errors = cell.query.jsonResult?.graphQLErrors {
+                ForEach(Array(errors.enumerated()), id: \.offset) { _, message in
+                    Text(message).foregroundStyle(.red)
+                }
             }
         }
     }

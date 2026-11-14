@@ -31,12 +31,16 @@ enum LuaResultBridge {
         var table: [String: LuaValue] = [
             "nrql": .string(container.nrql),
             "columns": .array(container.fieldNames.map { .string($0) }),
-            "rows": .array(container.data.map(row)),
+            "rows": rowsValue(from: container),
         ]
         if let facets = container.metadata.facets {
             table["facets"] = .array(facets.map { .string($0) })
         }
         return .table(table)
+    }
+
+    static func rowsValue(from container: NrdbResultContainer) -> LuaValue {
+        .array(container.data.map(row))
     }
 
     private static func row(_ datum: NrdbResults.Datum) -> LuaValue {

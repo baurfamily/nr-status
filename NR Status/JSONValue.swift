@@ -54,7 +54,7 @@ indirect enum JSONValue: Codable, Equatable, Sendable {
         case .string(let value): self = .string(value)
         case .number(let value):
             guard value.isFinite else {
-                throw NrqlConnection.ConfigurationError(message: "GraphQL variables cannot contain non-finite numbers.")
+                throw NrqlConnection.ConfigurationError(message: "JSON cannot contain non-finite numbers.")
             }
             self = .number(Decimal(value))
         case .bool(let value): self = .bool(value)

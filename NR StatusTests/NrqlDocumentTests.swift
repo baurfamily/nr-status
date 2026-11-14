@@ -76,6 +76,163 @@ struct NrqlDocumentParserTests {
 }
 
 struct NrqlDocumentCellTests {
+    @Test func documentConfigurationRoundTripsAndIsNotRunnable() throws {
+        let text = "```config\n/***\napi-key: Production\naccounts: 12, 34\n***/\n```\n\n# Notes\n\n```nrql\nSELECT 1\n```\n"
+        let document = NRQL_EditorDocument(text: text)
+        #expect(document.cells.map(\.kind) == [.config, .markdown, .nrql])
+        #expect(!document.cells[0].isRunnable)
+        #expect(document.cells[0].query.nrql.isEmpty)
+        #expect(document.text == text)
+        #expect(try document.connection.get() == NrqlConnection(apiKeyName: "Production", accountIds: [12, 34]))
+    }
+
+    @Test func rejectsMisplacedRepeatedOrUnclosedConfiguration() {
+        for text in [
+            "# Title\n\n```config\n/***\napi-key: Work\n***/\n```",
+            "```config\n/***\napi-key: Work\n***/\n```\n\n```config\n/***\naccounts: 12\n***/\n```",
+            "```config\n/***\napi-key: Work\n***/"
+        ] {
+            #expect(throws: NrqlConnection.ConfigurationError.self) {
+                try NRQL_EditorDocument(text: text).connection.get()
+            }
+        }
+    }
+
+    @Test func addsOneConfigurationAtTop() throws {
+        var document = NRQL_EditorDocument(text: "```nrql\nSELECT 1\n```")
+        document.addConfiguration()
+        document.addConfiguration()
+        #expect(document.cells.map(\.kind) == [.config, .nrql])
+        #expect(document.focusedCellId == document.cells[0].id)
+        #expect(document.cells[0].editorText.contains("author:"))
+        #expect(document.cells[0].editorText.contains("description:"))
+        #expect(try document.connection.get() == NrqlConnection())
+    }
+
+    @Test func toolbarDefaultsDoNotCreateAConfigCell() throws {
+        var document = NRQL_EditorDocument(text: "```nrql\nSELECT 1\n```")
+        try document.setDefaultApiKey(nil)
+        try document.setDefaultAccountIds(nil)
+        #expect(document.cells.map(\.kind) == [.nrql])
+        #expect(try document.connection.get() == NrqlConnection())
+    }
+
+    @Test func toolbarSelectionsAddAndSynchronizeOnlyExplicitOverrides() throws {
+        var document = NRQL_EditorDocument(text: "# Notes\n\n```nrql\nSELECT 1\n```")
+        let queryID = document.cells[1].id
+        let queryText = document.cells[1].text
+        try document.setDefaultApiKey("Production US")
+        #expect(document.cells.map(\.kind) == [.config, .markdown, .nrql])
+        #expect(document.cells[0].editorText.contains("author:"))
+        #expect(document.cells[0].editorText.contains("description:"))
+        #expect(try document.connection.get() == NrqlConnection(apiKeyName: "Production US"))
+
+        try document.setDefaultAccountIds([123, 456])
+        let expected = NrqlConnection(apiKeyName: "Production US", accountIds: [123, 456])
+        #expect(try document.connection.get() == expected)
+        #expect(try NRQL_EditorDocument(text: document.text).connection.get() == expected)
+        #expect(document.cells[2].id == queryID)
+        #expect(document.cells[2].text == queryText)
+
+        try document.setDefaultApiKey("Staging")
+        #expect(try document.connection.get() == NrqlConnection(apiKeyName: "Staging", accountIds: [123, 456]))
+        try document.setDefaultApiKey(nil)
+        #expect(try document.connection.get() == NrqlConnection(accountIds: [123, 456]))
+        try document.setDefaultAccountIds(nil)
+        #expect(document.cells[0].editorText.contains("author:"))
+        #expect(document.cells[0].editorText.contains("description:"))
+        #expect(!document.cells[0].editorText.contains("api-key:"))
+        #expect(!document.cells[0].editorText.contains("accounts:"))
+        #expect(try document.connection.get() == NrqlConnection())
+        #expect(try NRQL_EditorDocument(text: document.text).connection.get() == NrqlConnection())
+    }
+
+    @Test func selectingAccountsAloneAddsConfigAndDefaultPreservesTheKey() throws {
+        var document = NRQL_EditorDocument(text: "```nrql\nSELECT 1\n```")
+        try document.setDefaultAccountIds([789])
+        #expect(document.cells[0].kind == .config)
+        #expect(try document.connection.get() == NrqlConnection(accountIds: [789]))
+        try document.setDefaultApiKey("Work")
+        try document.setDefaultAccountIds(nil)
+        #expect(try document.connection.get() == NrqlConnection(apiKeyName: "Work"))
+    }
+
+    @Test func showingConfigExpandsItAndKeepsItsContents() throws {
+        var document = NRQL_EditorDocument(text: "```nrql\nSELECT 1\n```")
+        try document.setDefaultApiKey("Work")
+        let id = document.cells[0].id
+        let text = document.cells[0].text
+        document.cells[0].isCollapsed = true
+        document.focusedCellId = document.cells[1].id
+        document.addConfiguration()
+        #expect(document.cells[0].id == id)
+        #expect(document.cells[0].text == text)
+        #expect(!document.cells[0].isCollapsed)
+        #expect(document.focusedCellId == id)
+    }
+
+    @Test func toolbarChangesDoNotOverwriteMalformedConfig() {
+        var document = NRQL_EditorDocument(text: "```config\n/***\napi-key:\n***/\n```")
+        let originalText = document.text
+        #expect(throws: NrqlConnection.ConfigurationError.self) { try document.setDefaultApiKey("Work") }
+        #expect(document.text == originalText)
+    }
+
+    @Test func toolbarChangesPreserveDocumentMetadataIncludingPendingEdits() throws {
+        var document = NRQL_EditorDocument(text: "```config\n/***\n  author: Before\n  accounts: 12\n***/\n```")
+        document.cells[0].query.text = """
+            ```config
+            /***
+              author: Ada
+              description: Error rates: per application
+              owner-team: Observability
+              custom-notes:
+              // Keep this note.
+              accounts: 12
+            ***/
+            ```
+            """
+        try document.setDefaultApiKey("Production")
+        try document.setDefaultAccountIds([34, 56])
+        #expect(try document.connection.get() == NrqlConnection(apiKeyName: "Production", accountIds: [34, 56]))
+        try document.setDefaultApiKey(nil)
+        try document.setDefaultAccountIds(nil)
+
+        #expect(document.cells[0].editorText == """
+            /***
+              author: Ada
+              description: Error rates: per application
+              owner-team: Observability
+              custom-notes:
+              // Keep this note.
+            ***/
+            """)
+        #expect(try document.connection.get() == NrqlConnection())
+        let reopened = NRQL_EditorDocument(text: document.text)
+        #expect(reopened.cells[0].editorText == document.cells[0].editorText)
+        #expect(try reopened.connection.get() == NrqlConnection())
+    }
+
+    @Test func collapsesAndExpandsConfigAlongsideCode() throws {
+        var document = NRQL_EditorDocument(text: NrqlDocumentParser.join([
+            NrqlCellKind.config.template, "# Notes", NrqlCellKind.nrql.template, NrqlCellKind.lua.template
+        ]))
+        let originalText = document.text
+        let originalConnection = try document.connection.get()
+        document.setAllCollapsed(true)
+        #expect(document.cells.map(\.isCollapsed) == [true, false, true, true])
+        #expect(document.text == originalText)
+        #expect(try document.connection.get() == originalConnection)
+        document.setAllCollapsed(false)
+        #expect(document.cells.allSatisfy { !$0.isCollapsed })
+    }
+
+    @Test func executionReadsPendingConfigEditsBeforeDocumentDebounce() throws {
+        let document = NRQL_EditorDocument(text: "```config\n/***\napi-key: Old\naccounts: 1\n***/\n```")
+        document.cells[0].query.text = "```config\n/***\napi-key: New\naccounts: 2\n***/\n```"
+        #expect(try document.connection.get() == NrqlConnection(apiKeyName: "New", accountIds: [2]))
+    }
+
     @Test func documentTextRoundTripsThroughCells() {
         let text = "# Title\n\n```nrql\n// A\nSELECT 1\n```\n\n```nrql\nSELECT 2\n```\n"
         let document = NRQL_EditorDocument(text: text)
@@ -115,6 +272,57 @@ struct NrqlDocumentCellTests {
     }
 }
 
+struct NrqlConnectionTests {
+    @Test(arguments: [
+        "api-key: Work\naccounts: 123",
+        "// api-key: Work\n// accounts: 123",
+        "/*\napi-key: Work\n*/",
+        "/***\napi-key: Work",
+        "/***\napi-key: Work\n***/\naccounts: 123",
+        "/***\napi-key: Work\n***/\n/***\naccounts: 123\n***/"
+    ])
+    func documentSettingsRequireASingleBlockComment(_ body: String) {
+        let document = NRQL_EditorDocument(text: "```config\n\(body)\n```")
+        #expect(throws: NrqlConnection.ConfigurationError.self) { try document.connection.get() }
+    }
+
+    @Test func parsesRoutingAlongsideChartSettingsAndInheritsEachField() throws {
+        let body = "title: Errors: per day\napi-key: Staging\naccounts: 7, 8, 7\nchart: line"
+        let connection = try NrqlConnection.parse(body)
+        #expect(connection == NrqlConnection(apiKeyName: "Staging", accountIds: [7, 8]))
+        let defaults = NrqlConnection(apiKeyName: "Production", accountIds: [1, 2])
+        #expect(NrqlConnection(accountIds: [9]).inheriting(defaults) == NrqlConnection(apiKeyName: "Production", accountIds: [9]))
+        #expect(NrqlConnection(apiKeyName: "Other").inheriting(defaults) == NrqlConnection(apiKeyName: "Other", accountIds: [1, 2]))
+        #expect(NrqlConnection().inheriting(defaults) == defaults)
+        let query = NrqlQuery(from: "/***\n\(body)\n***/\nSELECT 1")
+        #expect(query.nrql == "SELECT 1")
+        #expect(query.format?.type == .line)
+    }
+
+    @Test(arguments: [
+        "accounts:", "accounts: 0", "accounts: -1", "accounts: 1,wat", "accounts: 1,,2",
+        "accounts: 2147483648", "api-key:", "api-key: NRAK-secret", "api-key: A\napi-key: B"
+    ])
+    func rejectsInvalidRoutingInsteadOfFallingBack(_ body: String) {
+        #expect(throws: (any Error).self) { try NrqlConnection.parse(body) }
+    }
+
+    @Test func documentConfigAllowsMetadataAndIgnoresLineCommentSettings() throws {
+        let config = try NrqlConnection.parseDocumentConfig(
+            "/***\nauthor: Ada\ndescription: Report: per day\nowner-team: Observability\ncustom:\n// api-key: Ignored\napi-key: Work\n// accounts: 999\naccounts: 123\n***/"
+        )
+        #expect(config == NrqlConnection(apiKeyName: "Work", accountIds: [123]))
+        #expect(try NrqlConnection.parseDocumentConfig("/***\naccount: 123\n***/") == NrqlConnection())
+    }
+
+    @Test(arguments: ["api-key:", "accounts:", "accounts: invalid", "accounts: 1\naccounts: 2", "missing colon"])
+    func metadataDoesNotDisableConfigurationValidation(_ body: String) {
+        #expect(throws: (any Error).self) {
+            try NrqlConnection.parseDocumentConfig("/***\nauthor: Ada\ndescription:\n\(body)\n***/")
+        }
+    }
+}
+
 struct NrqlQueryTests {
     @Test func formatTitleOverridesCommentTitle() {
         let query = NrqlQuery(from: "/***\ntitle: Errors: last day\n***/\n// Comment title\nSELECT 1")
@@ -127,8 +335,27 @@ struct NrqlQueryTests {
         let query = NrqlQuery(from: "/***\nchart: line\nattributes: points\n***/\n// Title\nSELECT 1")
 
         #expect(query.nrql == "SELECT 1")
-        #expect(query.title == "Title")
+        #expect(query.title == "NRQL Query")
         #expect(query.format?.type == .line)
+    }
+
+    @Test(arguments: [
+        "/***\napi-key: Work\naccounts: 123\n***/\n// Legacy title\nSELECT 1",
+        "// Legacy title\n/***\nname: query_result\n***/\nSELECT 1",
+        "/***\n***/\n// Legacy title\nSELECT 1"
+    ])
+    func metadataBlockDisablesLineCommentTitleFallback(_ text: String) {
+        #expect(NrqlQuery(from: text).title == "NRQL Query")
+    }
+
+    @Test func lineCommentsSupplyOnlyTheLegacyQueryTitle() throws {
+        let text = "// Legacy title\n// api-key: Ignored\n// accounts: 999\n// chart: line\nSELECT 1"
+        let query = NrqlQuery(from: text)
+        #expect(query.title == "Legacy title")
+        #expect(query.name == nil)
+        #expect(query.format == nil)
+        #expect(query.nrql == "SELECT 1")
+        #expect(try NrqlConnection.parse(NrqlConnection.metadataBody(in: text)) == NrqlConnection())
     }
 
     @Test func stripsCommentsAndFindsTitle() {
@@ -226,6 +453,96 @@ struct NrqlInterpolationTests {
         #expect(query.name == "top_app")
         #expect(query.format?.hidesChart == true)
         #expect(query.format?.type == nil)
+    }
+}
+
+@MainActor
+struct NrqlClearResultsTests {
+    @Test func clearsResultsAndErrorsWithoutChangingTheDocument() throws {
+        var document = NRQL_EditorDocument(text: """
+            ```config
+            /***
+            accounts: 12
+            ***/
+            ```
+
+            # Notes
+
+            ```nrql
+            /*** name: source ***/
+            SELECT count(*) FROM Log
+            ```
+
+            ```lua
+            emit(results.source.rows)
+            ```
+
+            ```nrql
+            SELECT 1
+            ```
+            """)
+        let data = try #require(ChartSamples.sampleData(size: .small))
+        let source = document.cells[2].query
+        source.setState(.loaded(data))
+        document.cells[3].query.setState(.failed("Script failed"))
+        document.cells[4].query.setState(.running)
+        document.cells[2].isCollapsed = true
+        document.focusedCellId = document.cells[3].id
+        let text = document.text
+        let ids = document.cells.map(\.id)
+        let focus = document.focusedCellId
+        #expect(!document.priorResults.isEmpty)
+        #expect(source.loadedAt != nil)
+
+        document.clearResults()
+
+        for cell in document.cells {
+            guard case .idle = cell.query.state else {
+                Issue.record("Cleared cells must return to idle")
+                continue
+            }
+            #expect(cell.query.resultContainer == nil)
+            #expect(cell.query.errorMessage == nil)
+            #expect(cell.query.loadedAt == nil)
+            #expect(cell.query.executedNrql == nil)
+        }
+        #expect(document.priorResults.isEmpty)
+        #expect(document.completionScope(excluding: document.cells[3].id).results.isEmpty)
+        #expect(document.staleCellIds(profiles: NerdgraphProfiles.Settings()).isEmpty)
+        #expect(document.text == text)
+        #expect(document.cells.map(\.id) == ids)
+        #expect(document.focusedCellId == focus)
+        #expect(document.cells[2].isCollapsed)
+        #expect(try document.connection.get() == NrqlConnection(accountIds: [12]))
+    }
+
+    @Test func clearCancelsQueuedRunsAcrossDocumentCopiesAndAllowsRerunning() async {
+        let document = NRQL_EditorDocument(text: "```lua\nreturn { rows = { { count = 1 } } }\n```\n\n```lua\nreturn { rows = { { count = 2 } } }\n```")
+        let run = document.runAllQueries()
+        let copy = document
+        copy.clearResults()
+        await run.value
+
+        #expect(run.isCancelled)
+        for cell in document.cells {
+            if case .idle = cell.query.state {} else {
+                Issue.record("A queued run restored a cleared result")
+            }
+        }
+
+        await document.runAllQueries().value
+        #expect(document.cells.allSatisfy { $0.query.resultContainer != nil })
+    }
+
+    @Test func cancelledQueryCannotStartAfterClearing() async {
+        let query = NrqlQuery(from: "```lua\nreturn { rows = { { count = 1 } } }\n```")
+        let run = Task { await query.getData() }
+        run.cancel()
+        query.clearResults()
+        await run.value
+        if case .idle = query.state {} else {
+            Issue.record("A cancelled run changed the cleared state")
+        }
     }
 }
 
@@ -417,5 +734,171 @@ struct NrqlStaleTests {
 
         await a.query.getData()
         #expect(NrqlDependencies.staleCells(in: cells) == [b.id, c.id])
+    }
+}
+
+@MainActor
+struct NrqlConnectionStaleTests {
+    private let production = NerdgraphProfile(name: "Production", preferredAccountIds: [10, 20])
+    private let staging = NerdgraphProfile(name: "Staging", preferredAccountIds: [30])
+
+    private var profiles: NerdgraphProfiles.Settings {
+        NerdgraphProfiles.Settings(profiles: [production, staging], defaultProfileID: production.id)
+    }
+
+    private func cacheResults(in document: NRQL_EditorDocument, profiles: NerdgraphProfiles.Settings) throws {
+        let data = try #require(ChartSamples.sampleData(size: .small))
+        for cell in NrqlDependencies.plan(for: document.cells, in: document.cells, includeFinished: true) {
+            let snapshot: NrqlConnection.Snapshot?
+            if cell.kind == .nrql {
+                snapshot = try NrqlConnection.parse(NrqlConnection.metadataBody(in: cell.editorText))
+                    .inheriting(document.connection.get())
+                    .snapshot(profiles: profiles)
+            } else {
+                snapshot = nil
+            }
+            cell.query.setState(.loaded(data), connection: snapshot)
+        }
+    }
+
+    @Test(arguments: [true, false])
+    func documentChangesOnlyInvalidateInheritedFieldsAndTheirReaders(changingKey: Bool) throws {
+        var document = NRQL_EditorDocument(text: """
+            ```config
+            /***
+            api-key: Production
+            accounts: 10
+            ***/
+            ```
+
+            ```nrql
+            /*** name: source ***/
+            SELECT 1
+            ```
+
+            ```nrql
+            /*** api-key: Staging ***/
+            SELECT 2
+            ```
+
+            ```nrql
+            /*** accounts: 30 ***/
+            SELECT 3
+            ```
+
+            ```nrql
+            /***
+            api-key: Staging
+            accounts: 30
+            ***/
+            SELECT 4
+            ```
+
+            ```lua
+            --[[ name: derived ]]
+            return results.source
+            ```
+
+            ```lua
+            return results.derived
+            ```
+
+            ```lua
+            return { rows = { { count = 1 } } }
+            ```
+            """)
+        try cacheResults(in: document, profiles: profiles)
+        #expect(document.staleCellIds(profiles: profiles).isEmpty)
+
+        if changingKey {
+            try document.setDefaultApiKey("Staging")
+        } else {
+            try document.setDefaultAccountIds([20])
+        }
+        let affected = [1, changingKey ? 3 : 2, 5, 6].map { document.cells[$0].id }
+        let stale = document.staleCellIds(profiles: profiles)
+        #expect(stale == Set(affected))
+        #expect(document.pendingDependencies(for: document.cells[6].id, stale: stale).map(\.id)
+                == [document.cells[1].id, document.cells[5].id])
+        #expect(NrqlDependencies.plan(for: [document.cells[6]], in: document.cells, includeFinished: false, stale: stale).map(\.id)
+                == [document.cells[1].id, document.cells[5].id, document.cells[6].id])
+
+        try cacheResults(in: document, profiles: profiles)
+        #expect(document.staleCellIds(profiles: profiles).isEmpty)
+    }
+
+    @Test(arguments: [true, false])
+    func pendingEditorChangesInvalidateCachedResults(editingDocumentConfig: Bool) throws {
+        let document = NRQL_EditorDocument(text: """
+            ```config
+            /*** api-key: Production ***/
+            ```
+
+            ```nrql
+            /*** name: source ***/
+            SELECT 1
+            ```
+
+            ```lua
+            return results.source
+            ```
+            """)
+        try cacheResults(in: document, profiles: profiles)
+        let text = document.text
+        if editingDocumentConfig {
+            document.cells[0].query.text = "```config\n/*** api-key: Staging ***/\n```"
+        } else {
+            document.cells[1].query.text = "```nrql\n/***\nname: source\naccounts: 30\n***/\nSELECT 1\n```"
+        }
+        #expect(document.text == text)
+        #expect(document.staleCellIds(profiles: profiles) == [document.cells[1].id, document.cells[2].id])
+    }
+
+    @Test(arguments: [true, false])
+    func inheritedAppDefaultsAndPreferredAccountsAreTracked(changingKey: Bool) throws {
+        let document = NRQL_EditorDocument(text: """
+            ```nrql
+            /*** name: source ***/
+            SELECT 1
+            ```
+
+            ```lua
+            return results.source
+            ```
+
+            ```nrql
+            /***
+            api-key: Staging
+            accounts: 30
+            ***/
+            SELECT 2
+            ```
+            """)
+        try cacheResults(in: document, profiles: profiles)
+        var updated = profiles
+        if changingKey {
+            updated.defaultProfileID = staging.id
+        } else {
+            updated.profiles[0].preferredAccountIds = [20]
+        }
+        #expect(document.staleCellIds(profiles: updated) == [document.cells[0].id, document.cells[1].id])
+    }
+
+    @Test func equivalentSelectionsAndClearedResultsAreNotStale() throws {
+        var document = NRQL_EditorDocument(text: "```nrql\nSELECT 1\n```")
+        try cacheResults(in: document, profiles: profiles)
+        try document.setDefaultApiKey("production")
+        try document.setDefaultAccountIds([20, 10])
+        #expect(document.staleCellIds(profiles: profiles).isEmpty)
+        document.cells[0].editorText = document.cells[0].editorText
+            .replacingOccurrences(of: "author:", with: "author: Ada")
+            .replacingOccurrences(of: "description:", with: "description: Updated report")
+        #expect(document.staleCellIds(profiles: profiles).isEmpty)
+
+        try document.setDefaultAccountIds([30])
+        #expect(document.staleCellIds(profiles: profiles) == [document.cells[1].id])
+        document.clearResults()
+        #expect(document.staleCellIds(profiles: profiles).isEmpty)
+        #expect(document.cells[1].query.loadedConnection == nil)
     }
 }

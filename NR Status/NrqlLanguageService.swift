@@ -10,14 +10,15 @@ import LanguageSupport
 /// Gives the code editor completions: NRQL for query cells (and Lua inside their `{{ }}`),
 /// or Lua for script cells. One instance serves one cell.
 final class NrqlLanguageService: LanguageService {
-    enum Language { case nrql, lua }
+    enum Language { case nrql, lua, config }
 
-    private let metadata: NrqlMetadataProviding
+    private let metadata: NrqlMetadataProviding?
     private let language: Language
     private let lock = NSLock()
     private var openedText = ""
     private var textSource: (() -> String)?
     private var scopeSource: (() -> LuaCompletion.Scope)?
+    private var connectionSource: (() -> Result<NrqlConnection, Error>)?
     private var lastChange = Date.distantPast
     private var completionAction: (() -> Void)?
 
@@ -29,7 +30,7 @@ final class NrqlLanguageService: LanguageService {
     var popsUpWhileTyping = true
     private(set) var isOpen = false
 
-    init(metadata: NrqlMetadataProviding = NrqlMetadata.shared, language: Language = .nrql) {
+    init(metadata: NrqlMetadataProviding? = nil, language: Language = .nrql) {
         self.metadata = metadata
         self.language = language
     }
@@ -42,6 +43,10 @@ final class NrqlLanguageService: LanguageService {
     /// What the rest of the notebook offers to Lua; read on the main actor.
     func setScopeSource(_ source: @escaping () -> LuaCompletion.Scope) {
         lock.withLock { scopeSource = source }
+    }
+
+    func setConnectionSource(_ source: @escaping () -> Result<NrqlConnection, Error>) {
+        lock.withLock { connectionSource = source }
     }
 
     private var currentText: String {
@@ -68,8 +73,10 @@ final class NrqlLanguageService: LanguageService {
         switch language {
         case .lua:
             retrigger = text == "."
-        case .nrql:
-            retrigger = ([" ", ",", "("].contains(text) && NrqlCompletion.offersAfterSeparator(text: source, location: next))
+        case .nrql, .config:
+            retrigger = ([" ", ",", "("].contains(text) && NrqlCompletion.offersAfterSeparator(
+                text: source, location: next, configuration: language == .config
+            ))
                 || (text == "." && LuaCompletion.interpolationStart(in: source, at: next) != nil)
         }
         guard retrigger else { return }
@@ -103,8 +110,8 @@ final class NrqlLanguageService: LanguageService {
         case .lua:
             let scope = await currentScope()
             (items, range) = LuaCompletion.items(text: text, location: location, scope: scope)
-        case .nrql:
-            if let start = LuaCompletion.interpolationStart(in: text, at: location) {
+        case .nrql, .config:
+            if language == .nrql, let start = LuaCompletion.interpolationStart(in: text, at: location) {
                 let scope = await currentScope()
                 let expression = (text as NSString).substring(from: start)
                 let found = LuaCompletion.items(
@@ -113,7 +120,18 @@ final class NrqlLanguageService: LanguageService {
                 items = found.items
                 range = NSRange(location: found.range.location + start, length: found.range.length)
             } else {
-                (items, range) = await NrqlCompletion.items(text: text, location: location, metadata: metadata)
+                let source = lock.withLock { connectionSource }
+                let defaults = await MainActor.run { source?() ?? .success(NrqlConnection()) }
+                let connection = Result {
+                    try NrqlConnection.parse(NrqlConnection.metadataBody(in: text)).inheriting(defaults.get())
+                }
+                let settings = try NerdgraphProfiles.shared.load()
+                let defaultName = (try? defaults.get().apiKeyName)
+                    ?? settings.profiles.first(where: { $0.id == settings.defaultProfileID })?.name
+                (items, range) = await NrqlCompletion.items(
+                    text: text, location: location, metadata: metadata ?? NrqlMetadata.Source(connection: connection),
+                    profiles: settings.profiles, defaultKeyName: defaultName, configuration: language == .config
+                )
             }
         }
         guard !items.isEmpty else { return .none }

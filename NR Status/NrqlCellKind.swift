@@ -6,9 +6,10 @@
 import Foundation
 
 /// What a cell holds. Text outside a code fence is Markdown; queries and scripts
-/// are stored in ```nrql and ```lua fences, which the editor never shows.
+/// are stored in ```nrql and ```lua fences. A leading ```config cell holds defaults.
+/// The editor never shows the fence lines.
 enum NrqlCellKind: String, CaseIterable, Identifiable {
-    case markdown, nrql, lua
+    case markdown, nrql, lua, config
 
     var id: String { rawValue }
 
@@ -17,6 +18,7 @@ enum NrqlCellKind: String, CaseIterable, Identifiable {
         case .markdown: "Markdown"
         case .nrql: "Query"
         case .lua: "Script"
+        case .config: "Document Config"
         }
     }
 
@@ -26,6 +28,7 @@ enum NrqlCellKind: String, CaseIterable, Identifiable {
         case .markdown: ""
         case .nrql: "```nrql\nFROM \n```"
         case .lua: "```lua\n\n```"
+        case .config: "```config\n/***\n  author:\n  description:\n***/\n```"
         }
     }
 
@@ -34,6 +37,7 @@ enum NrqlCellKind: String, CaseIterable, Identifiable {
         case .markdown: nil
         case .nrql: "nrql"
         case .lua: "lua"
+        case .config: "config"
         }
     }
 
@@ -47,6 +51,7 @@ enum NrqlCellKind: String, CaseIterable, Identifiable {
     /// The code kind whose opening fence this line is, if any.
     static func fenced(by line: String) -> NrqlCellKind? {
         let trimmed = line.trimmingCharacters(in: .whitespaces).lowercased()
+        if trimmed == "```config" { return .config }
         return [NrqlCellKind.nrql, .lua].first { trimmed.hasPrefix("```" + ($0.fenceTag ?? "")) }
     }
 

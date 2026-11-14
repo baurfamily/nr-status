@@ -47,17 +47,17 @@ struct EditorMenuView : View {
 
             Divider()
             Menu("Add Cell Above") {
-                ForEach(NrqlCellKind.allCases) { cellButton($0.title, .add($0, above: true)) }
+                ForEach(NrqlCellKind.allCases.filter { $0 != .config }) { cellButton($0.title, .add($0, above: true)) }
             }
             Menu("Add Cell Below") {
-                ForEach(NrqlCellKind.allCases) { cellButton($0.title, .add($0, above: false)) }
+                ForEach(NrqlCellKind.allCases.filter { $0 != .config }) { cellButton($0.title, .add($0, above: false)) }
             }
             Divider()
             cellButton("Move Cell Up", .moveUp)
             cellButton("Move Cell Down", .moveDown)
             Divider()
             Menu("Convert Cell To") {
-                ForEach(NrqlCellKind.allCases) { cellButton($0.title, .convert($0)) }
+                ForEach(NrqlCellKind.allCases.filter { $0 != .config }) { cellButton($0.title, .convert($0)) }
             }
             Divider()
             Button("Collapse All Queries") { document?.setAllCollapsed(true) }

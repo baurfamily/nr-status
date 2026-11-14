@@ -54,6 +54,8 @@ import LanguageSupport
     
     // when the current result arrived; cells reading this one compare against it
     private(set) var loadedAt: Date?
+
+    private(set) var loadedConnection: NrqlConnection.Snapshot?
     
     // the query as last sent, with `{{ }}` expressions replaced; nil before a run
     private(set) var executedNrql: String?
@@ -62,6 +64,7 @@ import LanguageSupport
     var name: String? { format?.name }
     
     @ObservationIgnored private var runningTask: Task<Void, Never>?
+    @ObservationIgnored private var executionID = UUID()
     
     var isRunning: Bool {
         if case .running = state { return true }
@@ -82,6 +85,7 @@ import LanguageSupport
     var id: String { hash(nrql: self.nrql) }
     
     var title: String {
+        if kind == .config { return "Document Config" }
         if kind == .markdown {
             let heading = text.split(separator: "\n").first { $0.hasPrefix("#") }
             return heading.map { $0.drop { $0 == "#" }.trimmingCharacters(in: .whitespaces) } ?? "Markdown"
@@ -94,8 +98,8 @@ import LanguageSupport
             let title = first.drop { $0 == " " || $0 == "-" }.trimmingCharacters(in: .whitespaces)
             return title.isEmpty ? defaultTitle : title
         }
-        let withoutFormat = ChartFormat.strip(from: kind.unwrap(text), lua: kind == .lua)
-        guard let titleString = withoutFormat.split(separator: "\n").first else { return defaultTitle }
+        guard format == nil else { return defaultTitle }
+        guard let titleString = kind.unwrap(text).split(separator: "\n").first else { return defaultTitle }
         guard titleString.starts(with: "//") else { return defaultTitle }
         
         let title = titleString.dropFirst(2).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -121,35 +125,43 @@ import LanguageSupport
     
     /// Runs the query and waits for the result; see `state` for the outcome.
     /// `results` are the earlier cell results that `{{ }}` expressions can read.
-    func getData(results: [LuaRuntime.PriorResult] = []) async {
-        await setState(.running)
+    @MainActor func getData(results: [LuaRuntime.PriorResult] = [], defaults: NrqlConnection = NrqlConnection()) async {
+        guard !Task.isCancelled else { return }
+        let id = UUID()
+        executionID = id
+        let script = script
+        let nrql = nrql
+        let options = Result {
+            try NrqlConnection.parse(NrqlConnection.metadataBody(in: kind.unwrap(text)))
+        }
+        setState(.running)
+        setExecuted(nil)
         
         if let script {
-            await setExecuted(nil)
-            await setState(await Self.runScript(script, results: results))
+            let outcome = await Self.runScript(script, results: results)
+            guard !Task.isCancelled, executionID == id else { return }
+            setState(outcome)
             return
         }
         
-        let sent: String
         do {
-            sent = try NrqlInterpolation.expand(nrql, results: results)
-        } catch {
-            await setExecuted(nil)
-            await setState(.failed(error.localizedDescription))
-            return
-        }
-        await setExecuted(sent)
-        
-        do {
-            let container = try await Queries().getNrqlData(query: sent)
+            let sent = try await Task.detached {
+                try NrqlInterpolation.expand(nrql, results: results)
+            }.value
+            guard !Task.isCancelled, executionID == id else { return }
+            let connection = try options.get().inheriting(defaults)
+            let snapshot = try connection.snapshot(profiles: NerdgraphProfiles.shared.load())
+            let config = try connection.resolve()
+            setExecuted(sent)
+            let container = try await Queries(config: config).getNrqlData(query: sent)
             // a newer run has taken over, so don't clobber its state
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled, executionID == id else { return }
             
-            await setState(container.map { .loaded($0) } ?? .failed("The query returned no data"))
+            setState(container.map { .loaded($0) } ?? .failed("The query returned no data"), connection: snapshot)
         } catch {
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled, executionID == id else { return }
             
-            await setState(.failed(error.localizedDescription))
+            setState(.failed(error.localizedDescription))
         }
     }
     
@@ -170,9 +182,22 @@ import LanguageSupport
         runningTask?.cancel()
         runningTask = Task { await getData(results: results) }
     }
+
+    @MainActor func clearResults() {
+        runningTask?.cancel()
+        runningTask = nil
+        executionID = UUID()
+        setState(.idle)
+        loadedAt = nil
+        loadedConnection = nil
+        setExecuted(nil)
+    }
     
-    @MainActor func setState(_ newState: State) {
-        if case .loaded = newState { loadedAt = Date() }
+    @MainActor func setState(_ newState: State, connection: NrqlConnection.Snapshot? = nil) {
+        if case .loaded = newState {
+            loadedAt = Date()
+            loadedConnection = connection
+        }
         state = newState
     }
     
@@ -185,7 +210,7 @@ import LanguageSupport
     }
     
     private func textWillUpdate(to newValue: String) {
-        guard kind != .markdown else {
+        guard kind == .nrql || kind == .lua else {
             format = nil
             script = nil
             nrql = ""

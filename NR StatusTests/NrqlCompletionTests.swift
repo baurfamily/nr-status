@@ -89,6 +89,32 @@ struct NrqlCompletionTests {
         #expect(await names("/***\ntitle: Fo|\n***/").isEmpty)
     }
 
+    @Test func completesSavedNamesAndOnlyTheSelectedKeysPreferredAccounts() async {
+        let profiles = [
+            NerdgraphProfile(name: "Production US", preferredAccountIds: [123, 456]),
+            NerdgraphProfile(name: "Staging", preferredAccountIds: [789])
+        ]
+        func complete(_ text: String, configuration: Bool = false) async -> (items: [NrqlCompletion.Item], range: NSRange) {
+            await NrqlCompletion.items(text: text, location: text.utf16.count, metadata: StubMetadata(),
+                                       profiles: profiles, defaultKeyName: "Production US", configuration: configuration)
+        }
+        let keyText = "/***\napi-key: Production U"
+        let key = await complete(keyText)
+        #expect(key.items.map(\.name) == ["Production US"])
+        #expect((keyText as NSString).substring(with: key.range) == "Production U")
+        #expect(await complete("/***\naccounts: ").items.map(\.name) == ["123", "456"])
+        #expect(await complete("/***\napi-key: Staging\naccounts: ").items.map(\.name) == ["789"])
+        #expect(await complete("/***\napi-key: Unknown\naccounts: ").items.isEmpty)
+        #expect(await complete("/***\naccounts: 123, 4").items.map(\.name) == ["456"])
+        #expect(await complete("/***\napi-key: Staging\naccounts: ", configuration: true).items.map(\.name) == ["789"])
+        #expect(await complete("/***\nacc", configuration: true).items.map(\.name) == ["accounts"])
+        #expect(await complete("/***\naut", configuration: true).items.map(\.name) == ["author"])
+        #expect(await complete("/***\ndesc", configuration: true).items.map(\.name) == ["description"])
+        #expect(await complete("accounts: ", configuration: true).items.isEmpty)
+        #expect(await complete("// api-key: ", configuration: true).items.isEmpty)
+        #expect(await complete("/***\napi-key: Staging\n***/\naccounts: ", configuration: true).items.isEmpty)
+    }
+
     @Test func offersAfterSeparators() {
         func offers(_ marked: String) -> Bool {
             let loc = (marked as NSString).range(of: "|").location

@@ -62,8 +62,12 @@ struct ChartFormat: Equatable, Hashable {
               let bodyRange = Range(match.range(at: 1), in: text)
         else { return nil }
 
+        return parseMetadata(String(text[bodyRange]))
+    }
+
+    static func parseMetadata(_ body: String) -> ChartFormat {
         var format = ChartFormat()
-        for line in text[bodyRange].split(whereSeparator: \.isNewline) {
+        for line in body.split(whereSeparator: \.isNewline) {
             // only the first colon separates key from value, so titles can contain colons
             guard let colon = line.firstIndex(of: ":") else { continue }
             let key = line[..<colon].trimmingCharacters(in: .whitespaces).lowercased()

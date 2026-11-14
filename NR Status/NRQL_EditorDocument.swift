@@ -58,7 +58,7 @@ struct NrqlCell: Identifiable {
 
     // comment-only cells have nothing to run
     var isRunnable: Bool {
-        guard kind == .nrql || kind == .lua else { return false }
+        guard kind == .nrql || kind == .lua || kind == .nerdgraph else { return false }
         let code = query.script ?? query.nrql
         return !code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
@@ -215,7 +215,11 @@ struct NRQL_EditorDocument: FileDocument {
 
     private static func priorResults(in cells: [NrqlCell]) -> [LuaRuntime.PriorResult] {
         cells.compactMap { cell in
-            guard let name = cell.query.name, let container = cell.query.resultContainer else { return nil }
+            guard let name = cell.query.name else { return nil }
+            if let value = cell.query.jsonResult {
+                return LuaRuntime.PriorResult(name: name, value: value.luaValue)
+            }
+            guard let container = cell.query.resultContainer else { return nil }
             return LuaRuntime.PriorResult(name: name, value: LuaResultBridge.luaValue(from: container))
         }
     }
@@ -270,11 +274,13 @@ struct NRQL_EditorDocument: FileDocument {
     func staleCellIds(profiles: NerdgraphProfiles.Settings) -> Set<NrqlCell.ID> {
         var invalidated = Set<NrqlCell.ID>()
         for cell in cells {
-            guard cell.kind == .nrql, let loaded = cell.query.loadedConnection else { continue }
+            guard cell.kind == .nrql || cell.kind == .nerdgraph, let loaded = cell.query.loadedConnection else { continue }
             do {
-                let current = try NrqlConnection.parse(NrqlConnection.metadataBody(in: cell.kind.unwrap(cell.query.text)))
+                let metadata = cell.kind == .nerdgraph ? NerdgraphCellSource(stored: cell.query.text).metadata
+                    : NrqlConnection.metadataBody(in: cell.kind.unwrap(cell.query.text))
+                let current = try NrqlConnection.parse(metadata)
                     .inheriting(connection.get())
-                    .snapshot(profiles: profiles)
+                    .snapshot(profiles: profiles, requiresAccounts: cell.kind != .nerdgraph)
                 if current != loaded { invalidated.insert(cell.id) }
             } catch {
                 // Invalid routing cannot reproduce a cached result; running the cell reports the error.

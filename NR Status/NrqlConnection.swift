@@ -44,7 +44,7 @@ struct NrqlConnection: Equatable, Sendable {
         var lines = Self.metadataBody(in: text).components(separatedBy: .newlines).filter { line in
             guard let colon = line.firstIndex(of: ":") else { return true }
             let key = line[..<colon].trimmingCharacters(in: .whitespaces).lowercased()
-            return key != "api-key" && key != "accounts"
+            return key != "api-key" && key != "api_key" && key != "accounts"
         }
         while lines.first?.trimmingCharacters(in: .whitespaces).isEmpty == true { lines.removeFirst() }
         while lines.last?.trimmingCharacters(in: .whitespaces).isEmpty == true { lines.removeLast() }
@@ -63,12 +63,13 @@ struct NrqlConnection: Equatable, Sendable {
             let line = line.trimmingCharacters(in: .whitespaces)
             if line.isEmpty || line.hasPrefix("//") { continue }
             guard let colon = line.firstIndex(of: ":") else {
-                if strict || line == "api-key" || line == "accounts" {
+                if strict || line == "api-key" || line == "api_key" || line == "accounts" {
                     throw ConfigurationError(message: "Expected 'key: value' in connection configuration.")
                 }
                 continue
             }
-            let key = line[..<colon].trimmingCharacters(in: .whitespaces).lowercased()
+            let rawKey = line[..<colon].trimmingCharacters(in: .whitespaces).lowercased()
+            let key = rawKey == "api_key" ? "api-key" : rawKey
             let value = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
             guard ["api-key", "accounts"].contains(key) else { continue }
             guard seen.insert(key).inserted else {
@@ -94,18 +95,18 @@ struct NrqlConnection: Equatable, Sendable {
         NrqlConnection(apiKeyName: apiKeyName ?? defaults.apiKeyName, accountIds: accountIds ?? defaults.accountIds)
     }
 
-    func resolve(profiles: NerdgraphProfiles = .shared) throws -> NerdgraphConfig {
-        try profiles.resolve(name: apiKeyName, accountIds: accountIds)
+    func resolve(profiles: NerdgraphProfiles = .shared, requiresAccounts: Bool = true) throws -> NerdgraphConfig {
+        try profiles.resolve(name: apiKeyName, accountIds: requiresAccounts ? accountIds : [], requiresAccounts: requiresAccounts)
     }
 
     /// The non-secret identity of the connection, including inherited preferences.
-    func snapshot(profiles: NerdgraphProfiles.Settings) throws -> Snapshot {
+    func snapshot(profiles: NerdgraphProfiles.Settings, requiresAccounts: Bool = true) throws -> Snapshot {
         guard let profile = profiles.profiles.first(where: {
             if let apiKeyName { return $0.name.caseInsensitiveCompare(apiKeyName) == .orderedSame }
             return $0.id == profiles.defaultProfileID
         }) else { throw NerdgraphProfiles.ProfileError.missingProfile }
-        let ids = accountIds ?? profile.preferredAccountIds
-        guard !ids.isEmpty else { throw NerdgraphProfiles.ProfileError.missingAccounts }
+        let ids = requiresAccounts ? (accountIds ?? profile.preferredAccountIds) : []
+        guard !requiresAccounts || !ids.isEmpty else { throw NerdgraphProfiles.ProfileError.missingAccounts }
         return Snapshot(profileID: profile.id, host: profile.host, accountIds: Set(ids))
     }
 
@@ -113,7 +114,7 @@ struct NrqlConnection: Equatable, Sendable {
     static func keyName(in body: String) -> String? {
         for line in body.components(separatedBy: .newlines) {
             guard let colon = line.firstIndex(of: ":"),
-                  line[..<colon].trimmingCharacters(in: .whitespaces).lowercased() == "api-key" else { continue }
+                  ["api-key", "api_key"].contains(line[..<colon].trimmingCharacters(in: .whitespaces).lowercased()) else { continue }
             let value = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
             return value.isEmpty ? nil : value
         }

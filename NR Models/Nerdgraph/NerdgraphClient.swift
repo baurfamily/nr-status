@@ -44,7 +44,9 @@ struct NerdgraphClient {
         self.init(config: NerdgraphConfig(host: host, apiKey: apiKey, accountIds: ""), session: session)
     }
 
-    func send<Variables: Encodable>(_ query: String, variables: Variables, debug: Bool = false) async throws -> Root {
+    func sendResponse<Response: Decodable, Variables: Encodable>(
+        _ query: String, variables: Variables, debug: Bool = false
+    ) async throws -> Response {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -65,21 +67,21 @@ struct NerdgraphClient {
                 throw ClientError.httpStatus(http.statusCode)
             }
 
-            let root = try JSONDecoder().decode(Root.self, from: data)
-
-            if let errors = root.errors, !errors.isEmpty {
-                let messages = errors.map(\.message)
-                Self.logger.error("GraphQL errors: \(messages.joined(separator: "; "), privacy: .public)")
-                // partial results are still useful, so only fail when nothing came back
-                if root.data == nil {
-                    throw ClientError.graphQL(messages)
-                }
-            }
-            return root
+            return try JSONDecoder().decode(Response.self, from: data)
         } catch {
             Self.logger.error("request failed: \(error.localizedDescription, privacy: .public)")
             throw error
         }
+    }
+
+    func send<Variables: Encodable>(_ query: String, variables: Variables, debug: Bool = false) async throws -> Root {
+        let root: Root = try await sendResponse(query, variables: variables, debug: debug)
+        if let errors = root.errors, !errors.isEmpty {
+            let messages = errors.map(\.message)
+            Self.logger.error("GraphQL errors: \(messages.joined(separator: "; "), privacy: .public)")
+            if root.data == nil { throw ClientError.graphQL(messages) }
+        }
+        return root
     }
 
     func send(_ query: String, debug: Bool = false) async throws -> Root {

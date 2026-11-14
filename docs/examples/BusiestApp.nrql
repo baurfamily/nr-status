@@ -10,6 +10,9 @@ We can have three different kinds of cells
 
 Code cells (NRQL and Lua) are fended with standard markdown code blocks. ie: Three backticks and then `nrql` or `lua`
 
+Can this contain variables?
+{{ results.top_app.rows[1].facet }}
+
 ```nrql
 /***
   title: Busiest app, last week
@@ -72,6 +75,42 @@ emit({
 })
 ```
 
-```lua
+```graphql
 
+# title: Entity Search
+# name: entity_search
+query FindEntity($query: String) {
+  actor {
+    entitySearch(query: $query) {
+      results { entities {
+        guid 
+        account { name id }
+        name
+        reporting
+        tags { key values }
+      }}
+    }
+  }
+}
+```
+```variables
+{
+  "query": "name = '{{ results.top_app.rows[1].facet }}'"
+}
+```
+
+```lua
+--[[
+title: Entity tag count
+chart: billboard
+]]
+
+local entities = results.entity_search.data.actor.entitySearch.results.entities
+local entity = assert(entities[1], "No matching entity found")
+
+emit({
+  rows = {
+    { tag_count = #entity.tags }
+  }
+})
 ```

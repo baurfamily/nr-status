@@ -29,6 +29,83 @@ final class StubURLProtocol: URLProtocol {
 
 @Suite(.serialized)
 struct NerdgraphClientTests {
+    @MainActor @Test func executesGraphqlWithNamedKeyWithoutAccountsAndPreservesPartialErrors() async throws {
+        let suite = "NR Status Nerdgraph test \(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        let profiles = NerdgraphProfiles(
+            defaults: defaults, legacyStore: KeychainStore(label: suite + " legacy", accessGroup: nil),
+            labelPrefix: suite, accessGroup: nil
+        )
+        let profile = NerdgraphProfile(name: "GraphQL", host: "\(UUID().uuidString).example.com")
+        try profiles.save(profile, apiKey: "test-key", makeDefault: true)
+        defer {
+            profiles.keychain(for: profile).remove()
+            defaults.removePersistentDomain(forName: suite)
+        }
+        nonisolated(unsafe) var captured: URLRequest?
+        let response = #"{"data":{"customField":{"id":42}},"errors":[{"message":"partial error","path":["other"]}],"extensions":{"trace":"ok"}}"#
+        StubURLProtocol.handler = {
+            captured = $0
+            return (200, Data(response.utf8))
+        }
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [StubURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer { session.invalidateAndCancel() }
+        let query = NrqlQuery(from: """
+            ```graphql
+            # api_key: GraphQL
+            # name: custom
+            query($id: Int!) { customField(id: $id, text: "{{ literal }}") { id } }
+            ```
+            ```variables
+            {"id": {{ 6 * 7 }}}
+            ```
+            """)
+        await query.getData(defaults: NrqlConnection(apiKeyName: "Unavailable"), profiles: profiles, session: session)
+        #expect(query.errorMessage == nil)
+        #expect(query.jsonResult?["data"]?["customField"]?["id"] == .number(42))
+        #expect(query.jsonResult?.graphQLErrors == ["partial error"])
+        #expect(query.jsonResult?["extensions"]?["trace"] == .string("ok"))
+        #expect(query.executedNrql?.contains("{{ literal }}") == true)
+        #expect(query.executedNrql?.hasPrefix("# api_key: GraphQL\n# name: custom\n") == true)
+        #expect(query.loadedConnection?.accountIds.isEmpty == true)
+        let request = try #require(captured)
+        #expect(request.value(forHTTPHeaderField: "api-key") == "test-key")
+        #expect(request.url?.host == profile.host)
+        let body: Data
+        if let data = request.httpBody { body = data }
+        else {
+            let stream = try #require(request.httpBodyStream)
+            stream.open()
+            defer { stream.close() }
+            var data = Data()
+            var buffer = [UInt8](repeating: 0, count: 1024)
+            while stream.hasBytesAvailable {
+                let count = stream.read(&buffer, maxLength: buffer.count)
+                guard count > 0 else { break }
+                data.append(contentsOf: buffer.prefix(count))
+            }
+            body = data
+        }
+        let payload = try JSONDecoder().decode(JSONValue.self, from: body)
+        #expect(payload["variables"] == .object(["id": .number(42)]))
+        #expect(payload["query"] == .string(try #require(query.executedNrql)))
+        let sentVariables = try #require(query.executedVariables)
+        #expect(try JSONDecoder().decode(JSONValue.self, from: Data(sentVariables.utf8)) == payload["variables"])
+        #expect(!sentVariables.contains("{{"))
+        query.text = query.text.replacingOccurrences(of: "6 * 7", with: "results.missing.id")
+        #expect(query.executedVariables == sentVariables)
+        await query.getData(profiles: profiles, session: session)
+        #expect(query.errorMessage != nil)
+        #expect(query.executedVariables == nil)
+        query.text = query.text.replacingOccurrences(of: "results.missing.id", with: "6 * 7")
+        await query.getData(profiles: profiles, session: session)
+        #expect(query.executedVariables == sentVariables)
+        query.clearResults()
+        #expect(query.executedVariables == nil)
+    }
+
     private func makeClient() -> NerdgraphClient {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [StubURLProtocol.self]
@@ -132,6 +209,35 @@ struct NerdgraphClientTests {
         #expect(try await metadata.eventTypes(config: changed) == ["Event4"])
         #expect(try await metadata.eventTypes(config: original) == ["Event1"])
         #expect(requestCount == 4)
+    }
+
+    @Test func schemaCacheUsesEffectiveKeyAndHostAndReportsIntrospectionErrors() async throws {
+        nonisolated(unsafe) var requestCount = 0
+        StubURLProtocol.handler = { _ in
+            requestCount += 1
+            return (200, Data(#"{"data":{"__schema":{"queryType":{"name":"Query"},"types":[]}}}"#.utf8))
+        }
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [StubURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer { session.invalidateAndCancel() }
+        let store = NerdgraphSchemaStore(session: session)
+        let config = NerdgraphConfig(host: "first.example.com", apiKey: "first-key", accountIds: "")
+        #expect(try await store.schema(config: config).queryType.name == "Query")
+        _ = try await store.schema(config: config)
+        #expect(requestCount == 1)
+        var changed = config
+        changed.apiKey = "second-key"
+        _ = try await store.schema(config: changed)
+        changed.host = "second.example.com"
+        _ = try await store.schema(config: changed)
+        #expect(requestCount == 3)
+        StubURLProtocol.handler = { _ in
+            (200, Data(#"{"errors":[{"message":"Introspection unavailable"}]}"#.utf8))
+        }
+        await #expect(throws: NerdgraphClient.ClientError.self) {
+            _ = try await store.schema(config: config)
+        }
     }
 
     @Test func throwsOnGraphQLErrorWithoutData() async {

@@ -15,7 +15,8 @@ enum NrqlDependencies {
 
     static func referencedNames(by cell: NrqlCell) -> Set<String> {
         guard cell.kind != .markdown else { return [] }
-        let code = cell.query.script ?? NrqlInterpolation.expressions(in: cell.query.nrql).joined(separator: "\n")
+        let interpolated = cell.kind == .nerdgraph ? cell.query.variables : cell.query.nrql
+        let code = cell.query.script ?? NrqlInterpolation.expressions(in: interpolated).joined(separator: "\n")
         let range = NSRange(code.startIndex..., in: code)
         var names = Set<String>()
         for pattern in references {
@@ -78,7 +79,7 @@ enum NrqlDependencies {
             // a cycle ends here; the cell then reports the missing result itself
             guard visited.insert(cell.id).inserted else { return }
             for dependency in dependencies(of: cell, in: cells) {
-                if !includeFinished && dependency.query.resultContainer != nil && !stale.contains(dependency.id) { continue }
+                if !includeFinished && dependency.query.hasResult && !stale.contains(dependency.id) { continue }
                 visit(dependency)
             }
             if cell.isRunnable { ordered.append(cell) }

@@ -53,14 +53,54 @@ enum NrqlInterpolation {
         return expanded + ns.substring(from: cursor)
     }
 
-    private static func evaluate(_ expression: String, results: [LuaRuntime.PriorResult]) throws -> String {
-        let value: LuaValue
+    /// Outside JSON strings a placeholder inserts a typed JSON value; inside strings it inserts escaped text.
+    static func expandJSON(_ text: String, results: [LuaRuntime.PriorResult] = []) throws -> JSONValue {
+        let ns = text as NSString
+        var expanded = ""
+        var cursor = 0
+        var inString = false
+        var escaped = false
+        for match in placeholder.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
+            let segment = ns.substring(with: NSRange(location: cursor, length: match.range.location - cursor))
+            for character in segment {
+                if escaped { escaped = false }
+                else if character == "\\", inString { escaped = true }
+                else if character == "\"" { inString.toggle() }
+            }
+            expanded += segment
+            let expression = ns.substring(with: match.range(at: 1)).trimmingCharacters(in: .whitespacesAndNewlines)
+            let value = try evaluateValue(expression, results: results)
+            if case .nil = value { throw InterpolationError.noValue(expression: expression) }
+            if inString {
+                let string = try textual(value, expression: expression)
+                let quoted = try JSONValue.string(string).encodedText()
+                expanded += quoted.dropFirst().dropLast()
+            } else {
+                expanded += try JSONValue(luaValue: value).encodedText()
+            }
+            cursor = NSMaxRange(match.range)
+        }
+        expanded += ns.substring(from: cursor)
+        let value = try JSONDecoder().decode(JSONValue.self, from: Data(expanded.utf8))
+        guard case .object = value else {
+            throw NrqlConnection.ConfigurationError(message: "GraphQL variables must be a JSON object.")
+        }
+        return value
+    }
+
+    private static func evaluateValue(_ expression: String, results: [LuaRuntime.PriorResult]) throws -> LuaValue {
         do {
-            value = try LuaRuntime.run("return (\(expression))", results: results).value
+            return try LuaRuntime.run("return (\(expression))", results: results).value
         } catch {
             throw InterpolationError.evaluation(expression: expression, message: error.localizedDescription)
         }
+    }
 
+    private static func evaluate(_ expression: String, results: [LuaRuntime.PriorResult]) throws -> String {
+        try textual(evaluateValue(expression, results: results), expression: expression)
+    }
+
+    private static func textual(_ value: LuaValue, expression: String) throws -> String {
         switch value {
         case .nil: throw InterpolationError.noValue(expression: expression)
         case .string(let string): return string

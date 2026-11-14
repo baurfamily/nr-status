@@ -10,7 +10,7 @@ import LanguageSupport
 /// Gives the code editor completions: NRQL for query cells (and Lua inside their `{{ }}`),
 /// or Lua for script cells. One instance serves one cell.
 final class NrqlLanguageService: LanguageService {
-    enum Language { case nrql, lua, config }
+    enum Language { case nrql, lua, config, graphql, variables }
 
     private let metadata: NrqlMetadataProviding?
     private let language: Language
@@ -21,6 +21,20 @@ final class NrqlLanguageService: LanguageService {
     private var connectionSource: (() -> Result<NrqlConnection, Error>)?
     private var lastChange = Date.distantPast
     private var completionAction: (() -> Void)?
+    private let schemaStore = NerdgraphSchemaStore()
+    private var completionErrorHandler: ((String?) -> Void)?
+
+    func setCompletionErrorHandler(_ handler: @escaping (String?) -> Void) {
+        lock.withLock { completionErrorHandler = handler }
+    }
+
+    func graphqlSchema() async throws -> NerdgraphSchema {
+        let source = lock.withLock { connectionSource }
+        let defaults = await MainActor.run { source?() ?? .success(NrqlConnection()) }
+        let metadata = NerdgraphCellSource(editorText: currentText).metadata
+        let connection = try NrqlConnection.parse(metadata).inheriting(defaults.get())
+        return try await schemaStore.schema(config: connection.resolve(requiresAccounts: false))
+    }
 
     /// The editor's own "show completions" action, used to reopen the panel after a separator.
     func setCompletionAction(_ action: (() -> Void)?) {
@@ -73,6 +87,10 @@ final class NrqlLanguageService: LanguageService {
         switch language {
         case .lua:
             retrigger = text == "."
+        case .variables:
+            retrigger = text == "." && LuaCompletion.interpolationStart(in: source, at: next) != nil
+        case .graphql:
+            retrigger = [" ", "{", "(", "$", "\n"].contains(text)
         case .nrql, .config:
             retrigger = ([" ", ",", "("].contains(text) && NrqlCompletion.offersAfterSeparator(
                 text: source, location: next, configuration: language == .config
@@ -110,6 +128,40 @@ final class NrqlLanguageService: LanguageService {
         case .lua:
             let scope = await currentScope()
             (items, range) = LuaCompletion.items(text: text, location: location, scope: scope)
+        case .variables:
+            guard let start = LuaCompletion.interpolationStart(in: text, at: location) else { return .none }
+            let scope = await currentScope()
+            let found = LuaCompletion.items(
+                text: (text as NSString).substring(from: start), location: location - start, scope: scope, isExpression: true
+            )
+            items = found.items
+            range = NSRange(location: found.range.location + start, length: found.range.length)
+        case .graphql:
+            let source = lock.withLock { connectionSource }
+            let defaults = await MainActor.run { source?() ?? .success(NrqlConnection()) }
+            let context = NrqlCompletion.analyse(text: text, location: location, configuration: true, graphql: true).context
+            switch context {
+            case .formatKey, .formatValue:
+                let settings = try NerdgraphProfiles.shared.load()
+                let found = await NrqlCompletion.items(
+                    text: text, location: location, metadata: NrqlMetadata.Source(connection: defaults),
+                    profiles: settings.profiles, defaultKeyName: try defaults.get().apiKeyName,
+                    configuration: true, graphql: true
+                )
+                items = found.items
+                range = found.range
+            default:
+                do {
+                    let schema = try await graphqlSchema()
+                    (items, range) = NerdgraphCompletion.items(text: text, location: location, schema: schema)
+                    let handler = lock.withLock { completionErrorHandler }
+                    await MainActor.run { handler?(nil) }
+                } catch {
+                    let handler = lock.withLock { completionErrorHandler }
+                    await MainActor.run { handler?(error.localizedDescription) }
+                    throw error
+                }
+            }
         case .nrql, .config:
             if language == .nrql, let start = LuaCompletion.interpolationStart(in: text, at: location) {
                 let scope = await currentScope()
@@ -148,7 +200,7 @@ final class NrqlLanguageService: LanguageService {
                             Text(item.detail ?? item.kind.label).foregroundStyle(.secondary).font(.caption)
                         }
                     },
-                    documentationView: Text("\(item.kind.label.capitalized): \(item.name)"),
+                    documentationView: Text(item.detail ?? "\(item.kind.label.capitalized): \(item.name)"),
                     selected: index == 0,
                     sortText: String(format: "%06d", index),
                     filterText: item.name,

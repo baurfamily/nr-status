@@ -15,6 +15,7 @@ import LanguageSupport
         case idle
         case running
         case loaded(NrdbResultContainer)
+        case jsonLoaded(JSONValue)
         case failed(String)
     }
     
@@ -59,6 +60,7 @@ import LanguageSupport
     
     // the query as last sent, with `{{ }}` expressions replaced; nil before a run
     private(set) var executedNrql: String?
+    private(set) var executedVariables: String?
     
     // how later cells refer to this result: `results.<name>`
     var name: String? { format?.name }
@@ -76,6 +78,17 @@ import LanguageSupport
         if case .loaded(let container) = state { return container }
         return nil
     }
+
+    var jsonResult: JSONValue? {
+        if case .jsonLoaded(let value) = state { return value }
+        return nil
+    }
+
+    var hasResult: Bool { resultContainer != nil || jsonResult != nil }
+
+    var variables: String {
+        kind == .nerdgraph ? NerdgraphCellSource(stored: text).variables : ""
+    }
     
     var errorMessage: String? {
         if case .failed(let message) = state { return message }
@@ -90,7 +103,7 @@ import LanguageSupport
             let heading = text.split(separator: "\n").first { $0.hasPrefix("#") }
             return heading.map { $0.drop { $0 == "#" }.trimmingCharacters(in: .whitespaces) } ?? "Markdown"
         }
-        let defaultTitle = isScript ? "Lua Script" : "NRQL Query"
+        let defaultTitle = kind == .nerdgraph ? "Nerdgraph Query" : isScript ? "Lua Script" : "NRQL Query"
         if let title = format?.title { return title }
         if let script {
             let first = script.split(separator: "\n").first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
@@ -125,14 +138,18 @@ import LanguageSupport
     
     /// Runs the query and waits for the result; see `state` for the outcome.
     /// `results` are the earlier cell results that `{{ }}` expressions can read.
-    @MainActor func getData(results: [LuaRuntime.PriorResult] = [], defaults: NrqlConnection = NrqlConnection()) async {
+    @MainActor func getData(
+        results: [LuaRuntime.PriorResult] = [], defaults: NrqlConnection = NrqlConnection(),
+        profiles: NerdgraphProfiles = .shared, session: URLSession = .shared
+    ) async {
         guard !Task.isCancelled else { return }
         let id = UUID()
         executionID = id
         let script = script
         let nrql = nrql
+        let graphQL = kind == .nerdgraph ? NerdgraphCellSource(stored: text) : nil
         let options = Result {
-            try NrqlConnection.parse(NrqlConnection.metadataBody(in: kind.unwrap(text)))
+            try NrqlConnection.parse(graphQL?.metadata ?? NrqlConnection.metadataBody(in: kind.unwrap(text)))
         }
         setState(.running)
         setExecuted(nil)
@@ -145,15 +162,37 @@ import LanguageSupport
         }
         
         do {
+            if let graphQL {
+                guard graphQL.isClosed else {
+                    throw NrqlConnection.ConfigurationError(message: "Close the GraphQL and variables fences with ```.")
+                }
+                let variables = try await Task.detached {
+                    try NrqlInterpolation.expandJSON(graphQL.variables, results: results)
+                }.value
+                guard !Task.isCancelled, executionID == id else { return }
+                let connection = try options.get().inheriting(defaults)
+                let snapshot = try connection.snapshot(profiles: profiles.load(), requiresAccounts: false)
+                let config = try connection.resolve(profiles: profiles, requiresAccounts: false)
+                setExecuted(graphQL.operation, variables: try variables.encodedText(pretty: true))
+                let value: JSONValue = try await NerdgraphClient(config: config, session: session).sendResponse(
+                    graphQL.operation, variables: variables
+                )
+                guard !Task.isCancelled, executionID == id else { return }
+                guard case .object = value else {
+                    throw NrqlConnection.ConfigurationError(message: "Nerdgraph returned an invalid response: expected a JSON object.")
+                }
+                setState(.jsonLoaded(value), connection: snapshot)
+                return
+            }
             let sent = try await Task.detached {
                 try NrqlInterpolation.expand(nrql, results: results)
             }.value
             guard !Task.isCancelled, executionID == id else { return }
             let connection = try options.get().inheriting(defaults)
-            let snapshot = try connection.snapshot(profiles: NerdgraphProfiles.shared.load())
-            let config = try connection.resolve()
+            let snapshot = try connection.snapshot(profiles: profiles.load())
+            let config = try connection.resolve(profiles: profiles)
             setExecuted(sent)
-            let container = try await Queries(config: config).getNrqlData(query: sent)
+            let container = try await Queries(config: config, session: session).getNrqlData(query: sent)
             // a newer run has taken over, so don't clobber its state
             guard !Task.isCancelled, executionID == id else { return }
             
@@ -194,15 +233,18 @@ import LanguageSupport
     }
     
     @MainActor func setState(_ newState: State, connection: NrqlConnection.Snapshot? = nil) {
-        if case .loaded = newState {
+        switch newState {
+        case .loaded, .jsonLoaded:
             loadedAt = Date()
             loadedConnection = connection
+        default: break
         }
         state = newState
     }
     
-    @MainActor private func setExecuted(_ nrql: String?) {
+    @MainActor private func setExecuted(_ nrql: String?, variables: String? = nil) {
         executedNrql = nrql
+        executedVariables = variables
     }
     
     private func hash(nrql: String) -> String {
@@ -210,6 +252,13 @@ import LanguageSupport
     }
     
     private func textWillUpdate(to newValue: String) {
+        if kind == .nerdgraph {
+            let source = NerdgraphCellSource(stored: newValue)
+            format = source.format
+            script = nil
+            nrql = source.operation
+            return
+        }
         guard kind == .nrql || kind == .lua else {
             format = nil
             script = nil

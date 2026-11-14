@@ -6,10 +6,11 @@
 import Foundation
 
 /// What a cell holds. Text outside a code fence is Markdown; queries and scripts
-/// are stored in ```nrql and ```lua fences. A leading ```config cell holds defaults.
+/// are stored in ```nrql, ```lua, and ```graphql fences. GraphQL can have an adjacent
+/// ```variables fence. A leading ```config cell holds defaults.
 /// The editor never shows the fence lines.
 enum NrqlCellKind: String, CaseIterable, Identifiable {
-    case markdown, nrql, lua, config
+    case markdown, nrql, lua, nerdgraph, config
 
     var id: String { rawValue }
 
@@ -18,6 +19,7 @@ enum NrqlCellKind: String, CaseIterable, Identifiable {
         case .markdown: "Markdown"
         case .nrql: "Query"
         case .lua: "Script"
+        case .nerdgraph: "Nerdgraph"
         case .config: "Document Config"
         }
     }
@@ -28,6 +30,7 @@ enum NrqlCellKind: String, CaseIterable, Identifiable {
         case .markdown: ""
         case .nrql: "```nrql\nFROM \n```"
         case .lua: "```lua\n\n```"
+        case .nerdgraph: "```graphql\n# title:\n# name:\n\n{\n  actor {\n    user {\n      name\n    }\n  }\n}\n```\n```variables\n{}\n```"
         case .config: "```config\n/***\n  author:\n  description:\n***/\n```"
         }
     }
@@ -37,6 +40,7 @@ enum NrqlCellKind: String, CaseIterable, Identifiable {
         case .markdown: nil
         case .nrql: "nrql"
         case .lua: "lua"
+        case .nerdgraph: "graphql"
         case .config: "config"
         }
     }
@@ -52,6 +56,7 @@ enum NrqlCellKind: String, CaseIterable, Identifiable {
     static func fenced(by line: String) -> NrqlCellKind? {
         let trimmed = line.trimmingCharacters(in: .whitespaces).lowercased()
         if trimmed == "```config" { return .config }
+        if trimmed == "```graphql" || trimmed == "```nerdgraph" { return .nerdgraph }
         return [NrqlCellKind.nrql, .lua].first { trimmed.hasPrefix("```" + ($0.fenceTag ?? "")) }
     }
 
@@ -65,6 +70,7 @@ enum NrqlCellKind: String, CaseIterable, Identifiable {
 
     /// The stored text without its fence lines; text without a fence is returned as it is.
     func unwrap(_ stored: String) -> String {
+        if self == .nerdgraph { return NerdgraphCellSource(stored: stored).editorText }
         guard fenceTag != nil else { return stored }
         var lines = stored.components(separatedBy: "\n")
         guard let open = lines.firstIndex(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }),
@@ -79,6 +85,7 @@ enum NrqlCellKind: String, CaseIterable, Identifiable {
 
     /// The editor text put back inside a fence.
     func wrap(_ shown: String) -> String {
+        if self == .nerdgraph { return NerdgraphCellSource(editorText: shown).storedText }
         guard let tag = fenceTag else { return shown }
         return "```\(tag)\n\(shown)\n```"
     }

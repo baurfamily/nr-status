@@ -7,6 +7,104 @@ import Testing
 import Foundation
 @testable import NR_Status
 
+struct NerdgraphCompletionTests {
+    private func schema() throws -> NerdgraphSchema {
+        try JSONDecoder().decode(NerdgraphSchema.self, from: Data("""
+            {
+              "queryType": {"name": "Query"},
+              "mutationType": {"name": "Mutation"},
+              "types": [
+                {"name": "Query", "kind": "OBJECT", "fields": [
+                  {"name": "actor", "description": "Current actor", "args": [], "type": {"kind": "OBJECT", "name": "Actor"}}
+                ]},
+                {"name": "Actor", "kind": "OBJECT", "fields": [
+                  {"name": "user", "args": [], "type": {"kind": "OBJECT", "name": "User"}},
+                  {"name": "account", "args": [
+                    {"name": "id", "description": "Account ID", "type": {"kind": "NON_NULL", "ofType": {"kind": "SCALAR", "name": "Int"}}}
+                  ], "type": {"kind": "OBJECT", "name": "Account"}}
+                ]},
+                {"name": "User", "kind": "OBJECT", "fields": [
+                  {"name": "name", "description": "Display name", "args": [], "type": {"kind": "SCALAR", "name": "String"}},
+                  {"name": "email", "args": [], "type": {"kind": "SCALAR", "name": "String"}}
+                ]},
+                {"name": "Account", "kind": "OBJECT", "fields": [
+                  {"name": "name", "args": [], "type": {"kind": "SCALAR", "name": "String"}}
+                ]},
+                {"name": "Mutation", "kind": "OBJECT", "fields": [
+                  {"name": "update", "args": [], "type": {"kind": "OBJECT", "name": "User"}}
+                ]}
+              ]
+            }
+            """.utf8))
+    }
+
+    @Test(arguments: [
+        "{ actor { user { na",
+        "{ me: actor { alias: user { na",
+        "{ actor { account(id: 1) { na",
+        "{ actor { account(id: {nested: \"}\"}) { na",
+        "{ actor { user { ... on User { na",
+        "fragment Details on User { na",
+        "mutation Update { update { na",
+        "# 😀 ignored braces { }\n{ actor { user { na"
+    ])
+    func completesNestedFieldsWithoutConfusingAliasesArgumentsOrFragments(text: String) throws {
+        let completion = NerdgraphCompletion.items(text: text, location: text.utf16.count, schema: try schema())
+        #expect(completion.items.map(\.name) == ["name"])
+        #expect(completion.range == NSRange(location: text.utf16.count - 2, length: 2))
+    }
+
+    @Test func suggestsArgumentsAndDeclaredVariables() throws {
+        let schema = try schema()
+        let text = "{ actor { account(i"
+        let found = NerdgraphCompletion.items(text: text, location: text.utf16.count, schema: schema)
+        #expect(found.items.first?.insertText == "id: ")
+        #expect(found.items.first?.detail?.contains("Int!") == true)
+        let variable = "query($accountId: Int!) { actor { account(id: $acc"
+        let variables = NerdgraphCompletion.items(text: variable, location: variable.utf16.count, schema: schema)
+        #expect(variables.items.map(\.name) == ["accountId"])
+        #expect(variables.items.first?.insertText == "accountId")
+    }
+
+    @Test(arguments: [
+        "{ actor { # us",
+        "{ actor { account(id: \"na",
+        "{ actor { account(id: \"\"\"na",
+        "{ actor { # title: na"
+    ])
+    func doesNotOfferFieldsInsideCommentsOrStrings(text: String) throws {
+        #expect(NerdgraphCompletion.items(text: text, location: text.utf16.count, schema: try schema()).items.isEmpty)
+    }
+
+    @Test func includesSchemaDocumentation() throws {
+        let text = "{ actor { user { na"
+        let found = NerdgraphCompletion.items(text: text, location: text.utf16.count, schema: try schema())
+        #expect(found.items.first?.detail?.contains("Display name") == true)
+    }
+
+    @Test func completesNativeMetadataKeysAndSavedKeyNames() async {
+        let profiles = [NerdgraphProfile(name: "Production US"), NerdgraphProfile(name: "Staging")]
+        let text = "# A note\n\n  # na"
+        let keys = await NrqlCompletion.items(
+            text: text, location: text.utf16.count, metadata: NrqlCompletionTests.StubMetadata(),
+            profiles: profiles, configuration: true, graphql: true
+        )
+        #expect(keys.items.map(\.name) == ["name"])
+        #expect(keys.items.first?.insertText == "name: ")
+        #expect(keys.range == NSRange(location: text.utf16.count - 2, length: 2))
+        let value = "# title: Details\n# api-key: Production U"
+        let names = await NrqlCompletion.items(
+            text: value, location: value.utf16.count, metadata: NrqlCompletionTests.StubMetadata(),
+            profiles: profiles, configuration: true, graphql: true
+        )
+        #expect(names.items.map(\.name) == ["Production US"])
+        #expect((value as NSString).substring(with: names.range) == "Production U")
+        for query in ["{ actor {\n# name: ", "/***\nname: "] {
+            #expect(NrqlCompletion.analyse(text: query, location: query.utf16.count, configuration: true, graphql: true).context == .none)
+        }
+    }
+}
+
 struct NrqlCompletionTests {
     struct StubMetadata: NrqlMetadataProviding {
         func eventTypes() async -> [String] { ["Transaction", "TransactionError", "PageView"] }

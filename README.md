@@ -89,6 +89,77 @@ that depend on them as out of date. Query-level overrides isolate settings they
 replace; inherited app defaults and preferred accounts are tracked too. Running
 an affected cell refreshes its stale prerequisites before using their results.
 
+#### Nerdgraph (GraphQL) cells
+
+Choose **Add Nerdgraph** (or **Convert To > Nerdgraph**) to edit GraphQL with
+its JSON variables underneath and JSON results on the right. The results have
+a **Find in JSON** box and disclosure triangles for objects and arrays.
+The tree starts fully expanded, with each level indented. Field/item counts
+appear only when a container is collapsed.
+GraphQL errors remain visible alongside partial data, including the full
+`errors` and `extensions` response fields.
+The **Variables Sent** button shows the last request's interpolated variables
+as formatted JSON, rather than repeating the literal GraphQL query.
+
+GraphQL uses the same saved API keys and document defaults as NRQL, but does
+not require or inherit account IDs. Supply account IDs as GraphQL arguments
+or variables when the selected operation needs them. Leading `#` comments
+can override `api-key` (`api_key` is also accepted), set a
+`title`, and assign a result `name`. Overrides reference saved key names, not
+secret values.
+
+````text
+```graphql
+# title: Account details
+# api-key: Production
+# name: accountDetails
+
+query AccountDetails($accountId: Int!) {
+  actor {
+    account(id: $accountId) {
+      id
+      name
+    }
+  }
+}
+```
+```variables
+{
+  "accountId": {{ results.accounts.rows[1].id }}
+}
+```
+
+```lua
+return {
+  rows = {
+    { name = results.accountDetails.data.actor.account.name }
+  }
+}
+```
+````
+
+The adjacent `graphql` and optional `variables` fences are saved as one cell
+(`nerdgraph` is accepted as an alternative query fence). Variables must be a
+JSON object; without a variables fence they default to `{}`. GraphQL text is
+sent literally, including the native metadata comments, without `{{ }}` interpolation.
+Metadata is read only from comments before the first line of GraphQL code.
+Only variables interpolate Lua
+expressions: unquoted placeholders insert typed JSON values, including arrays
+and objects; placeholders within quoted strings insert safely escaped text.
+Missing results, invalid expressions, or invalid JSON report errors.
+Named results expose the complete response as `results.<name>`, including
+`data`, and participate in **Run All**, dependency ordering, staleness tracking,
+and **Clear Results**.
+
+Completion loads the live GraphQL schema using the cell's effective API key
+and offers fields, arguments, declared variables, and inline-fragment types,
+with schema descriptions. Variables offer Lua completion inside `{{ }}`.
+The **Browse GraphQL Fields** sidebar button opens a searchable type/field
+browser with documentation, argument types, and field insertion. These
+features use Nerdgraph introspection and the existing editor; no additional
+package is needed. If schema loading fails, the editor/sidebar reports the
+error and queries can still be run.
+
 ### Other experiments
 
 There is a window at launch that lists some Entities in your account. This isn't currently useful for much, I got distracted by the Charts and Widgets.

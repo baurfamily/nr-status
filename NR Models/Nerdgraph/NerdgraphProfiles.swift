@@ -110,7 +110,7 @@ struct NerdgraphProfiles {
         return settings
     }
 
-    func resolve(name: String? = nil, accountIds: [Int]? = nil) throws -> NerdgraphConfig {
+    func resolve(name: String? = nil, accountIds: [Int]? = nil, requiresAccounts: Bool = true) throws -> NerdgraphConfig {
         let settings = try load()
         let profile = settings.profiles.first {
             if let name { return $0.name.caseInsensitiveCompare(name) == .orderedSame }
@@ -119,7 +119,7 @@ struct NerdgraphProfiles {
         guard let profile else { throw ProfileError.missingProfile }
         guard let credential = try keychain(for: profile).loadChecked() else { throw ProfileError.missingKey }
         let ids = accountIds ?? profile.preferredAccountIds
-        guard !ids.isEmpty else { throw ProfileError.missingAccounts }
+        guard !requiresAccounts || !ids.isEmpty else { throw ProfileError.missingAccounts }
         guard ids.allSatisfy({ $0 > 0 && $0 <= Int(Int32.max) }) else { throw ProfileError.invalidAccounts }
         return NerdgraphConfig(host: credential.host, apiKey: credential.apiKey,
                                accountIds: ids.map(String.init).joined(separator: ","))

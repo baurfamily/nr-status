@@ -15,8 +15,44 @@ This is current a passion project of mine. I love playing with data and I wanted
 <img width="1263" alt="Editor Example" src="https://github.com/user-attachments/assets/2186b07e-22cc-4997-b854-d182604c8264" />
 
 Notebook files are registered as **NR Markdown** (`.nrmd`): plain-text Markdown
-with NRQL, Lua, Nerdgraph, and configuration cells. Existing `.nrql` notebooks
-can be renamed to `.nrmd`; their contents do not need to change.
+with NRQL, Lua, Nerdgraph, and configuration cells.
+
+#### Cell configuration
+
+Each code cell has a gear button that opens a sidebar spanning its header, code,
+and results. Configure its title, result bindings, connection overrides, display
+mode, and chart settings there, even before running it. **Settings** and **Text**
+edit the same configuration; changes are saved directly in the document.
+Configuration fences are hidden by default.
+
+A `cell_config` fence immediately precedes the cell it configures. It uses the
+same keys for NRQL, Lua, and Nerdgraph; document defaults use a separate `config`
+fence at the top of the file. Neither fence needs a comment wrapper:
+
+````text
+```cell_config
+title: Error rate
+var: error_rate
+chart: billboard
+attributes: gauge, max(100), style(circular)
+```
+```nrql
+SELECT percentage(count(*), WHERE error IS true) FROM Transaction
+```
+````
+
+Supported chart attributes include `stacked`, `smoothed`, `lines`, `points`,
+`donut`, `separated`, `pivot`, `color-facets`, `x-log`, `y-log`, and `gauge`.
+Gauges also accept `max(number)` and `style(styleName)`; scatter plots accept
+`x(field)`, `y(field)`, `color(field)`, and `size(field)`. An absent attributes
+line uses chart defaults; an explicit empty line switches applicable toggles off.
+Facet/field filtering and display counts are not stored in workbook configuration.
+In the query builder, facet selections filter the chart, and **Filter Query to
+Selected Facets** can add a `WHERE` clause for a single facet.
+
+With no `cell_config` fence, the first code line can supply the title via a
+`//` NRQL comment, `--` Lua comment, or `#` GraphQL comment. Any cell configuration,
+even an empty fence, disables that fallback; use `title:` instead.
 
 #### API keys and accounts
 
@@ -38,7 +74,7 @@ does not change document settings. Results that reference `config` become stale
 when these effective settings change, including account order.
 
 Declare document data with `var appName = "Foo"` (or `var: appName = "Foo"`)
-inside the config comment. It is available only as `config.appName`
+inside the document `config` fence. It is available only as `config.appName`
 in scripts and interpolation. Declarations are evaluated in order as Lua
 expressions, so they can use earlier variables through `config`; strings,
 numbers, booleans, and tables are supported. Names must be unique and cannot
@@ -68,41 +104,37 @@ Settings, not a copied key name or account list. The key and building icons stay
 fixed to keep the native control group joined when selections change. Key names,
 account selections, and checkmarks appear inside the menus, not in the toolbar.
 
-Click the **Document Config** gear button to reveal and expand that cell for manual
-editing. New blocks include optional `author` and `description` metadata fields.
+Click the **Document Config** gear button to open its configuration sidebar.
+New blocks include optional `author` and `description` metadata fields.
 With both dropdowns at **Default**, no connection overrides are stored (and the
-cell need not exist until opened). Its cell has the same collapse toggle as code cells and is included
-in **Collapse All** and **Expand All**. Explicit overrides are stored as:
+cell need not exist until opened). Explicit overrides are stored as:
 
 ````text
 ```config
-/***
 author:
 description:
 api-key: Production
 accounts: 123, 456
-***/
 ```
 
-```nrql
-/***
+```cell_config
 title: Errors in staging
 api-key: Staging
 accounts: 789, 101
-***/
+```
+```nrql
 SELECT count(*) FROM TransactionError
+```
 ```
 ````
 
-Each query independently overrides `api-key`, `accounts`, or both in its existing
-`/*** ... ***/` metadata comment. Non-empty document settings also require that
-block-comment format inside the `config` fence; bare fields and `//` settings are
-not accepted.
+Each query independently overrides `api-key`, `accounts`, or both in its
+`cell_config` fence. Document settings are plain key/value lines inside the
+`config` fence; `//` lines are comments, not settings.
 Only `api-key` and `accounts` affect document connection settings. Other
 `key: value` metadata is accepted without affecting execution and is preserved
 when the toolbar changes connection settings.
-A leading `//` line supplies only the query title, and only when the query has no
-metadata block. Missing fields inherit document defaults, then the
+Missing fields inherit document defaults, then the
 app's default key and that key's preferred accounts. Changing only the key keeps
 any explicit document account list; otherwise the selected key's preferred list
 is used. Multiple accounts are sent together in one NerdGraph query.
@@ -131,10 +163,10 @@ GraphQL errors remain visible alongside partial data, including the full
 The **Variables Sent** button shows the last request's interpolated variables
 as formatted JSON, rather than repeating the literal GraphQL query.
 
-Nerdgraph defaults to `chart: json`. Add `# chart: none` to hide its result pane
+Nerdgraph defaults to JSON. Set `chart: none` in its `cell_config` to hide its result pane
 while keeping variable bindings available to other cells. Execution errors and
 GraphQL errors remain visible even when the result data is hidden.
-NRQL and Lua cells can also use `chart: json` in their metadata comments to
+NRQL and Lua cells can also use `chart: json` in their `cell_config` to
 display results in the searchable JSON viewer instead of a chart. Their JSON
 contains only the result rows as an array, without the query text, column list,
 or result metadata. Lua variable bindings still use `{ nrql, columns, rows, facets }`;
@@ -143,19 +175,19 @@ HTML and PDF exports respect these display modes.
 
 GraphQL uses the same saved API keys and document defaults as NRQL, but does
 not require or inherit account IDs. Supply account IDs as GraphQL arguments
-or variables when the selected operation needs them. Leading `#` comments
+or variables when the selected operation needs them. The `cell_config` fence
 can override `api-key` (`api_key` is also accepted), set a
 `title`, and bind the result using `var`. Overrides reference saved key names, not
 secret values.
-Use `var` in NRQL and Lua metadata blocks too; `name` no longer binds results.
+Use `var` in NRQL and Lua configuration too; `name` does not bind results.
 
-Nerdgraph supports multiple result declarations. A plain `# var: response`
+Nerdgraph supports multiple result declarations. A plain `var: response`
 binds the complete response; an expression binds an extracted value instead:
 
-```graphql
-# var: response
-# var: entity = data.actor.entitySearch.results.entities[1]
-# var: tagCount = #data.actor.entitySearch.results.entities[1].tags
+```cell_config
+var: response
+var: entity = data.actor.entitySearch.results.entities[1]
+var: tagCount = #data.actor.entitySearch.results.entities[1].tags
 ```
 
 Later cells read `results.entity.name` or `results.tagCount`. Expressions use
@@ -168,11 +200,12 @@ partial bindings. Successful runs still show the complete response in the JSON
 viewer.
 
 ````text
+```cell_config
+title: Account details
+api-key: Production
+var: accountDetails
+```
 ```graphql
-# title: Account details
-# api-key: Production
-# var: accountDetails
-
 query AccountDetails($accountId: Int!) {
   actor {
     account(id: $accountId) {
@@ -200,8 +233,7 @@ return {
 The adjacent `graphql` and optional `variables` fences are saved as one cell
 (`nerdgraph` is accepted as an alternative query fence). Variables must be a
 JSON object; without a variables fence they default to `{}`. GraphQL text is
-sent literally, including the native metadata comments, without `{{ }}` interpolation.
-Metadata is read only from comments before the first line of GraphQL code.
+sent literally, including comments, without `{{ }}` interpolation.
 Only variables interpolate Lua
 expressions: unquoted placeholders insert typed JSON values, including arrays
 and objects; placeholders within quoted strings insert safely escaped text.

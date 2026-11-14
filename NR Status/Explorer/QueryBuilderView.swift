@@ -39,6 +39,14 @@ struct QueryBuilderView : View {
             ConfigurableChartView(config: chartConfiguration)
                 .inspectorHeader {
                     QueryTextView(nrql: queryBuilder.formattedNrql)
+                    if queryBuilder.facets.count == 1, !chartConfiguration.facets.all.isEmpty {
+                        Button("Filter Query to Selected Facets") {
+                            queryBuilder.filterFacetValues(chartConfiguration.facets.selected)
+                        }
+                        .disabled(chartConfiguration.facets.selected.isEmpty
+                            || chartConfiguration.facets.selected.count == chartConfiguration.facets.all.count)
+                        .help("Add a WHERE clause and rerun the query with the selected facet values")
+                    }
                 }
                 .overlay {
                     if query.isRunning {

@@ -18,26 +18,27 @@ enum NrqlDocumentParser {
 
     /// Splits text into cells: each ```nrql, ```lua, ```graphql or ```config fence is a cell, and
     /// whatever lies between them is one Markdown cell (blank lines included).
-    /// An adjacent ```variables fence belongs to the preceding GraphQL cell.
+    /// A ```cell_config fence belongs to the following code cell; an adjacent
+    /// ```variables fence belongs to the preceding GraphQL cell.
     /// Other fences, such as ```swift, are Markdown content, so a ```nrql inside one stays text.
     static func blocks(_ text: String) -> [String] {
         var blocks: [String] = []
         var current: [String] = []
         var inCode = false
         var inProseFence = false
-        var attachingVariables = false
+        var attachingToPrevious = false
 
         func flush() {
             let block = current.joined(separator: "\n").trimmingCharacters(in: .newlines)
             if !block.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                if attachingVariables, !blocks.isEmpty {
+                if attachingToPrevious, !blocks.isEmpty {
                     blocks[blocks.count - 1] += "\n" + block
                 } else {
                     blocks.append(block)
                 }
             }
             current.removeAll()
-            attachingVariables = false
+            attachingToPrevious = false
         }
 
         for line in text.components(separatedBy: "\n") {
@@ -50,9 +51,21 @@ enum NrqlDocumentParser {
             } else if inProseFence {
                 current.append(line)
                 if NrqlCellKind.isClosingFence(line) { inProseFence = false }
-            } else if NrqlCellKind.fenced(by: line) != nil {
-                flush()
+            } else if let kind = NrqlCellKind.fenced(by: line) {
+                if kind != .config,
+                   current.allSatisfy({ $0.trimmingCharacters(in: .whitespaces).isEmpty }),
+                   let previous = blocks.last, previous.hasPrefix("```cell_config\n"),
+                   NrqlCellSource(stored: previous).code.isEmpty {
+                    current.removeAll()
+                    attachingToPrevious = true
+                } else {
+                    flush()
+                }
                 current.append(line)
+                inCode = true
+            } else if line.trimmingCharacters(in: .whitespaces).lowercased() == "```cell_config" {
+                flush()
+                current.append("```cell_config")
                 inCode = true
             } else if line.trimmingCharacters(in: .whitespaces).lowercased() == "```variables",
                       current.allSatisfy({ $0.trimmingCharacters(in: .whitespaces).isEmpty }),
@@ -60,7 +73,7 @@ enum NrqlDocumentParser {
                       !NerdgraphCellSource(stored: previous).hasVariables {
                 current.removeAll()
                 current.append(line)
-                attachingVariables = true
+                attachingToPrevious = true
                 inCode = true
             } else {
                 if NrqlCellKind.isFence(line) { inProseFence = true }

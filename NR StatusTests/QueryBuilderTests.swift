@@ -16,6 +16,26 @@ struct QueryBuilderTests {
         #expect(query.nrql == "FROM Transaction SELECT COUNT(*) SINCE 6 hours ago")
     }
 
+    @Test func selectedFacetsAddEscapedWhereClauseAndKeepExistingPredicates() {
+        var query = QueryBuilder(event: "Transaction")
+        query.add(facet: name)
+        query.predicates = ["duration > 1"]
+        query.filterFacetValues(["Checkout", "O'Brien"])
+        #expect(query.nrql.contains("WHERE (duration > 1) AND (`name` IN ('Checkout', 'O\\'Brien'))"))
+        #expect(query.formattedNrql.replacingOccurrences(of: "\n", with: " ") == query.nrql)
+        #expect(query.nrql.hasSuffix("FACET name"))
+        let before = query
+        query.filterFacetValues([])
+        #expect(query == before)
+    }
+
+    @Test func numericFacetFiltersUseNumericLiterals() {
+        var query = QueryBuilder(event: "Transaction")
+        query.add(facet: duration)
+        query.filterFacetValues(["1.5", "2"])
+        #expect(query.nrql.contains("WHERE (`duration` IN (1.5, 2))"))
+    }
+
     @Test func defaultCountCanBeDisabled() {
         var query = QueryBuilder(event: "Transaction")
         query.defaultCount = false

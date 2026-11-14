@@ -5,18 +5,10 @@
 
 import Foundation
 
-/// Chart settings written in a doc-style comment at the top of a query:
+/// Chart settings written as plain key/value lines in a cell_config fence:
 ///
-///     /***
 ///     chart: line
 ///     attributes: smoothed, lines, points
-///     ***/
-///
-/// A script cell writes the same keys in a Lua comment that opens the script:
-///
-///     --[[
-///     chart: bar
-///     ]]
 ///
 /// With no `attributes` key, the chart keeps its defaults. When it is present,
 /// every attribute that applies to the chart type is on if listed and off if not.
@@ -40,31 +32,19 @@ struct ChartFormat: Equatable, Hashable {
         .plot: ["color-facets", "x-log", "y-log"],
         .billboard: ["gauge"]
     ]
-    private static let block = try! NSRegularExpression(
-        pattern: #"/\*\*\*(.*?)\*\*\*/"#,
-        options: [.dotMatchesLineSeparators]
-    )
-    // in a Lua cell the format is the comment that opens the script
-    private static let luaBlock = try! NSRegularExpression(
-        pattern: #"\A\s*--\[\[(.*?)\]\]"#,
-        options: [.dotMatchesLineSeparators]
-    )
+    private static let attributePattern = try! NSRegularExpression(pattern: #"[\w-]+\([^)]*\)|[\w-]+"#)
 
-    /// The text with any format block removed; `lua` looks for a leading `--[[ ]]` comment instead.
-    static func strip(from text: String, lua: Bool = false) -> String {
-        let range = NSRange(text.startIndex..., in: text)
-        let pattern = lua ? luaBlock : block
-        return pattern.stringByReplacingMatches(in: text, range: range, withTemplate: "")
+    static func parseAttributes(_ text: String) -> Set<String> {
+        Set(attributePattern.matches(in: text, range: NSRange(text.startIndex..., in: text)).compactMap {
+            guard let range = Range($0.range, in: text) else { return nil }
+            let token = String(text[range])
+            return token.contains("(") ? token : token.lowercased()
+        })
     }
 
-    /// Reads the first format block in the text; nil if there isn't one.
-    static func parse(from text: String, lua: Bool = false) -> ChartFormat? {
-        let range = NSRange(text.startIndex..., in: text)
-        guard let match = (lua ? luaBlock : block).firstMatch(in: text, range: range),
-              let bodyRange = Range(match.range(at: 1), in: text)
-        else { return nil }
-
-        return parseMetadata(String(text[bodyRange]))
+    func parameter(_ name: String) -> String? {
+        attributes?.sorted().first { $0.hasPrefix(name + "(") && $0.hasSuffix(")") }
+            .map { String($0.dropFirst(name.count + 1).dropLast()) }
     }
 
     static func parseMetadata(_ body: String) -> ChartFormat {
@@ -86,8 +66,7 @@ struct ChartFormat: Equatable, Hashable {
                 format.showsJSON = value == "json"
                 format.type = ChartType(rawValue: value)
             case "attributes":
-                let names = value.split(whereSeparator: { $0 == "," || $0.isWhitespace }).map(String.init)
-                format.attributes = names.isEmpty ? nil : Set(names)
+                format.attributes = parseAttributes(rawValue)
             default:
                 // unknown keys are left alone for later features
                 continue
@@ -122,8 +101,18 @@ struct ChartFormat: Equatable, Hashable {
             config.plot.colorFacets = on("color-facets")
             config.plot.xLogScale = on("x-log")
             config.plot.yLogScale = on("y-log")
+            if let field = parameter("x") { config.plot.xField = field }
+            if let field = parameter("y") { config.plot.yField = field }
+            if let field = parameter("color") { config.plot.colorField = field.isEmpty ? nil : field }
+            if let field = parameter("size") { config.plot.sizeField = field.isEmpty ? nil : field }
         case .billboard:
             config.billboard.showGauge = on("gauge")
+            if let maximum = parameter("max").flatMap(Double.init), maximum.isFinite, maximum > 0 {
+                config.billboard.gaugeMax = maximum
+            }
+            if let style = parameter("style").flatMap(BillboardConfiguration.GaugeStyle.init(rawValue:)) {
+                config.billboard.gaugeStyle = style
+            }
         case .table:
             break
         }

@@ -137,41 +137,15 @@ final class NrqlLanguageService: LanguageService {
             items = found.items
             range = NSRange(location: found.range.location + start, length: found.range.length)
         case .graphql:
-            let source = lock.withLock { connectionSource }
-            let defaults = await MainActor.run { source?() ?? .success(NrqlConnection()) }
-            let context = NrqlCompletion.analyse(text: text, location: location, configuration: true, graphql: true).context
-            switch context {
-            case .formatKey, .formatValue:
-                let line = (text as NSString).lineRange(for: NSRange(location: location, length: 0))
-                let before = (text as NSString).substring(with: NSRange(location: line.location, length: location - line.location))
-                if before.trimmingCharacters(in: .whitespaces).hasPrefix("# var:"), let equals = before.firstIndex(of: "=") {
-                    let start = line.location + before[..<before.index(after: equals)].utf16.count
-                    let scope = await currentScope()
-                    let expression = (text as NSString).substring(from: start)
-                    let found = LuaCompletion.items(text: expression, location: location - start, scope: scope, isExpression: true)
-                    items = found.items
-                    range = NSRange(location: found.range.location + start, length: found.range.length)
-                    break
-                }
-                let settings = try NerdgraphProfiles.shared.load()
-                let found = await NrqlCompletion.items(
-                    text: text, location: location, metadata: NrqlMetadata.Source(connection: defaults),
-                    profiles: settings.profiles, defaultKeyName: try defaults.get().apiKeyName,
-                    configuration: true, graphql: true
-                )
-                items = found.items
-                range = found.range
-            default:
-                do {
-                    let schema = try await graphqlSchema()
-                    (items, range) = NerdgraphCompletion.items(text: text, location: location, schema: schema)
-                    let handler = lock.withLock { completionErrorHandler }
-                    await MainActor.run { handler?(nil) }
-                } catch {
-                    let handler = lock.withLock { completionErrorHandler }
-                    await MainActor.run { handler?(error.localizedDescription) }
-                    throw error
-                }
+            do {
+                let schema = try await graphqlSchema()
+                (items, range) = NerdgraphCompletion.items(text: text, location: location, schema: schema)
+                let handler = lock.withLock { completionErrorHandler }
+                await MainActor.run { handler?(nil) }
+            } catch {
+                let handler = lock.withLock { completionErrorHandler }
+                await MainActor.run { handler?(error.localizedDescription) }
+                throw error
             }
         case .nrql, .config:
             let line = (text as NSString).lineRange(for: NSRange(location: location, length: 0))
@@ -195,7 +169,7 @@ final class NrqlLanguageService: LanguageService {
                 let source = lock.withLock { connectionSource }
                 let defaults = await MainActor.run { source?() ?? .success(NrqlConnection()) }
                 let connection = Result {
-                    try NrqlConnection.parse(NrqlConnection.metadataBody(in: text)).inheriting(defaults.get())
+                    try NrqlConnection.parse(language == .config ? text : "").inheriting(defaults.get())
                 }
                 let settings = try NerdgraphProfiles.shared.load()
                 let defaultName = (try? defaults.get().apiKeyName)

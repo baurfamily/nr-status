@@ -87,9 +87,9 @@ struct NerdgraphCompletionTests {
         #expect(found.items.first?.detail?.contains("Display name") == true)
     }
 
-    @Test func completesNativeMetadataKeysAndSavedKeyNames() async {
+    @Test func completesPlainNerdgraphConfigurationKeysAndSavedKeyNames() async {
         let profiles = [NerdgraphProfile(name: "Production US"), NerdgraphProfile(name: "Staging")]
-        let text = "# A note\n\n  # va"
+        let text = "  va"
         let keys = await NrqlCompletion.items(
             text: text, location: text.utf16.count, metadata: NrqlCompletionTests.StubMetadata(),
             profiles: profiles, configuration: true, graphql: true
@@ -97,17 +97,17 @@ struct NerdgraphCompletionTests {
         #expect(keys.items.map(\.name) == ["var"])
         #expect(keys.items.first?.insertText == "var: ")
         #expect(keys.range == NSRange(location: text.utf16.count - 2, length: 2))
-        let value = "# title: Details\n# api-key: Production U"
+        let value = "title: Details\napi-key: Production U"
         let names = await NrqlCompletion.items(
             text: value, location: value.utf16.count, metadata: NrqlCompletionTests.StubMetadata(),
             profiles: profiles, configuration: true, graphql: true
         )
         #expect(names.items.map(\.name) == ["Production US"])
         #expect((value as NSString).substring(with: names.range) == "Production U")
-        for query in ["{ actor {\n# var: ", "/***\nvar: "] {
+        for query in ["# var: ", "/***\nvar: "] {
             #expect(NrqlCompletion.analyse(text: query, location: query.utf16.count, configuration: true, graphql: true).context == .none)
         }
-        let chart = "# chart: "
+        let chart = "chart: "
         let charts = await NrqlCompletion.items(
             text: chart, location: chart.utf16.count, metadata: NrqlCompletionTests.StubMetadata(),
             configuration: true, graphql: true
@@ -221,15 +221,18 @@ struct NrqlCompletionTests {
         #expect(await names("// FROM\nSELECT cou|").contains("count"))
     }
 
-    @Test func completesFormatBlock() async {
-        #expect(await names("/***\n  ti|\n***/") == ["title"])
-        #expect(await names("/***\n  va|\n***/") == ["var"])
-        #expect(await names("/***\n  na|\n***/").isEmpty)
-        #expect(await names("/***\nchart: p|\n***/") == ["pie", "plot"])
-        #expect(await names("/***\nchart: j|\n***/") == ["json"])
-        #expect(await names("/***\nchart: pie\nattributes: |\n***/") == ["donut", "separated"])
-        #expect(await names("/***\nchart: plot\nattributes: x-|\n***/") == ["x-log"])
-        #expect(await names("/***\ntitle: Fo|\n***/").isEmpty)
+    @Test func completesPlainConfiguration() async {
+        func complete(_ text: String) async -> [String] {
+            await NrqlCompletion.items(text: text, location: text.utf16.count, metadata: StubMetadata(), configuration: true).items.map(\.name)
+        }
+        #expect(await complete("  ti") == ["title"])
+        #expect(await complete("  va") == ["var"])
+        #expect(await complete("  na").isEmpty)
+        #expect(await complete("chart: p") == ["pie", "plot"])
+        #expect(await complete("chart: j") == ["json"])
+        #expect(await complete("chart: pie\nattributes: ") == ["donut", "separated"])
+        #expect(await complete("chart: plot\nattributes: x-") == ["x-log"])
+        #expect(await complete("title: Fo").isEmpty)
     }
 
     @Test func completesSavedNamesAndOnlyTheSelectedKeysPreferredAccounts() async {
@@ -237,34 +240,33 @@ struct NrqlCompletionTests {
             NerdgraphProfile(name: "Production US", preferredAccountIds: [123, 456]),
             NerdgraphProfile(name: "Staging", preferredAccountIds: [789])
         ]
-        func complete(_ text: String, configuration: Bool = false) async -> (items: [NrqlCompletion.Item], range: NSRange) {
+        func complete(_ text: String, configuration: Bool = true) async -> (items: [NrqlCompletion.Item], range: NSRange) {
             await NrqlCompletion.items(text: text, location: text.utf16.count, metadata: StubMetadata(),
                                        profiles: profiles, defaultKeyName: "Production US", configuration: configuration)
         }
-        let keyText = "/***\napi-key: Production U"
+        let keyText = "api-key: Production U"
         let key = await complete(keyText)
         #expect(key.items.map(\.name) == ["Production US"])
         #expect((keyText as NSString).substring(with: key.range) == "Production U")
-        #expect(await complete("/***\naccounts: ").items.map(\.name) == ["123", "456"])
-        #expect(await complete("/***\napi-key: Staging\naccounts: ").items.map(\.name) == ["789"])
-        #expect(await complete("/***\napi-key: Unknown\naccounts: ").items.isEmpty)
-        #expect(await complete("/***\naccounts: 123, 4").items.map(\.name) == ["456"])
-        #expect(await complete("/***\napi-key: Staging\naccounts: ", configuration: true).items.map(\.name) == ["789"])
-        #expect(await complete("/***\nacc", configuration: true).items.map(\.name) == ["accounts"])
-        #expect(await complete("/***\naut", configuration: true).items.map(\.name) == ["author"])
-        #expect(await complete("/***\ndesc", configuration: true).items.map(\.name) == ["description"])
-        #expect(await complete("accounts: ", configuration: true).items.isEmpty)
+        #expect(await complete("accounts: ").items.map(\.name) == ["123", "456"])
+        #expect(await complete("api-key: Staging\naccounts: ").items.map(\.name) == ["789"])
+        #expect(await complete("api-key: Unknown\naccounts: ").items.isEmpty)
+        #expect(await complete("accounts: 123, 4").items.map(\.name) == ["456"])
+        #expect(await complete("api-key: Staging\naccounts: ", configuration: true).items.map(\.name) == ["789"])
+        #expect(await complete("acc", configuration: true).items.map(\.name) == ["accounts"])
+        #expect(await complete("aut", configuration: true).items.map(\.name) == ["author"])
+        #expect(await complete("desc", configuration: true).items.map(\.name) == ["description"])
         #expect(await complete("// api-key: ", configuration: true).items.isEmpty)
-        #expect(await complete("/***\napi-key: Staging\n***/\naccounts: ", configuration: true).items.isEmpty)
+        #expect(await complete("/* api-key: Staging", configuration: true).items.isEmpty)
     }
 
     @Test func offersAfterSeparators() {
-        func offers(_ marked: String) -> Bool {
+        func offers(_ marked: String, configuration: Bool = false) -> Bool {
             let loc = (marked as NSString).range(of: "|").location
-            return NrqlCompletion.offersAfterSeparator(text: marked.replacingOccurrences(of: "|", with: ""), location: loc)
+            return NrqlCompletion.offersAfterSeparator(text: marked.replacingOccurrences(of: "|", with: ""), location: loc, configuration: configuration)
         }
-        #expect(offers("/***\nchart: line\nattributes: stacked, |\n***/"))
-        #expect(offers("/***\nchart: line\nattributes: stacked |\n***/"))
+        #expect(offers("chart: line\nattributes: stacked, |", configuration: true))
+        #expect(offers("chart: line\nattributes: stacked |", configuration: true))
         #expect(offers("SELECT count(*), |"))
         #expect(offers("SELECT count(*) FROM |"))
         #expect(!offers("SELECT count(*) |"))

@@ -49,10 +49,12 @@ struct NerdgraphClientTests {
         let session = URLSession(configuration: configuration)
         defer { session.invalidateAndCancel() }
         let document = NRQL_EditorDocument(text: """
+            ```cell_config
+            var: response
+            var: entity = data.actor.entitySearch.results.entities[1]
+            var: tagCount = #data.actor.entitySearch.results.entities[1].tags
+            ```
             ```graphql
-            # var: response
-            # var: entity = data.actor.entitySearch.results.entities[1]
-            # var: tagCount = #data.actor.entitySearch.results.entities[1].tags
             { actor { entitySearch(query: "name = 'Foo'") { results { entities { name tags { key } } } } } }
             ```
 
@@ -147,9 +149,11 @@ struct NerdgraphClientTests {
         let session = URLSession(configuration: configuration)
         defer { session.invalidateAndCancel() }
         let query = NrqlQuery(from: """
+            ```cell_config
+            api_key: GraphQL
+            var: custom
+            ```
             ```graphql
-            # api_key: GraphQL
-            # var: custom
             query($id: Int!) { customField(id: $id, text: "{{ literal }}") { id } }
             ```
             ```variables
@@ -162,7 +166,7 @@ struct NerdgraphClientTests {
         #expect(query.jsonResult?.graphQLErrors == ["partial error"])
         #expect(query.jsonResult?["extensions"]?["trace"] == .string("ok"))
         #expect(query.executedNrql?.contains("{{ literal }}") == true)
-        #expect(query.executedNrql?.hasPrefix("# api_key: GraphQL\n# var: custom\n") == true)
+        #expect(query.executedNrql?.hasPrefix("query($id: Int!)") == true)
         #expect(query.loadedConnection?.accountIds.isEmpty == true)
         let request = try #require(captured)
         #expect(request.value(forHTTPHeaderField: "api-key") == "test-key")

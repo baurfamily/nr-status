@@ -15,25 +15,23 @@ struct ScatterPlot: View {
         config.resultContainer
     }
     
-    var data: [NrdbResults.StatDatum] = []
-    var filteredData: [NrdbResults.StatDatum] {
-        data.filter { selectedFacets.isEmpty || selectedFacets.contains($0.facet) }
-    }
-    
-    init(config: ChartConfiguration) {
-        self.config = config
-        
-        let allData = config.resultContainer.results.data
-        
-        self.data = allData.map { datum in
+    var data: [NrdbResults.StatDatum] {
+        config.resultContainer.results.data.map { datum in
             NrdbResults.StatDatum(
                 facet: datum.facet ?? "",
                 color: colorValue(for: datum),
                 x: datum.numberFields[xField] ?? 0,
                 y: datum.numberFields[yField] ?? 0,
-                z: size(for: datum),
+                z: size(for: datum)
             )
         }
+    }
+    var filteredData: [NrdbResults.StatDatum] {
+        data.filter { config.facets.all.isEmpty || selectedFacets.contains($0.facet) }
+    }
+
+    init(config: ChartConfiguration) {
+        self.config = config
     }
     
     var metadata: NrdbMetadata { config.resultContainer.metadata }

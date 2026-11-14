@@ -462,7 +462,7 @@ struct NrqlClearResultsTests {
         }
         #expect(document.priorResults.isEmpty)
         #expect(document.completionScope(excluding: document.cells[3].id).results.isEmpty)
-        #expect(document.staleCellIds.isEmpty)
+        #expect(document.staleCellIds(profiles: NerdgraphProfiles.Settings()).isEmpty)
         #expect(document.text == text)
         #expect(document.cells.map(\.id) == ids)
         #expect(document.focusedCellId == focus)
@@ -688,5 +688,167 @@ struct NrqlStaleTests {
 
         await a.query.getData()
         #expect(NrqlDependencies.staleCells(in: cells) == [b.id, c.id])
+    }
+}
+
+@MainActor
+struct NrqlConnectionStaleTests {
+    private let production = NerdgraphProfile(name: "Production", preferredAccountIds: [10, 20])
+    private let staging = NerdgraphProfile(name: "Staging", preferredAccountIds: [30])
+
+    private var profiles: NerdgraphProfiles.Settings {
+        NerdgraphProfiles.Settings(profiles: [production, staging], defaultProfileID: production.id)
+    }
+
+    private func cacheResults(in document: NRQL_EditorDocument, profiles: NerdgraphProfiles.Settings) throws {
+        let data = try #require(ChartSamples.sampleData(size: .small))
+        for cell in NrqlDependencies.plan(for: document.cells, in: document.cells, includeFinished: true) {
+            let snapshot: NrqlConnection.Snapshot?
+            if cell.kind == .nrql {
+                snapshot = try NrqlConnection.parse(NrqlConnection.metadataBody(in: cell.editorText))
+                    .inheriting(document.connection.get())
+                    .snapshot(profiles: profiles)
+            } else {
+                snapshot = nil
+            }
+            cell.query.setState(.loaded(data), connection: snapshot)
+        }
+    }
+
+    @Test(arguments: [true, false])
+    func documentChangesOnlyInvalidateInheritedFieldsAndTheirReaders(changingKey: Bool) throws {
+        var document = NRQL_EditorDocument(text: """
+            ```config
+            /***
+            api-key: Production
+            accounts: 10
+            ***/
+            ```
+
+            ```nrql
+            /*** name: source ***/
+            SELECT 1
+            ```
+
+            ```nrql
+            /*** api-key: Staging ***/
+            SELECT 2
+            ```
+
+            ```nrql
+            /*** accounts: 30 ***/
+            SELECT 3
+            ```
+
+            ```nrql
+            /***
+            api-key: Staging
+            accounts: 30
+            ***/
+            SELECT 4
+            ```
+
+            ```lua
+            --[[ name: derived ]]
+            return results.source
+            ```
+
+            ```lua
+            return results.derived
+            ```
+
+            ```lua
+            return { rows = { { count = 1 } } }
+            ```
+            """)
+        try cacheResults(in: document, profiles: profiles)
+        #expect(document.staleCellIds(profiles: profiles).isEmpty)
+
+        if changingKey {
+            try document.setDefaultApiKey("Staging")
+        } else {
+            try document.setDefaultAccountIds([20])
+        }
+        let affected = [1, changingKey ? 3 : 2, 5, 6].map { document.cells[$0].id }
+        let stale = document.staleCellIds(profiles: profiles)
+        #expect(stale == Set(affected))
+        #expect(document.pendingDependencies(for: document.cells[6].id, stale: stale).map(\.id)
+                == [document.cells[1].id, document.cells[5].id])
+        #expect(NrqlDependencies.plan(for: [document.cells[6]], in: document.cells, includeFinished: false, stale: stale).map(\.id)
+                == [document.cells[1].id, document.cells[5].id, document.cells[6].id])
+
+        try cacheResults(in: document, profiles: profiles)
+        #expect(document.staleCellIds(profiles: profiles).isEmpty)
+    }
+
+    @Test(arguments: [true, false])
+    func pendingEditorChangesInvalidateCachedResults(editingDocumentConfig: Bool) throws {
+        let document = NRQL_EditorDocument(text: """
+            ```config
+            /*** api-key: Production ***/
+            ```
+
+            ```nrql
+            /*** name: source ***/
+            SELECT 1
+            ```
+
+            ```lua
+            return results.source
+            ```
+            """)
+        try cacheResults(in: document, profiles: profiles)
+        let text = document.text
+        if editingDocumentConfig {
+            document.cells[0].query.text = "```config\n/*** api-key: Staging ***/\n```"
+        } else {
+            document.cells[1].query.text = "```nrql\n/***\nname: source\naccounts: 30\n***/\nSELECT 1\n```"
+        }
+        #expect(document.text == text)
+        #expect(document.staleCellIds(profiles: profiles) == [document.cells[1].id, document.cells[2].id])
+    }
+
+    @Test(arguments: [true, false])
+    func inheritedAppDefaultsAndPreferredAccountsAreTracked(changingKey: Bool) throws {
+        let document = NRQL_EditorDocument(text: """
+            ```nrql
+            /*** name: source ***/
+            SELECT 1
+            ```
+
+            ```lua
+            return results.source
+            ```
+
+            ```nrql
+            /***
+            api-key: Staging
+            accounts: 30
+            ***/
+            SELECT 2
+            ```
+            """)
+        try cacheResults(in: document, profiles: profiles)
+        var updated = profiles
+        if changingKey {
+            updated.defaultProfileID = staging.id
+        } else {
+            updated.profiles[0].preferredAccountIds = [20]
+        }
+        #expect(document.staleCellIds(profiles: updated) == [document.cells[0].id, document.cells[1].id])
+    }
+
+    @Test func equivalentSelectionsAndClearedResultsAreNotStale() throws {
+        var document = NRQL_EditorDocument(text: "```nrql\nSELECT 1\n```")
+        try cacheResults(in: document, profiles: profiles)
+        try document.setDefaultApiKey("production")
+        try document.setDefaultAccountIds([20, 10])
+        #expect(document.staleCellIds(profiles: profiles).isEmpty)
+
+        try document.setDefaultAccountIds([30])
+        #expect(document.staleCellIds(profiles: profiles) == [document.cells[1].id])
+        document.clearResults()
+        #expect(document.staleCellIds(profiles: profiles).isEmpty)
+        #expect(document.cells[1].query.loadedConnection == nil)
     }
 }

@@ -253,22 +253,44 @@ struct NRQL_EditorDocument: FileDocument {
         runCell(id)
     }
 
-    /// Runs a cell, first running any cell it reads that has no result yet.
+    /// Runs a cell, first refreshing any missing or stale results it reads.
     @MainActor func runCell(_ id: NrqlCell.ID) {
         guard let cell = cells.first(where: { $0.id == id }), cell.isRunnable else { return }
-        run(NrqlDependencies.plan(for: [cell], in: cells, includeFinished: false), in: cells)
+        do {
+            let stale = try staleCellIds(profiles: NerdgraphProfiles.shared.load())
+            run(NrqlDependencies.plan(for: [cell], in: cells, includeFinished: false, stale: stale), in: cells)
+        } catch {
+            cell.query.setState(.failed(error.localizedDescription))
+        }
     }
 
-    /// Cells showing a result that a cell they read has since replaced.
-    var staleCellIds: Set<NrqlCell.ID> { NrqlDependencies.staleCells(in: cells) }
+    /// Results from a different connection, plus their transitive readers.
+    func staleCellIds(profiles: NerdgraphProfiles.Settings) -> Set<NrqlCell.ID> {
+        var invalidated = Set<NrqlCell.ID>()
+        for cell in cells {
+            guard cell.kind == .nrql, let loaded = cell.query.loadedConnection else { continue }
+            do {
+                let current = try NrqlConnection.parse(NrqlConnection.metadataBody(in: cell.kind.unwrap(cell.query.text)))
+                    .inheriting(connection.get())
+                    .snapshot(profiles: profiles)
+                if current != loaded { invalidated.insert(cell.id) }
+            } catch {
+                // Invalid routing cannot reproduce a cached result; running the cell reports the error.
+                invalidated.insert(cell.id)
+            }
+        }
+        return NrqlDependencies.staleCells(in: cells, invalidated: invalidated)
+    }
 
     /// Cells that read a result from further down the document.
     var readingBelowCellIds: Set<NrqlCell.ID> { NrqlDependencies.cellsReadingBelow(in: cells) }
 
     /// The cells that running this one would run first.
-    func pendingDependencies(for id: NrqlCell.ID) -> [NrqlCell] {
+    func pendingDependencies(for id: NrqlCell.ID, stale: Set<NrqlCell.ID>) -> [NrqlCell] {
         guard let cell = cells.first(where: { $0.id == id }) else { return [] }
-        return NrqlDependencies.plan(for: [cell], in: cells, includeFinished: false).filter { $0.id != id }
+        return NrqlDependencies.plan(
+            for: [cell], in: cells, includeFinished: false, stale: stale
+        ).filter { $0.id != id }
     }
 
     @discardableResult

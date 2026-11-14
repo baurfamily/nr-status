@@ -5,6 +5,12 @@ struct NrqlConnection: Equatable, Sendable {
     var apiKeyName: String?
     var accountIds: [Int]?
 
+    struct Snapshot: Equatable, Sendable {
+        let profileID: UUID
+        let host: String
+        let accountIds: Set<Int>
+    }
+
     struct ConfigurationError: LocalizedError {
         let message: String
         var errorDescription: String? { message }
@@ -86,6 +92,17 @@ struct NrqlConnection: Equatable, Sendable {
 
     func resolve(profiles: NerdgraphProfiles = .shared) throws -> NerdgraphConfig {
         try profiles.resolve(name: apiKeyName, accountIds: accountIds)
+    }
+
+    /// The non-secret identity of the connection, including inherited preferences.
+    func snapshot(profiles: NerdgraphProfiles.Settings) throws -> Snapshot {
+        guard let profile = profiles.profiles.first(where: {
+            if let apiKeyName { return $0.name.caseInsensitiveCompare(apiKeyName) == .orderedSame }
+            return $0.id == profiles.defaultProfileID
+        }) else { throw NerdgraphProfiles.ProfileError.missingProfile }
+        let ids = accountIds ?? profile.preferredAccountIds
+        guard !ids.isEmpty else { throw NerdgraphProfiles.ProfileError.missingAccounts }
+        return Snapshot(profileID: profile.id, host: profile.host, accountIds: Set(ids))
     }
 
     /// Also works while an account list is incomplete, so key-specific suggestions stay available.

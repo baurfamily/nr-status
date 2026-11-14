@@ -45,41 +45,32 @@ enum NrqlDependencies {
         return result
     }
 
-    /// Cells whose result is out of date: a cell they read has produced a newer
-    /// result since they ran, or is itself out of date.
-    static func staleCells(in cells: [NrqlCell]) -> Set<NrqlCell.ID> {
-        var stale = Set<NrqlCell.ID>()
-        var resolved = Set<NrqlCell.ID>()
-
-        func check(_ cell: NrqlCell, path: inout Set<NrqlCell.ID>) -> Bool {
-            if resolved.contains(cell.id) { return stale.contains(cell.id) }
-            guard path.insert(cell.id).inserted else { return false }
-            defer { path.remove(cell.id) }
-
-            var isStale = false
-            if let loadedAt = cell.query.loadedAt {
-                for dependency in dependencies(of: cell, in: cells) {
-                    let dependencyStale = check(dependency, path: &path)
-                    let newer = dependency.query.loadedAt.map { $0 > loadedAt } ?? false
-                    if dependencyStale || newer { isStale = true }
+    /// Connection-invalidated results and cells reading newer or stale results.
+    static func staleCells(in cells: [NrqlCell], invalidated: Set<NrqlCell.ID> = []) -> Set<NrqlCell.ID> {
+        var stale = invalidated
+        let upstream = Dictionary(uniqueKeysWithValues: cells.map { ($0.id, dependencies(of: $0, in: cells)) })
+        var changed: Bool
+        repeat {
+            changed = false
+            for cell in cells where !stale.contains(cell.id) {
+                guard let loadedAt = cell.query.loadedAt else { continue }
+                if upstream[cell.id, default: []].contains(where: {
+                    stale.contains($0.id) || $0.query.loadedAt.map { $0 > loadedAt } == true
+                }) {
+                    stale.insert(cell.id)
+                    changed = true
                 }
             }
-            resolved.insert(cell.id)
-            if isStale { stale.insert(cell.id) }
-            return isStale
-        }
-
-        for cell in cells {
-            var path = Set<NrqlCell.ID>()
-            _ = check(cell, path: &path)
-        }
+        } while changed
         return stale
     }
 
     /// The cells to run, dependencies first, so that `roots` can read what they need.
     /// With `includeFinished` false, a dependency that already has a result (and
-    /// whatever it depends on) is left alone; the roots themselves always run.
-    static func plan(for roots: [NrqlCell], in cells: [NrqlCell], includeFinished: Bool) -> [NrqlCell] {
+    /// whatever it depends on) is left alone unless stale; the roots always run.
+    static func plan(
+        for roots: [NrqlCell], in cells: [NrqlCell], includeFinished: Bool, stale: Set<NrqlCell.ID> = []
+    ) -> [NrqlCell] {
         var visited = Set<NrqlCell.ID>()
         var ordered: [NrqlCell] = []
 
@@ -87,7 +78,7 @@ enum NrqlDependencies {
             // a cycle ends here; the cell then reports the missing result itself
             guard visited.insert(cell.id).inserted else { return }
             for dependency in dependencies(of: cell, in: cells) {
-                if !includeFinished && dependency.query.resultContainer != nil { continue }
+                if !includeFinished && dependency.query.resultContainer != nil && !stale.contains(dependency.id) { continue }
                 visit(dependency)
             }
             if cell.isRunnable { ordered.append(cell) }

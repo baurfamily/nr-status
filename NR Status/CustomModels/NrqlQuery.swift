@@ -54,6 +54,8 @@ import LanguageSupport
     
     // when the current result arrived; cells reading this one compare against it
     private(set) var loadedAt: Date?
+
+    private(set) var loadedConnection: NrqlConnection.Snapshot?
     
     // the query as last sent, with `{{ }}` expressions replaced; nil before a run
     private(set) var executedNrql: String?
@@ -147,13 +149,15 @@ import LanguageSupport
                 try NrqlInterpolation.expand(nrql, results: results)
             }.value
             guard !Task.isCancelled, executionID == id else { return }
-            let config = try options.get().inheriting(defaults).resolve()
+            let connection = try options.get().inheriting(defaults)
+            let snapshot = try connection.snapshot(profiles: NerdgraphProfiles.shared.load())
+            let config = try connection.resolve()
             setExecuted(sent)
             let container = try await Queries(config: config).getNrqlData(query: sent)
             // a newer run has taken over, so don't clobber its state
             guard !Task.isCancelled, executionID == id else { return }
             
-            setState(container.map { .loaded($0) } ?? .failed("The query returned no data"))
+            setState(container.map { .loaded($0) } ?? .failed("The query returned no data"), connection: snapshot)
         } catch {
             guard !Task.isCancelled, executionID == id else { return }
             
@@ -185,11 +189,15 @@ import LanguageSupport
         executionID = UUID()
         setState(.idle)
         loadedAt = nil
+        loadedConnection = nil
         setExecuted(nil)
     }
     
-    @MainActor func setState(_ newState: State) {
-        if case .loaded = newState { loadedAt = Date() }
+    @MainActor func setState(_ newState: State, connection: NrqlConnection.Snapshot? = nil) {
+        if case .loaded = newState {
+            loadedAt = Date()
+            loadedConnection = connection
+        }
         state = newState
     }
     

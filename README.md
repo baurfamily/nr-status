@@ -78,6 +78,11 @@ accounts. Unknown key names, empty/invalid account lists, and misplaced config
 fences report errors rather than silently using another connection. Renaming or
 deleting a key requires updating documents that reference its old name.
 
+Changing the effective key or accounts marks affected cached charts and cells
+that depend on them as out of date. Query-level overrides isolate settings they
+replace; inherited app defaults and preferred accounts are tracked too. Running
+an affected cell refreshes its stale prerequisites before using their results.
+
 ### Other experiments
 
 There is a window at launch that lists some Entities in your account. This isn't currently useful for much, I got distracted by the Charts and Widgets.

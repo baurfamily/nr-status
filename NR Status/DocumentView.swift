@@ -45,7 +45,7 @@ struct DocumentView: View {
     }
 
     private var notebook: some View {
-        let stale = document.staleCellIds
+        let stale = document.staleCellIds(profiles: profileSettings)
         let readingBelow = document.readingBelowCellIds
         return ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
@@ -62,7 +62,7 @@ struct DocumentView: View {
                         completionScope: { document.completionScope(excluding: cell.id) },
                         connectionSource: { document.connection },
                         onRun: { document.runCell(cell.id) },
-                        pendingTitles: document.pendingDependencies(for: cell.id).map(\.query.title),
+                        pendingTitles: document.pendingDependencies(for: cell.id, stale: stale).map(\.query.title),
                         canPerform: { document.canPerform($0, on: cell.id) },
                         onAction: { document.perform($0, on: cell.id) }
                     )
@@ -251,7 +251,7 @@ struct CellView: View {
     private var warnings: [String] {
         var messages: [String] = []
         if isStale {
-            messages.append("Out of date: a cell this one reads has run since. Run this cell to refresh it.")
+            messages.append("Out of date: connection settings or an upstream result changed. Run this cell to refresh it and any stale dependencies.")
         }
         if !pendingTitles.isEmpty {
             messages.append("Running this cell will also run: \(pendingTitles.joined(separator: ", "))")

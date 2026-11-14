@@ -33,7 +33,28 @@ struct NrqlCell: Identifiable {
     /// What the editor shows: the text, minus a code cell's fence lines.
     var editorText: String {
         get { kind.unwrap(text) }
-        set { text = kind.wrap(newValue) }
+        set { text = storedText(forEditorText: newValue) }
+    }
+
+    var configurationText: String {
+        get { kind == .config ? editorText : NrqlCellSource(stored: text).configuration ?? "" }
+        set {
+            if kind == .config {
+                editorText = newValue
+            } else {
+                var source = NrqlCellSource(stored: text)
+                source.configuration = newValue
+                text = source.storedText
+            }
+        }
+    }
+
+    func storedText(forEditorText value: String) -> String {
+        NrqlCellSource(configuration: NrqlCellSource(stored: text).configuration, code: kind.wrap(value)).storedText
+    }
+
+    mutating func removeConfiguration() {
+        text = NrqlCellSource(stored: text).code
     }
 
     // a reference type, so running it doesn't mutate the document
@@ -44,6 +65,7 @@ struct NrqlCell: Identifiable {
         self.text = text
         self.kind = kind
         self.focusOnAppear = focusOnAppear
+        self.isCollapsed = kind == .config && !focusOnAppear
         self.query = NrqlQuery(from: text, kind: kind)
     }
 
@@ -54,6 +76,7 @@ struct NrqlCell: Identifiable {
         kind = newKind
         query.kind = newKind
         editorText = shown
+        if newKind == .markdown { removeConfiguration() }
     }
 
     // comment-only cells have nothing to run
@@ -180,7 +203,7 @@ struct NRQL_EditorDocument: FileDocument {
     enum CellAction: Equatable {
         case add(NrqlCellKind, above: Bool)
         case convert(NrqlCellKind)
-        case moveUp, moveDown, delete
+        case duplicate, moveUp, moveDown, delete
     }
 
     func canPerform(_ action: CellAction, on id: NrqlCell.ID) -> Bool {
@@ -189,6 +212,7 @@ struct NRQL_EditorDocument: FileDocument {
         case .moveUp: return index > 0
         case .moveDown: return index < cells.count - 1
         case .convert(let kind): return cells[index].kind != kind
+        case .duplicate: return cells[index].kind != .config
         default: return true
         }
     }
@@ -201,6 +225,36 @@ struct NRQL_EditorDocument: FileDocument {
         case .moveUp: cells.swapAt(index, index - 1)
         case .moveDown: cells.swapAt(index, index + 1)
         case .convert(let kind): cells[index].convert(to: kind)
+        case .duplicate:
+            let original = cells[index]
+            var copy = NrqlCell(text: original.query.text, kind: original.kind, focusOnAppear: true)
+            if copy.kind != .markdown {
+                var configuration = NrqlCellSource.updating(
+                    "title", values: [original.query.title + " (copy)"], in: copy.configurationText
+                )
+                var usedNames = Set(cells.flatMap(\.query.resultNames))
+                let bindings = NrqlCellSource.values("var", in: configuration).map { declaration in
+                    let binding = copy.kind == .nerdgraph
+                        ? try? LuaRuntime.Variable.parse(declaration)
+                        : LuaRuntime.Variable(name: declaration, expression: nil)
+                    guard let binding, !binding.name.isEmpty else { return declaration }
+                    let base = binding.name + "_copy"
+                    var name = base
+                    var suffix = 2
+                    while usedNames.contains(name) {
+                        name = "\(base)\(suffix)"
+                        suffix += 1
+                    }
+                    usedNames.insert(name)
+                    return name + (binding.expression.map { " = \($0)" } ?? "")
+                }
+                if !bindings.isEmpty {
+                    configuration = NrqlCellSource.updating("var", values: bindings, in: configuration, includeEmptyValues: true)
+                }
+                copy.configurationText = configuration
+            }
+            cells.insert(copy, at: index + 1)
+            focusedCellId = copy.id
         case .delete: removeCell(id)
         }
     }
@@ -276,10 +330,10 @@ struct NRQL_EditorDocument: FileDocument {
     func staleCellIds(profiles: NerdgraphProfiles.Settings) -> Set<NrqlCell.ID> {
         var invalidated = Set<NrqlCell.ID>()
         for cell in cells {
-            if cell.kind == .nerdgraph, cell.query.hasResult, let sent = cell.query.executedNrql {
+            if cell.kind == .nerdgraph, cell.query.hasResult, cell.query.executedNrql != nil {
                 do {
-                    if try NerdgraphCellSource(editorText: sent).resultBindings()
-                        != NerdgraphCellSource(stored: cell.query.text).resultBindings() {
+                    if let bindings = cell.query.executedBindings,
+                       try bindings != NerdgraphCellSource(stored: cell.query.text).resultBindings() {
                         invalidated.insert(cell.id)
                     }
                 } catch {
@@ -297,8 +351,7 @@ struct NRQL_EditorDocument: FileDocument {
             }
             guard cell.kind == .nrql || cell.kind == .nerdgraph, let loaded = cell.query.loadedConnection else { continue }
             do {
-                let metadata = cell.kind == .nerdgraph ? NerdgraphCellSource(stored: cell.query.text).metadata
-                    : NrqlConnection.metadataBody(in: cell.kind.unwrap(cell.query.text))
+                let metadata = NrqlCellSource(stored: cell.query.text).configuration ?? ""
                 let current = try NrqlConnection.parse(metadata)
                     .inheriting(connection.get())
                     .snapshot(profiles: profiles, requiresAccounts: cell.kind != .nerdgraph)

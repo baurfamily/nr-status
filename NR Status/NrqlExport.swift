@@ -255,8 +255,7 @@ enum NrqlExport {
 
     /// The query as the PDF shows it; the chart settings are already visible in the chart.
     private static func queryText(for cell: NrqlCell) -> String {
-        ChartFormat.strip(from: cell.editorText, lua: cell.kind == .lua)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        cell.editorText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private static func codeBlockView(for cell: NrqlCell) -> some View {

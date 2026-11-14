@@ -165,6 +165,18 @@ struct QueryBuilder : Equatable {
     mutating func remove(facet attribute: Attribute) {
         facets.removeAll(key: attribute.key)
     }
+
+    mutating func filterFacetValues(_ values: [String]) {
+        guard facets.count == 1, !values.isEmpty else { return }
+        let facet = facets[0]
+        let key = "`" + facet.key.replacingOccurrences(of: "`", with: "\\`") + "`"
+        let literals = values.map { value in
+            if facet.type == "numeric", let number = Double(value), number.isFinite { return value }
+            return "'" + value.replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "'", with: "\\'") + "'"
+        }
+        predicates.append("\(key) IN (\(literals.joined(separator: ", ")))")
+    }
     
     // one entry per NRQL clause, in query order
     var clauses: [String] {
@@ -181,7 +193,11 @@ struct QueryBuilder : Equatable {
             select += aggregates.map(\.nrql).joined(separator: ", ")
         }
         
-        var clauses = ["FROM \(event)", select, timewindow.nrql]
+        var clauses = ["FROM \(event)", select]
+        if !predicates.isEmpty {
+            clauses.append("WHERE " + predicates.map { "(\($0))" }.joined(separator: " AND "))
+        }
+        clauses.append(timewindow.nrql)
         
         if !facets.isEmpty {
             clauses.append("FACET " + facets.map(\.key).joined(separator: ", "))

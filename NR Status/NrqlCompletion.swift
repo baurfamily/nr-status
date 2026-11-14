@@ -120,14 +120,8 @@ enum NrqlCompletion {
         let close = upToCursor.range(of: "*/", options: .backwards)
         var blockStart: String.Index?
         if let open, close == nil || close!.lowerBound < open.lowerBound { blockStart = open.lowerBound }
-        let lines = upToCursor.components(separatedBy: "\n")
-        let isGraphQLMetadata = graphql
-            && lines.dropLast().allSatisfy {
-                let trimmed = $0.trimmingCharacters(in: .whitespaces)
-                return trimmed.isEmpty || trimmed.hasPrefix("#")
-            }
-            && lines.last?.trimmingCharacters(in: .whitespaces).hasPrefix("#") == true
-        let isFormatBlock = isGraphQLMetadata || (!graphql && (blockStart.map { upToCursor[$0...].hasPrefix("/***") } ?? false))
+        let isPlainConfiguration = configuration && blockStart == nil
+        let isFormatBlock = isPlainConfiguration
 
         var start = cursor
         while start > 0, isWordCharacter(ns.character(at: start - 1), allowingDash: isFormatBlock) { start -= 1 }
@@ -141,12 +135,13 @@ enum NrqlCompletion {
         let lineStart = ns.lineRange(for: NSRange(location: start, length: 0)).location
         let lineBeforePrefix = ns.substring(with: NSRange(location: lineStart, length: start - lineStart))
 
-        if blockStart != nil || isGraphQLMetadata {
+        if blockStart != nil || isPlainConfiguration {
             guard isFormatBlock else { return result(.none) }
+            let trimmed = lineBeforePrefix.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("//") || trimmed.hasPrefix("#") { return result(.none) }
             if let colon = lineBeforePrefix.firstIndex(of: ":") {
-                var key = lineBeforePrefix[..<colon].trimmingCharacters(in: .whitespaces).lowercased()
-                if isGraphQLMetadata { key = key.dropFirst().trimmingCharacters(in: .whitespaces) }
-                if isGraphQLMetadata, key == "api_key" { key = "api-key" }
+                let rawKey = lineBeforePrefix[..<colon].trimmingCharacters(in: .whitespaces).lowercased()
+                let key = rawKey == "api_key" ? "api-key" : rawKey
                 if key == "api-key" {
                     // A saved name may contain spaces; replace the whole value, not just its last word.
                     let valueStart = lineBeforePrefix.index(after: colon)
@@ -161,8 +156,7 @@ enum NrqlCompletion {
                     .flatMap { ChartType(rawValue: block[$0].lowercased()) }
                 return result(.formatValue(key: key, type: type))
             }
-            var before = lineBeforePrefix.trimmingCharacters(in: .whitespaces)
-            if isGraphQLMetadata { before = before.dropFirst().trimmingCharacters(in: .whitespaces) }
+            let before = lineBeforePrefix.trimmingCharacters(in: .whitespaces)
             return result(before.isEmpty ? .formatKey : .none)
         }
 
@@ -279,9 +273,9 @@ enum NrqlCompletion {
             break
         case .formatKey:
             let keys = graphql ? ["title", "var", "api-key", "chart"]
-                : configuration ? ["api-key", "accounts", "author", "description", "var"] : ["title", "var", "chart", "attributes", "api-key", "accounts"]
+                : ["api-key", "accounts", "author", "description", "var", "title", "chart", "attributes"]
             candidates = keys.map {
-                Item(name: $0, kind: .formatKey, detail: nil, insertText: configuration && !graphql && $0 == "var" ? "var " : "\($0): ")
+                Item(name: $0, kind: .formatKey, detail: nil, insertText: "\($0): ")
             }
         case .formatValue(let key, let type):
             var values: [String] = []
@@ -293,7 +287,7 @@ enum NrqlCompletion {
             } else if key == "api-key" {
                 values = profiles.map(\.name)
             } else if key == "accounts" {
-                let body = NrqlConnection.metadataBody(in: text, allowUnclosed: true)
+                let body = configuration ? text : NrqlConnection.metadataBody(in: text, allowUnclosed: true)
                 let name = NrqlConnection.keyName(in: body) ?? defaultKeyName
                 let profile = profiles.first { $0.name.caseInsensitiveCompare(name ?? "") == .orderedSame }
                 values = profile?.preferredAccountIds.map(String.init) ?? []

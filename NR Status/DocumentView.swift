@@ -262,7 +262,7 @@ struct CellView: View {
     @State private var variablesService = NrqlLanguageService(language: .variables)
     @State private var variablesPosition: CodeEditor.Position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
     @State private var graphqlCompletionError: String?
-    // the chart settings inspector is hidden until asked for
+    // One configuration panel spans the header, editors, and results.
     @State private var showsChartSettings = false
     @State private var showsSentQuery = false
     @State private var showsWarnings = false
@@ -297,6 +297,41 @@ struct CellView: View {
     private var isRenderedMarkdown: Bool { cell.kind == .markdown && !isFocused }
 
     var body: some View {
+        HStack(alignment: .top, spacing: 0) {
+            cellContent.frame(maxWidth: .infinity)
+            if showsChartSettings {
+                CellConfigurationView(cell: $cell, isPresented: $showsChartSettings)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
+        }
+        .clipped()
+        .onChange(of: cell.focusOnAppear, initial: true) {
+            if cell.kind == .config && cell.focusOnAppear {
+                showsChartSettings = true
+                cell.focusOnAppear = false
+            }
+        }
+        .onChange(of: cell.configurationText) {
+            // Commit a pending code edit before configuration changes can replace it.
+            if let draft {
+                cell.editorText = draft
+                self.draft = nil
+            }
+            if isFocused { followGraphqlDocumentation() }
+        }
+        .onChange(of: cell.isCollapsed) {
+            if cell.kind == .config { showsChartSettings = !cell.isCollapsed }
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(
+                    isRenderedMarkdown ? Color.clear : isFocused ? Color.accentColor : Color.secondary.opacity(0.3),
+                    lineWidth: isFocused ? 2 : 1
+                )
+        )
+    }
+
+    private var cellContent: some View {
         VStack(alignment: .leading, spacing: 8) {
             header
 
@@ -309,24 +344,25 @@ struct CellView: View {
                     if cell.query.showsResultPane {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("JSON Results").font(.caption).foregroundStyle(.secondary)
-                            CellResultView(query: cell.query, configurationShowing: $showsChartSettings)
+                            CellResultView(query: cell.query)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
             } else if isRenderedMarkdown {
                 renderedMarkdown
-            } else if !cell.isCollapsed || cell.kind == .markdown {
+            } else if cell.kind != .config && (!cell.isCollapsed || cell.kind == .markdown) {
                 editor
             }
 
             if cell.kind == .nrql || cell.kind == .lua {
-                CellResultView(query: cell.query, configurationShowing: $showsChartSettings)
+                CellResultView(query: cell.query)
             }
         }
         .padding(8)
         .onChange(of: cell.kind) {
             draft = nil
+            if cell.kind == .markdown { showsChartSettings = false }
             if cell.kind != .nerdgraph { NerdgraphDocumentation.shared.clear(cellID: cell.id) }
         }
         .onChange(of: isFocused) { if isFocused { followGraphqlDocumentation() } }
@@ -334,13 +370,6 @@ struct CellView: View {
         .onChange(of: String(describing: connectionSource())) {
             if NerdgraphDocumentation.shared.source?.cursor.cellID == cell.id { followGraphqlDocumentation() }
         }
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(
-                    isRenderedMarkdown ? Color.clear : isFocused ? Color.accentColor : Color.secondary.opacity(0.3),
-                    lineWidth: isFocused ? 2 : 1
-                )
-        )
     }
 
     private var nerdgraphEditors: some View {
@@ -364,8 +393,8 @@ struct CellView: View {
             if let pending = draft, pending != cell.editorText { cell.editorText = pending }
             draft = nil
         }
-        .onChange(of: cell.text) {
-            if let draft, draft != cell.editorText { self.draft = nil }
+        .onChange(of: cell.text) { previous, _ in
+            if let draft, cell.kind.unwrap(previous) != cell.editorText, draft != cell.editorText { self.draft = nil }
             if cell.query.text != cell.text { cell.query.text = cell.text }
         }
     }
@@ -387,7 +416,7 @@ struct CellView: View {
                     source.query = value
                 }
                 draft = source.editorText
-                cell.query.text = source.storedText
+                cell.query.text = cell.storedText(forEditorText: source.editorText)
             }),
             position: variables ? $variablesPosition : $position,
             messages: $messages,
@@ -400,7 +429,7 @@ struct CellView: View {
                 return variables ? source.variables : source.query
             }
             service.setScopeSource(completionScope)
-            service.setConnectionSource(connectionSource)
+            service.setConnectionSource(cellConnection)
             if !variables { service.setCompletionErrorHandler { graphqlCompletionError = $0 } }
             if isFocused { followGraphqlDocumentation() }
         }
@@ -430,7 +459,7 @@ struct CellView: View {
         }
         source.query = text.replacingCharacters(in: selection, with: name)
         draft = source.editorText
-        cell.query.text = source.storedText
+        cell.query.text = cell.storedText(forEditorText: source.editorText)
         position = .init(selections: [NSRange(location: selection.location + name.utf16.count, length: 0)], verticalScrollPosition: position.verticalScrollPosition)
         cell.focusOnAppear = true
         onFocus()
@@ -441,7 +470,7 @@ struct CellView: View {
         let source = NerdgraphCellSource(editorText: liveText)
         NerdgraphDocumentation.shared.source = .init(
             cursor: .init(cellID: cell.id, text: source.query, location: position.selections.first?.location ?? 0),
-            loadID: cell.id.uuidString + source.metadata + String(describing: connectionSource()),
+            loadID: cell.id.uuidString + cell.configurationText + String(describing: connectionSource()),
             load: { try await graphqlService.graphqlSchema() },
             onInsert: insertGraphqlField
         )
@@ -493,7 +522,7 @@ struct CellView: View {
             text: Binding(get: { liveText }, set: {
                 draft = $0
                 // Execution must see routing edits immediately, even before the document's debounce.
-                cell.query.text = cell.kind.wrap($0)
+                cell.query.text = cell.storedText(forEditorText: $0)
             }),
             position: $position,
             messages: $messages,
@@ -506,7 +535,7 @@ struct CellView: View {
             for service in [languageService, luaService, configService] {
                 service.setTextSource { draft ?? cell.editorText }
                 service.setScopeSource(completionScope)
-                service.setConnectionSource(connectionSource)
+                service.setConnectionSource(cellConnection)
             }
         }
         .environment(\.codeEditorSetActions, CodeEditor.SetActions {
@@ -537,8 +566,8 @@ struct CellView: View {
             if let pending = draft, pending != cell.editorText { cell.editorText = pending }
             draft = nil
         }
-        .onChange(of: cell.text) {
-            if let draft, draft != cell.editorText { self.draft = nil }
+        .onChange(of: cell.text) { previous, _ in
+            if let draft, cell.kind.unwrap(previous) != cell.editorText, draft != cell.editorText { self.draft = nil }
             // undo/redo of the document restores whole cells without running the text observer
             if cell.query.text != cell.text { cell.query.text = cell.text }
         }
@@ -547,9 +576,9 @@ struct CellView: View {
     private var header: some View {
         HStack {
             if cell.kind == .config {
-                collapseButton
                 Text("Document Config").font(.headline)
                 Spacer()
+                configurationButton
                 actionsMenu
             } else if cell.kind == .markdown {
                 if !isRenderedMarkdown {
@@ -599,16 +628,8 @@ struct CellView: View {
                 }
             }
 
-            if cell.kind != .nerdgraph {
-                if cell.query.format?.showsJSON != true {
-                    Button("Chart Settings", systemImage: "gearshape") {
-                        showsChartSettings.toggle()
-                    }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
-                    .foregroundStyle(showsChartSettings ? Color.accentColor : Color.primary)
-                }
-            } else {
+            configurationButton
+            if cell.kind == .nerdgraph {
                 Button("Nerdgraph Documentation", systemImage: "questionmark.circle") {
                     onFocus()
                     followGraphqlDocumentation()
@@ -649,12 +670,31 @@ struct CellView: View {
         }
     }
 
+    private var configurationButton: some View {
+        Button("Configure Cell", systemImage: "gearshape") {
+            if let draft {
+                cell.editorText = draft
+                self.draft = nil
+            }
+            onFocus()
+            withAnimation { showsChartSettings.toggle() }
+        }
+        .labelStyle(.iconOnly)
+        .buttonStyle(.borderless)
+        .foregroundStyle(showsChartSettings ? Color.accentColor : Color.primary)
+    }
+
+    private func cellConnection() -> Result<NrqlConnection, Error> {
+        Result { try NrqlConnection.parse(cell.configurationText).inheriting(connectionSource().get()) }
+    }
+
     private var actionsMenu: some View {
         Menu("Cell Actions", systemImage: "ellipsis") {
             Menu("Add Above") {
                 ForEach(NrqlCellKind.allCases.filter { $0 != .config }) { kind in
                     Button(kind.title) { onAction(.add(kind, above: true)) }
                 }
+
             }
             Menu("Add Below") {
                 ForEach(NrqlCellKind.allCases.filter { $0 != .config }) { kind in
@@ -667,6 +707,9 @@ struct CellView: View {
                         .disabled(!canPerform(.convert(kind)))
                 }
             }
+            Divider()
+            Button("Duplicate Cell", systemImage: "doc.on.doc") { onAction(.duplicate) }
+                .disabled(!canPerform(.duplicate))
             Divider()
             Button("Move Up") { onAction(.moveUp) }
                 .disabled(!canPerform(.moveUp))
@@ -684,7 +727,6 @@ struct CellView: View {
 
 struct CellResultView: View {
     let query: NrqlQuery
-    @Binding var configurationShowing: Bool
 
     var body: some View {
         content
@@ -716,8 +758,8 @@ struct CellResultView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
-                ConfigurableChartView(resultsContainer: container, format: query.format, configurationShowing: $configurationShowing)
-                    // rebuild when the format comment changes, so it applies as you type
+                ConfigurableChartView(resultsContainer: container, format: query.format)
+                    .withoutConfiguration()
                     .id(query.format)
                     .frame(maxWidth: .infinity, minHeight: 300)
             }

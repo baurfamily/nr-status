@@ -105,13 +105,12 @@ struct NrdbTests {
     }
 
     @Test func formatParsesTypeAndAttributes() {
-        let format = ChartFormat.parse(from: "/***\nchart: Line\nattributes: smoothed, Points\nfuture: x\n***/\nSELECT 1")
+        let format = ChartFormat.parseMetadata("chart: Line\nattributes: smoothed, Points\nfuture: x")
 
-        #expect(format?.type == .line)
-        #expect(format?.attributes == ["smoothed", "points"])
-        #expect(ChartFormat.parse(from: "/***\nattributes: smoothed points,lines\n***/")?.attributes == ["smoothed", "points", "lines"])
-        #expect(ChartFormat.parse(from: "SELECT 1") == nil)
-        #expect(ChartFormat.strip(from: "/***\nchart: line\n***/\nSELECT 1") == "\nSELECT 1")
+        #expect(format.type == .line)
+        #expect(format.attributes == ["smoothed", "points"])
+        #expect(ChartFormat.parseMetadata("attributes: smoothed points,lines").attributes == ["smoothed", "points", "lines"])
+        #expect(ChartFormat.parseMetadata("attributes:").attributes == [])
     }
 
     @Test func formatAppliesToTimeseriesConfig() throws {
@@ -119,26 +118,65 @@ struct NrdbTests {
 
         // no attributes: defaults stay, type is applied
         var config = ChartConfiguration(resultContainer: timeseries)
-        ChartFormat.parse(from: "/***\nchart: bar\n***/")?.apply(to: config)
+        ChartFormat.parseMetadata("chart: bar").apply(to: config)
         #expect(config.chartType == .bar)
 
         // listed attributes are on, the rest off
         config = ChartConfiguration(resultContainer: timeseries)
-        ChartFormat.parse(from: "/***\nchart: line\nattributes: points\n***/")?.apply(to: config)
+        ChartFormat.parseMetadata("chart: line\nattributes: points").apply(to: config)
         #expect(config.timeseries.showDataPoints)
         #expect(!config.timeseries.isSmoothed)
         #expect(!config.timeseries.showLines)
 
         // neither lines nor points would be invisible
         config = ChartConfiguration(resultContainer: timeseries)
-        ChartFormat.parse(from: "/***\nchart: line\nattributes: smoothed\n***/")?.apply(to: config)
+        ChartFormat.parseMetadata("chart: line\nattributes: smoothed").apply(to: config)
         #expect(config.timeseries.showLines)
         #expect(!config.timeseries.showDataPoints)
 
         // a type the data can't show is ignored
         config = ChartConfiguration(resultContainer: timeseries)
-        ChartFormat.parse(from: "/***\nchart: pie\n***/")?.apply(to: config)
+        ChartFormat.parseMetadata("chart: pie").apply(to: config)
         #expect(config.chartType == .line)
+    }
+
+    @Test func parameterizedAttributesApplyAndPreserveFieldNames() throws {
+        let result = try container(results: #"[{"Count":5,"Response Time":2,"size":3}]"#)
+        let config = ChartConfiguration(resultContainer: result)
+        let gauge = ChartFormat.parseMetadata("chart: billboard\nattributes: gauge, max(250), style(circularCapacity)")
+        gauge.apply(to: config)
+        #expect(config.billboard.showGauge)
+        #expect(config.billboard.gaugeMax == 250)
+        #expect(config.billboard.gaugeStyle == .circularCapacity)
+        ChartFormat.parseMetadata("chart: billboard\nattributes: gauge, max(-1)").apply(to: config)
+        #expect(config.billboard.gaugeMax == 250)
+
+        ChartFormat.parseMetadata(
+            "chart: plot\nattributes: x(Response Time), y(Count), size(), color(), x-log"
+        ).apply(to: config)
+        #expect(config.plot.xField == "Response Time")
+        #expect(config.plot.yField == "Count")
+        #expect(config.plot.xLogScale)
+        #expect(!config.plot.colorFacets)
+        #expect(config.plot.sizeField == nil && config.plot.colorField == nil)
+    }
+
+    @Test func billboardAndScatterRespectFacetChangesIncludingAllOff() throws {
+        let result = try container(results: """
+            [{"facet":"A","Count":1,"Other":3},{"facet":"B","Count":2,"Other":4}]
+            """)
+        let config = ChartConfiguration(resultContainer: result)
+        let billboard = BillboardChart(config: config)
+        let scatter = ScatterPlot(config: config)
+        config.facets.all[0].isSelected = false
+        #expect(Set(billboard.data.compactMap(\.facet)) == ["B"])
+        #expect(scatter.filteredData.map(\.facet) == ["B"])
+        config.facets.all[1].isSelected = false
+        #expect(billboard.data.isEmpty)
+        #expect(scatter.filteredData.isEmpty)
+        config.facets.all[0].isSelected = true
+        config.plot.xField = "Other"
+        #expect(scatter.filteredData.first?.x == 3)
     }
 
     @Test func keysetParsesPerRowAndGroupedShapes() throws {

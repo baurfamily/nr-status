@@ -30,26 +30,20 @@ struct SeriesSelectionView : View {
 
 struct RadioSelectionView : View {
     @Binding var fields: [SelectableField]
-    @State var selectedField: String?
+
+    private var selectedField: Binding<String?> {
+        Binding(get: { fields.first(where: \.isSelected)?.id }, set: { selected in
+            for index in fields.indices { fields[index].isSelected = fields[index].id == selected }
+        })
+    }
     
     var body: some View {
-        Picker("", selection: $selectedField) {
+        Picker("", selection: selectedField) {
             ForEach(fields) { field in
-                Text(field.id).tag(field.id)
+                Text(field.id).tag(Optional(field.id))
             }
         }
         .pickerStyle(RadioGroupPickerStyle())
-        .onChange(of: selectedField) {
-            if let selectedField {
-                for field in $fields {
-                    if field.id == selectedField {
-                        field.wrappedValue.isSelected = true
-                    } else {
-                        field.wrappedValue.isSelected = false
-                    }
-                }
-            }
-        }
     }
 }
 

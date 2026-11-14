@@ -6,6 +6,7 @@ struct NerdgraphCellSource {
     var variables: String
     var hasVariables: Bool
     var isClosed = true
+    var configuration: String?
 
     private static let separator = "\n```variables\n"
 
@@ -22,13 +23,15 @@ struct NerdgraphCellSource {
     }
 
     init(stored: String) {
-        let lines = stored.components(separatedBy: "\n")
+        let source = NrqlCellSource(stored: stored)
+        let lines = source.code.components(separatedBy: "\n")
         guard let open = lines.firstIndex(where: { NrqlCellKind.fenced(by: $0) == .nerdgraph }) else {
             self.init(editorText: stored)
             return
         }
         let close = lines.indices.first { $0 > open && NrqlCellKind.isClosingFence(lines[$0]) }
         self.init(editorText: lines[(open + 1)..<(close ?? lines.endIndex)].joined(separator: "\n"))
+        configuration = source.configuration
         isClosed = close != nil
         if let close, let variablesOpen = lines.indices.first(where: {
             $0 > close && lines[$0].trimmingCharacters(in: .whitespaces).lowercased() == "```variables"
@@ -42,21 +45,14 @@ struct NerdgraphCellSource {
 
     var editorText: String { query + (hasVariables ? Self.separator + variables : "") }
     var storedText: String {
-        "```graphql\n\(query)\n```" + (hasVariables ? "\n```variables\n\(variables)\n```" : "")
+        NrqlCellSource(
+            configuration: configuration,
+            code: "```graphql\n\(query)\n```" + (hasVariables ? "\n```variables\n\(variables)\n```" : "")
+        ).storedText
     }
 
     var metadata: String {
-        query.components(separatedBy: "\n")
-            .prefix { line in
-                let trimmed = line.trimmingCharacters(in: .whitespaces)
-                return trimmed.isEmpty || trimmed.hasPrefix("#")
-            }
-            .compactMap { line -> String? in
-                let trimmed = line.trimmingCharacters(in: .whitespaces)
-                guard trimmed.hasPrefix("#") else { return nil }
-                return trimmed.dropFirst().trimmingCharacters(in: .whitespaces)
-            }
-            .joined(separator: "\n")
+        configuration ?? ""
     }
 
     private var variableDeclarations: [String] {
@@ -88,7 +84,7 @@ struct NerdgraphCellSource {
     }
 
     var format: ChartFormat? {
-        guard !metadata.isEmpty else { return nil }
+        guard configuration != nil else { return nil }
         var format = ChartFormat.parseMetadata(metadata)
         format.name = bindingNames.first
         return format

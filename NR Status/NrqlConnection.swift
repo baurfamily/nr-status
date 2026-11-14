@@ -1,6 +1,6 @@
 import Foundation
 
-/// Non-secret routing options shared by document config and query metadata.
+/// Non-secret routing options shared by document and cell config fences.
 struct NrqlConnection: Equatable, Sendable {
     var apiKeyName: String?
     var accountIds: [Int]?
@@ -17,32 +17,17 @@ struct NrqlConnection: Equatable, Sendable {
         var errorDescription: String? { message }
     }
 
-    private static let metadata = try! NSRegularExpression(
-        pattern: #"/\*\*\*(.*?)\*\*\*/"#, options: [.dotMatchesLineSeparators]
-    )
-
     static func metadataBody(in text: String, allowUnclosed: Bool = false) -> String {
-        guard let match = metadata.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
-              let range = Range(match.range(at: 1), in: text) else {
-            if allowUnclosed, let open = text.range(of: "/***") { return String(text[open.upperBound...]) }
-            return ""
-        }
-        return String(text[range])
+        NrqlCellSource(stored: text).configuration ?? ""
     }
 
     static func parseDocumentConfig(_ text: String) throws -> NrqlConnection {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty { return NrqlConnection() }
-        let range = NSRange(trimmed.startIndex..., in: trimmed)
-        guard let match = metadata.firstMatch(in: trimmed, range: range), match.range == range else {
-            throw ConfigurationError(message: "Document settings must be inside a single /*** ... ***/ block comment.")
-        }
-        return try parse(metadataBody(in: trimmed), strict: true)
+        try parse(text, strict: true)
     }
 
     func documentConfigText(preserving text: String = "") throws -> String {
         _ = try Self.parseDocumentConfig(text)
-        var lines = Self.metadataBody(in: text).components(separatedBy: .newlines).filter { line in
+        var lines = text.components(separatedBy: .newlines).filter { line in
             guard let colon = line.firstIndex(of: ":") else { return true }
             let key = line[..<colon].trimmingCharacters(in: .whitespaces).lowercased()
             return key != "api-key" && key != "api_key" && key != "accounts"
@@ -54,7 +39,7 @@ struct NrqlConnection: Equatable, Sendable {
         guard !lines.isEmpty else { return "" }
         let body = lines.joined(separator: "\n")
         _ = try Self.parse(body, strict: true)
-        return "/***\n\(body)\n***/"
+        return body
     }
 
     static func parse(_ body: String, strict: Bool = false) throws -> NrqlConnection {

@@ -30,8 +30,8 @@ enum NrqlCellKind: String, CaseIterable, Identifiable {
         case .markdown: ""
         case .nrql: "```nrql\nFROM \n```"
         case .lua: "```lua\n\n```"
-        case .nerdgraph: "```graphql\n# title:\n# var:\n\n{\n  actor {\n    user {\n      name\n    }\n  }\n}\n```\n```variables\n{}\n```"
-        case .config: "```config\n/***\n  author:\n  description:\n***/\n```"
+        case .nerdgraph: "```graphql\n{\n  actor {\n    user {\n      name\n    }\n  }\n}\n```\n```variables\n{}\n```"
+        case .config: "```config\nauthor:\ndescription:\n```"
         }
     }
 
@@ -47,7 +47,8 @@ enum NrqlCellKind: String, CaseIterable, Identifiable {
 
     /// The kind of cell a stored block is, from its first non-blank line.
     static func detect(in stored: String) -> NrqlCellKind {
-        guard let first = stored.components(separatedBy: "\n").first(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty })
+        let code = NrqlCellSource(stored: stored).code
+        guard let first = code.components(separatedBy: "\n").first(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty })
         else { return .markdown }
         return fenced(by: first) ?? .markdown
     }
@@ -72,7 +73,7 @@ enum NrqlCellKind: String, CaseIterable, Identifiable {
     func unwrap(_ stored: String) -> String {
         if self == .nerdgraph { return NerdgraphCellSource(stored: stored).editorText }
         guard fenceTag != nil else { return stored }
-        var lines = stored.components(separatedBy: "\n")
+        var lines = NrqlCellSource(stored: stored).code.components(separatedBy: "\n")
         guard let open = lines.firstIndex(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }),
               Self.fenced(by: lines[open]) == self
         else { return stored }

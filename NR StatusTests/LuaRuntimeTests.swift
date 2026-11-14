@@ -40,11 +40,9 @@ struct LuaRuntimeTests {
 
     @Test func documentVariablesAreConfigFieldsOnly() throws {
         let config = try NrqlConnection.parseDocumentConfig("""
-            /***
             var appName = "Foo"
             var: title = config.appName .. " report"
             var filter = { enabled = true, ids = {42, 17} }
-            ***/
             """)
         let value = try LuaRuntime.run(
             "return { name = config.appName, title = config.title, id = config.filter.ids[1], enabled = config.filter.enabled }",
@@ -65,7 +63,7 @@ struct LuaRuntimeTests {
     @Test(arguments: ["var:", "var accounts = {}", "var api_key = {}", "var bad-name = 1", "var appName =", "var appName = 1\nvar appName = 2"])
     func rejectsInvalidDocumentDeclarations(_ declaration: String) {
         #expect(throws: NrqlConnection.ConfigurationError.self) {
-            try NrqlConnection.parseDocumentConfig("/***\n\(declaration)\n***/")
+            try NrqlConnection.parseDocumentConfig(declaration)
         }
     }
 

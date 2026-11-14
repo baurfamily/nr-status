@@ -31,19 +31,21 @@ Evaluated before the query is sent; the value is converted to a string (tables o
 
 **2. Script cells: a ` ```lua ` fenced block**
 
+```cell_config
+var: top_apps
+```
 ```lua
---[[ var: top_apps ]]
 local r = query("FROM Transaction SELECT count(*) FACET appName LIMIT 5")
 emit(r)
 ```
 
-The chart format goes in a Lua comment that opens the script (`--[[ title: …  chart: bar ]]`); NRQL cells keep `/*** ***/`. Fences are stored in the file but hidden in the editor; blank lines inside a script are fine. Script cells render as code plus their emitted result (or `chart: none` to hide it). Text outside any fence is a Markdown cell, edited as plain text and rendered when focus moves to another cell.
+Chart settings go in a `cell_config` fence immediately before the script or query fence. Configuration is hidden by default and editable in the cell sidebar, either as settings or raw text. Script cells render as code plus their emitted result (or `chart: none` to hide it). Text outside any fence is a Markdown cell, edited as plain text and rendered when focus moves to another cell.
 
 ### Result variables
 
-Use `var: top_apps` inside an NRQL `/*** ... ***/` metadata block, a leading
-Lua `--[[ ... ]]` block, or a leading GraphQL `# var: top_apps` comment to bind
-the cell's result. `title` controls the displayed heading independently.
+Use `var: top_apps` in a `cell_config` fence to bind the cell's result, regardless
+of whether it contains NRQL, Lua, or GraphQL. GraphQL supports multiple `var:`
+lines, optionally with extraction expressions. `title` controls the displayed heading independently.
 `results` is a table keyed by both the configured variable and 1-based result
 index: `results.top_apps`, `results[1]`. The old `name` config key is not recognized.
 
@@ -82,7 +84,7 @@ Sandbox: open only `base` (minus `dofile`, `loadfile`, `require`), `string`, `ta
 
 ## Charting synthetic data
 
-`emit` builds an `NrdbResultContainer` from the Lua table (infer `isTimeseries` from `beginTimeSeconds`, facets from the `facets` list). It is then charted exactly like a query result, including export (PDF/HTML). The format block (`/*** ... ***/`) applies to script cells unchanged.
+`emit` builds an `NrdbResultContainer` from the Lua table (infer `isTimeseries` from `beginTimeSeconds`, facets from the `facets` list). It is then charted exactly like a query result, including export (PDF/HTML). The same `cell_config` keys apply to scripts and queries.
 
 ## UI and editor support
 

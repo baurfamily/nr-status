@@ -36,7 +36,7 @@ import LanguageSupport
     
     var isScript: Bool { kind == .lua }
 
-    // chart settings from a doc-comment, if the text has one
+    // Chart settings from the cell's configuration fence, if it has one.
     private(set) var format: ChartFormat?
     
     static func == (lhs: NrqlQuery, rhs: NrqlQuery) -> Bool {
@@ -63,6 +63,7 @@ import LanguageSupport
     // the query as last sent, with `{{ }}` expressions replaced; nil before a run
     private(set) var executedNrql: String?
     private(set) var executedVariables: String?
+    private(set) var executedBindings: [LuaRuntime.Variable]?
     
     // how later cells refer to this result: `results.<name>`
     var name: String? { format?.name }
@@ -142,17 +143,13 @@ import LanguageSupport
         }
         let defaultTitle = kind == .nerdgraph ? "Nerdgraph Query" : isScript ? "Lua Script" : "NRQL Query"
         if let title = format?.title { return title }
-        if let script {
-            let first = script.split(separator: "\n").first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
-            guard let first, first.trimmingCharacters(in: .whitespaces).hasPrefix("--") else { return defaultTitle }
-            let title = first.drop { $0 == " " || $0 == "-" }.trimmingCharacters(in: .whitespaces)
-            return title.isEmpty ? defaultTitle : title
-        }
         guard format == nil else { return defaultTitle }
-        guard let titleString = kind.unwrap(text).split(separator: "\n").first else { return defaultTitle }
-        guard titleString.starts(with: "//") else { return defaultTitle }
-        
-        let title = titleString.dropFirst(2).trimmingCharacters(in: .whitespacesAndNewlines)
+        let code = kind == .nerdgraph ? NerdgraphCellSource(stored: text).query : kind.unwrap(text)
+        guard let first = code.components(separatedBy: "\n").first else { return defaultTitle }
+        let titleString = first.trimmingCharacters(in: .whitespaces)
+        let prefix = kind == .nerdgraph ? "#" : isScript ? "--" : "//"
+        guard titleString.hasPrefix(prefix), !titleString.hasPrefix("--[[") else { return defaultTitle }
+        let title = titleString.dropFirst(prefix.count).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return defaultTitle }
         
         return title
@@ -187,7 +184,7 @@ import LanguageSupport
         let nrql = nrql
         let graphQL = kind == .nerdgraph ? NerdgraphCellSource(stored: text) : nil
         let options = Result {
-            try NrqlConnection.parse(graphQL?.metadata ?? NrqlConnection.metadataBody(in: kind.unwrap(text)))
+            try NrqlConnection.parse(NrqlCellSource(stored: text).configuration ?? "")
         }
         setState(.running)
         setExecuted(nil)
@@ -206,6 +203,7 @@ import LanguageSupport
             }
             if let graphQL {
                 let bindings = try graphQL.resultBindings()
+                executedBindings = bindings
                 guard graphQL.isClosed else {
                     throw NrqlConnection.ConfigurationError(message: "Close the GraphQL and variables fences with ```.")
                 }
@@ -297,6 +295,7 @@ import LanguageSupport
         loadedConnection = nil
         loadedDocumentConfig = nil
         loadedBindings = nil
+        executedBindings = nil
         setExecuted(nil)
     }
     
@@ -339,8 +338,8 @@ import LanguageSupport
             return
         }
         let code = kind.unwrap(newValue)
-        format = ChartFormat.parse(from: code, lua: kind == .lua)
-        let body = ChartFormat.strip(from: code, lua: kind == .lua)
+        format = NrqlCellSource(stored: newValue).configuration.map(ChartFormat.parseMetadata)
+        let body = code
         if kind == .lua {
             script = body
             nrql = ""

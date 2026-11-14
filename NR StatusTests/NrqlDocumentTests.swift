@@ -8,13 +8,100 @@ import Foundation
 import CoreGraphics
 @testable import NR_Status
 
+struct CellConfigurationTests {
+    @Test func configTravelsWithCodeAndVariablesAndEditsRoundTrip() throws {
+        var document = NRQL_EditorDocument(text: """
+            ```config
+            author: Ada
+            ```
+
+            ```cell_config
+            title: Entities
+            var: entities = data.actor.entities
+            future: preserved
+            ```
+
+            ```graphql
+            { actor { user { name } } }
+            ```
+            ```variables
+            {"id": 42}
+            ```
+
+            ```nrql
+            SELECT 1
+            ```
+            """)
+        #expect(document.cells.map(\.kind) == [.config, .nerdgraph, .nrql])
+        #expect(document.cells[0].isCollapsed)
+        let id = document.cells[1].id
+        let originalCode = document.cells[1].editorText
+        document.cells[1].configurationText = NrqlCellSource.updating(
+            "title", values: ["Updated: entities"], in: document.cells[1].configurationText
+        )
+        #expect(document.cells[1].editorText == originalCode)
+        #expect(document.cells[1].query.title == "Updated: entities")
+        #expect(document.cells[1].configurationText.contains("future: preserved"))
+        document.cells[1].editorText = originalCode.replacingOccurrences(of: "name", with: "email")
+        #expect(document.cells[1].query.variables == #"{"id": 42}"#)
+        document.perform(.moveDown, on: id)
+        #expect(document.cells[2].query.title == "Updated: entities")
+        let reopened = NRQL_EditorDocument(text: document.text)
+        #expect(reopened.text == document.text)
+        #expect(reopened.cells[2].query.resultNames == ["entities"])
+        #expect(reopened.cells[2].query.nrql.contains("email"))
+    }
+
+    @Test(arguments: [
+        (NrqlCellKind.nrql, "// Comment title\nSELECT 1", "NRQL Query"),
+        (.lua, "-- Comment title\nreturn { rows = {} }", "Lua Script"),
+        (.nerdgraph, "# Comment title\n{ actor { user { name } } }", "Nerdgraph Query")
+    ])
+    func firstLineTitleRequiresNoCellConfiguration(kind: NrqlCellKind, code: String, fallback: String) {
+        var cell = NrqlCell(text: kind.wrap(code))
+        #expect(cell.query.title == "Comment title")
+        cell.configurationText = ""
+        #expect(cell.query.title == fallback)
+        cell.configurationText = "var: result"
+        #expect(cell.query.title == fallback)
+        cell.configurationText = "title: Explicit"
+        #expect(cell.query.title == "Explicit")
+        cell.removeConfiguration()
+        #expect(cell.query.title == "Comment title")
+        #expect(cell.editorText == code)
+        #expect(NrqlCell(text: kind.wrap("\n" + code)).query.title == fallback)
+    }
+
+    @Test func adjacentConfiguredCellsStaySeparateAndProseFencesStayLiteral() {
+        let first = "```cell_config\ntitle: One\n```\n```nrql\nSELECT 1\n```"
+        let second = "```cell_config\ntitle: Two\n```\n```lua\nreturn {}\n```"
+        let prose = "```text\n```cell_config\nliteral\n```"
+        let document = NRQL_EditorDocument(text: first + "\n\n" + second + "\n\n" + prose)
+        #expect(document.cells.map(\.kind) == [.nrql, .lua, .markdown])
+        #expect(document.cells.map(\.query.title) == ["One", "Two", "Markdown"])
+        #expect(document.cells.last?.text == prose)
+    }
+
+    @Test func editingBindingsPreservesNewlinesWhileTyping() {
+        let configuration = NrqlCellSource.updating("var", values: ["response", ""], in: "", includeEmptyValues: true)
+        #expect(NrqlCellSource.values("var", in: configuration).joined(separator: "\n") == "response\n")
+        let edited = NrqlCellSource.updating(
+            "var", values: ["response", "entity = data.actor.entity"], in: configuration, includeEmptyValues: true
+        )
+        #expect(NrqlCellSource.values("var", in: edited) == ["response", "entity = data.actor.entity"])
+        #expect(!edited.contains("var: \n"))
+    }
+}
+
 struct NrqlDocumentParserTests {
     @Test func graphqlAndVariablesFormOneCellAndRoundTrip() {
         let text = """
         # Notes
 
+        ```cell_config
+        var: user
+        ```
         ```graphql
-        # var: user
         query { actor { user { name } } }
         ```
         ```variables
@@ -33,7 +120,7 @@ struct NrqlDocumentParserTests {
         #expect(cell.query.nrql.contains("query { actor"))
         #expect(!cell.query.nrql.contains("```variables"))
         #expect(cell.query.variables == #"{"id": {{ results.ids.rows[1].id }}}"#)
-        #expect(NrqlCellKind.nerdgraph.wrap(cell.editorText) == cell.text)
+        #expect(cell.storedText(forEditorText: cell.editorText) == cell.text)
         #expect(NRQL_EditorDocument(text: document.text).text == document.text)
     }
 
@@ -128,7 +215,7 @@ struct NerdgraphCellTests {
             {"nrql":"SELECT 7", "results":[{"count":7,"name":"Foo","values":[1,2]}],
              "metadata":{"facets":null,"timeWindow":null}}
             """.utf8))
-        let cell = NrqlCell(text: "```nrql\n/***\nvar: source\nchart: json\n***/\nSELECT 7\n```")
+        let cell = NrqlCell(text: "```cell_config\nvar: source\nchart: json\n```\n```nrql\nSELECT 7\n```")
         let query = cell.query
         query.setState(.loaded(container))
         let json = try #require(query.displayedJSON).get()
@@ -157,17 +244,17 @@ struct NerdgraphCellTests {
             {"nrql":"SELECT name FROM Transaction", "results":[],
              "metadata":{"facets":null,"timeWindow":null}}
             """.utf8))
-        let query = NrqlQuery(from: "```nrql\n/***\nchart: json\n***/\nSELECT name FROM Transaction\n```")
+        let query = NrqlQuery(from: "```cell_config\nchart: json\n```\n```nrql\nSELECT name FROM Transaction\n```")
         query.setState(.loaded(container))
         #expect(try #require(query.displayedJSON).get() == .array([]))
     }
 
     @Test func hiddenNerdgraphResultsKeepBindingsAndExposeErrors() throws {
-        let query = NrqlQuery(from: "```graphql\n# var: response\n{ actor { user { name } } }\n```")
+        let query = NrqlQuery(from: "```cell_config\nvar: response\n```\n```graphql\n{ actor { user { name } } }\n```")
         let value = JSONValue.object(["data": .object(["name": .string("Foo")])])
         query.setState(.jsonLoaded(value))
         #expect(try #require(query.displayedJSON).get() == value)
-        query.text = query.text.replacingOccurrences(of: "# var: response", with: "# var: response\n# chart: none")
+        query.text = query.text.replacingOccurrences(of: "var: response", with: "var: response\nchart: none")
         #expect(!query.showsResultPane)
         #expect(query.displayedJSON == nil)
         #expect(query.hasResult)
@@ -182,21 +269,25 @@ struct NerdgraphCellTests {
     }
 
     @Test func parsesMultipleWholeResponseAndExtractedBindings() throws {
-        let source = NerdgraphCellSource(editorText: """
-            # var: response
-            # var: entity = data.actor.entitySearch.results.entities[1]
-            # var: count = #data.actor.entitySearch.results.entities
+        let source = NerdgraphCellSource(stored: """
+            ```cell_config
+            var: response
+            var: entity = data.actor.entitySearch.results.entities[1]
+            var: count = #data.actor.entitySearch.results.entities
+            ```
+            ```graphql
             { actor { user { name } } }
+            ```
             """)
         #expect(source.bindingNames == ["response", "entity", "count"])
         #expect(try source.resultBindings().first?.expression == nil)
         #expect(source.format?.name == "response")
-        #expect(try NerdgraphCellSource(editorText: "# var: whole response\n{}").resultBindings().first?.name == "whole response")
+        #expect(try NerdgraphCellSource(stored: "```cell_config\nvar: whole response\n```\n```graphql\n{}\n```").resultBindings().first?.name == "whole response")
         let query = NrqlCell(text: source.storedText)
         let reader = NrqlCell(text: "```lua\nreturn results.entity\n```")
         #expect(NrqlDependencies.dependencies(of: reader, in: [query, reader]).map(\.id) == [query.id])
         #expect(throws: NrqlConnection.ConfigurationError.self) {
-            try NerdgraphCellSource(editorText: "# var: entity\n# var: entity = data.actor\n{}").resultBindings()
+            try NerdgraphCellSource(stored: "```cell_config\nvar: entity\nvar: entity = data.actor\n```\n```graphql\n{}\n```").resultBindings()
         }
     }
 
@@ -228,7 +319,7 @@ struct NerdgraphCellTests {
     }
 
     @Test func namedJSONResultsFeedScriptsAndOnlyVariablesCreateDependencies() async throws {
-        let source = NrqlCell(text: "```graphql\n# var: user\n{ actor { user { name } } }\n```")
+        let source = NrqlCell(text: "```cell_config\nvar: user\n```\n```graphql\n{ actor { user { name } } }\n```")
         let consumer = NrqlCell(text: """
             ```graphql
             query($id: Int!) { actor { account(id: $id) { name } } }
@@ -262,7 +353,7 @@ struct NerdgraphCellTests {
         try document.setDefaultApiKey("Staging")
         #expect(document.staleCellIds(profiles: profiles) == [document.cells[1].id])
         #expect(try NrqlConnection.parse("api_key: Staging").apiKeyName == "Staging")
-        document.cells[1].editorText = "# api-key: Production\n" + document.cells[1].editorText
+        document.cells[1].configurationText = "api-key: Production"
         #expect(document.staleCellIds(profiles: profiles).isEmpty)
     }
 
@@ -296,7 +387,7 @@ struct NerdgraphCellTests {
         #expect(JSONNode(key: "name", value: .string("Checkout")).displayValue(isExpanded: true) == #""Checkout""#)
     }
 
-    @Test func GraphQLMetadataOnlyUsesLeadingNativeComments() throws {
+    @Test func graphQLCommentsAreNotConfiguration() throws {
         let text = """
 
           # A note about this query
@@ -311,9 +402,9 @@ struct NerdgraphCellTests {
         """
         let source = NerdgraphCellSource(editorText: text)
         #expect(source.operation == text)
-        #expect(source.format?.title == "Account details: production")
-        #expect(source.format?.name == "account_details")
-        #expect(try NrqlConnection.parse(source.metadata).apiKeyName == "Production US")
+        #expect(source.format == nil)
+        #expect(source.bindingNames.isEmpty)
+        #expect(try NrqlConnection.parse(source.metadata).apiKeyName == nil)
         let old = "/***\nvar: old_style\napi-key: Missing\n***/\n{ actor { user { name } } }"
         let oldSource = NerdgraphCellSource(editorText: old)
         #expect(oldSource.format == nil)
@@ -324,7 +415,7 @@ struct NerdgraphCellTests {
 
 struct NrqlDocumentCellTests {
     @Test func documentConfigurationRoundTripsAndIsNotRunnable() throws {
-        let text = "```config\n/***\napi-key: Production\naccounts: 12, 34\n***/\n```\n\n# Notes\n\n```nrql\nSELECT 1\n```\n"
+        let text = "```config\napi-key: Production\naccounts: 12, 34\n```\n\n# Notes\n\n```nrql\nSELECT 1\n```\n"
         let document = NRQL_EditorDocument(text: text)
         #expect(document.cells.map(\.kind) == [.config, .markdown, .nrql])
         #expect(!document.cells[0].isRunnable)
@@ -335,9 +426,9 @@ struct NrqlDocumentCellTests {
 
     @Test func rejectsMisplacedRepeatedOrUnclosedConfiguration() {
         for text in [
-            "# Title\n\n```config\n/***\napi-key: Work\n***/\n```",
-            "```config\n/***\napi-key: Work\n***/\n```\n\n```config\n/***\naccounts: 12\n***/\n```",
-            "```config\n/***\napi-key: Work\n***/"
+            "# Title\n\n```config\napi-key: Work\n```",
+            "```config\napi-key: Work\n```\n\n```config\naccounts: 12\n```",
+            "```config\napi-key: Work\n"
         ] {
             #expect(throws: NrqlConnection.ConfigurationError.self) {
                 try NRQL_EditorDocument(text: text).connection.get()
@@ -419,24 +510,22 @@ struct NrqlDocumentCellTests {
     }
 
     @Test func toolbarChangesDoNotOverwriteMalformedConfig() {
-        var document = NRQL_EditorDocument(text: "```config\n/***\napi-key:\n***/\n```")
+        var document = NRQL_EditorDocument(text: "```config\napi-key:\n```")
         let originalText = document.text
         #expect(throws: NrqlConnection.ConfigurationError.self) { try document.setDefaultApiKey("Work") }
         #expect(document.text == originalText)
     }
 
     @Test func toolbarChangesPreserveDocumentMetadataIncludingPendingEdits() throws {
-        var document = NRQL_EditorDocument(text: "```config\n/***\n  author: Before\n  accounts: 12\n***/\n```")
+        var document = NRQL_EditorDocument(text: "```config\nauthor: Before\naccounts: 12\n```")
         document.cells[0].query.text = """
             ```config
-            /***
-              author: Ada
-              description: Error rates: per application
-              owner-team: Observability
-              custom-notes:
-              // Keep this note.
-              accounts: 12
-            ***/
+            author: Ada
+            description: Error rates: per application
+            owner-team: Observability
+            custom-notes:
+            // Keep this note.
+            accounts: 12
             ```
             """
         try document.setDefaultApiKey("Production")
@@ -446,13 +535,11 @@ struct NrqlDocumentCellTests {
         try document.setDefaultAccountIds(nil)
 
         #expect(document.cells[0].editorText == """
-            /***
-              author: Ada
-              description: Error rates: per application
-              owner-team: Observability
-              custom-notes:
-              // Keep this note.
-            ***/
+            author: Ada
+            description: Error rates: per application
+            owner-team: Observability
+            custom-notes:
+            // Keep this note.
             """)
         #expect(try document.connection.get() == NrqlConnection())
         let reopened = NRQL_EditorDocument(text: document.text)
@@ -475,8 +562,8 @@ struct NrqlDocumentCellTests {
     }
 
     @Test func executionReadsPendingConfigEditsBeforeDocumentDebounce() throws {
-        let document = NRQL_EditorDocument(text: "```config\n/***\napi-key: Old\naccounts: 1\n***/\n```")
-        document.cells[0].query.text = "```config\n/***\napi-key: New\naccounts: 2\n***/\n```"
+        let document = NRQL_EditorDocument(text: "```config\napi-key: Old\naccounts: 1\n```")
+        document.cells[0].query.text = "```config\napi-key: New\naccounts: 2\n```"
         #expect(try document.connection.get() == NrqlConnection(apiKeyName: "New", accountIds: [2]))
     }
 
@@ -521,14 +608,12 @@ struct NrqlDocumentCellTests {
 
 struct NrqlConnectionTests {
     @Test(arguments: [
-        "api-key: Work\naccounts: 123",
-        "// api-key: Work\n// accounts: 123",
         "/*\napi-key: Work\n*/",
         "/***\napi-key: Work",
         "/***\napi-key: Work\n***/\naccounts: 123",
         "/***\napi-key: Work\n***/\n/***\naccounts: 123\n***/"
     ])
-    func documentSettingsRequireASingleBlockComment(_ body: String) {
+    func documentSettingsRejectCommentWrappers(_ body: String) {
         let document = NRQL_EditorDocument(text: "```config\n\(body)\n```")
         #expect(throws: NrqlConnection.ConfigurationError.self) { try document.connection.get() }
     }
@@ -541,7 +626,7 @@ struct NrqlConnectionTests {
         #expect(NrqlConnection(accountIds: [9]).inheriting(defaults) == NrqlConnection(apiKeyName: "Production", accountIds: [9]))
         #expect(NrqlConnection(apiKeyName: "Other").inheriting(defaults) == NrqlConnection(apiKeyName: "Other", accountIds: [1, 2]))
         #expect(NrqlConnection().inheriting(defaults) == defaults)
-        let query = NrqlQuery(from: "/***\n\(body)\n***/\nSELECT 1")
+        let query = NrqlQuery(from: "```cell_config\n\(body)\n```\n```nrql\nSELECT 1\n```")
         #expect(query.nrql == "SELECT 1")
         #expect(query.format?.type == .line)
     }
@@ -556,25 +641,25 @@ struct NrqlConnectionTests {
 
     @Test func documentConfigAllowsMetadataAndIgnoresLineCommentSettings() throws {
         let config = try NrqlConnection.parseDocumentConfig(
-            "/***\nauthor: Ada\ndescription: Report: per day\nowner-team: Observability\ncustom:\n// api-key: Ignored\napi-key: Work\n// accounts: 999\naccounts: 123\n***/"
+            "author: Ada\ndescription: Report: per day\nowner-team: Observability\ncustom:\n// api-key: Ignored\napi-key: Work\n// accounts: 999\naccounts: 123"
         )
         #expect(config == NrqlConnection(apiKeyName: "Work", accountIds: [123]))
-        #expect(try NrqlConnection.parseDocumentConfig("/***\naccount: 123\n***/") == NrqlConnection())
+        #expect(try NrqlConnection.parseDocumentConfig("account: 123") == NrqlConnection())
     }
 
     @Test(arguments: ["api-key:", "accounts:", "accounts: invalid", "accounts: 1\naccounts: 2", "missing colon"])
     func metadataDoesNotDisableConfigurationValidation(_ body: String) {
         #expect(throws: (any Error).self) {
-            try NrqlConnection.parseDocumentConfig("/***\nauthor: Ada\ndescription:\n\(body)\n***/")
+            try NrqlConnection.parseDocumentConfig("author: Ada\ndescription:\n\(body)")
         }
     }
 }
 
 struct NrqlQueryTests {
     @Test(arguments: [
-        "```nrql\n/***\nvar: source\n***/\nSELECT 1\n```",
-        "```lua\n--[[\nvar: source\n]]\nreturn { rows = {} }\n```",
-        "```graphql\n# var: source\n{ actor { user { name } } }\n```"
+        "```cell_config\nvar: source\n```\n```nrql\nSELECT 1\n```",
+        "```cell_config\nvar: source\n```\n```lua\nreturn { rows = {} }\n```",
+        "```cell_config\nvar: source\n```\n```graphql\n{ actor { user { name } } }\n```"
     ])
     func bindsResultsWithVarWithoutANameAlias(_ text: String) {
         #expect(NrqlQuery(from: text).name == "source")
@@ -583,14 +668,14 @@ struct NrqlQueryTests {
     }
 
     @Test func formatTitleOverridesCommentTitle() {
-        let query = NrqlQuery(from: "/***\ntitle: Errors: last day\n***/\n// Comment title\nSELECT 1")
+        let query = NrqlQuery(from: "```cell_config\ntitle: Errors: last day\n```\n```nrql\n// Comment title\nSELECT 1\n```")
 
         #expect(query.title == "Errors: last day")
         #expect(NrqlQuery(from: "// Comment title\nSELECT 1").title == "Comment title")
     }
 
     @Test func formatBlockIsNotPartOfTheQueryOrTitle() {
-        let query = NrqlQuery(from: "/***\nchart: line\nattributes: points\n***/\n// Title\nSELECT 1")
+        let query = NrqlQuery(from: "```cell_config\nchart: line\nattributes: points\n```\n```nrql\n// Title\nSELECT 1\n```")
 
         #expect(query.nrql == "SELECT 1")
         #expect(query.title == "NRQL Query")
@@ -598,9 +683,9 @@ struct NrqlQueryTests {
     }
 
     @Test(arguments: [
-        "/***\napi-key: Work\naccounts: 123\n***/\n// Legacy title\nSELECT 1",
-        "// Legacy title\n/***\nvar: query_result\n***/\nSELECT 1",
-        "/***\n***/\n// Legacy title\nSELECT 1"
+        "```cell_config\napi-key: Work\naccounts: 123\n```\n```nrql\n// Legacy title\nSELECT 1\n```",
+        "```cell_config\nvar: query_result\n```\n```nrql\n// Legacy title\nSELECT 1\n```",
+        "```cell_config\n\n```\n```nrql\n// Legacy title\nSELECT 1\n```"
     ])
     func metadataBlockDisablesLineCommentTitleFallback(_ text: String) {
         #expect(NrqlQuery(from: text).title == "NRQL Query")
@@ -671,7 +756,7 @@ struct NrqlExportTests {
     }
 
     @Test func exportsTablesAsData() throws {
-        let document = NRQL_EditorDocument(text: "```nrql\n/***\nchart: table\n***/\nSELECT * FROM Log\n```")
+        let document = NRQL_EditorDocument(text: "```cell_config\nchart: table\n```\n```nrql\nSELECT * FROM Log\n```")
         let results = try #require(ChartSamples.sampleData(timeseries: false, size: .large))
         document.cells[0].query.setState(.loaded(results))
 
@@ -718,7 +803,7 @@ struct NrqlInterpolationTests {
     }
 
     @Test func formatVariableAndHiddenChart() {
-        let query = NrqlQuery(from: "/***\nvar: top_app\nchart: none\n***/\nSELECT 1")
+        let query = NrqlQuery(from: "```cell_config\nvar: top_app\nchart: none\n```\n```nrql\nSELECT 1\n```")
 
         #expect(query.name == "top_app")
         #expect(query.format?.hidesChart == true)
@@ -731,15 +816,15 @@ struct NrqlClearResultsTests {
     @Test func clearsResultsAndErrorsWithoutChangingTheDocument() throws {
         var document = NRQL_EditorDocument(text: """
             ```config
-            /***
             accounts: 12
-            ***/
             ```
 
             # Notes
 
+            ```cell_config
+            var: source
+            ```
             ```nrql
-            /*** var: source ***/
             SELECT count(*) FROM Log
             ```
 
@@ -817,7 +902,7 @@ struct NrqlClearResultsTests {
 }
 
 struct NrqlScriptCellTests {
-    private let script = "```lua\n--[[\nvar: x\n]]\n-- Compare\n\nemit({ rows = { { facet = 'A', count = results.a.rows[1].count } } })\n```"
+    private let script = "```cell_config\nvar: x\n```\n```lua\n-- Compare\n\nemit({ rows = { { facet = 'A', count = results.a.rows[1].count } } })\n```"
 
     @Test func documentVariablesAreExecutedAndTrackedForStaleness() async throws {
         let suite = "NR Status document globals test \(UUID().uuidString)"
@@ -826,9 +911,7 @@ struct NrqlScriptCellTests {
         defaults.set(try JSONEncoder().encode(NerdgraphProfiles.Settings()), forKey: "nerdgraphProfiles")
         let document = NRQL_EditorDocument(text: """
             ```config
-            /***
             var appName = "Foo"
-            ***/
             ```
 
             ```lua
@@ -839,7 +922,7 @@ struct NrqlScriptCellTests {
         await query.getData(defaults: try document.connection.get(), profiles: NerdgraphProfiles(defaults: defaults))
         #expect(query.errorMessage == nil)
         #expect(query.resultContainer?.data.first?.stringFields["name"] == "Foo")
-        document.cells[0].query.text = "```config\n/***\nvar appName = \"Bar\"\n***/\n```"
+        document.cells[0].query.text = "```config\nvar appName = \"Bar\"\n```"
         #expect(document.staleCellIds(profiles: .init()) == [document.cells[1].id])
     }
 
@@ -854,7 +937,7 @@ struct NrqlScriptCellTests {
             forKey: "nerdgraphProfiles"
         )
         let profiles = NerdgraphProfiles(defaults: defaults)
-        let prefix = explicitConfig ? "```config\n/***\naccounts: 23, 11\n***/\n```\n\n" : ""
+        let prefix = explicitConfig ? "```config\naccounts: 23, 11\n```\n\n" : ""
         let document = NRQL_EditorDocument(text: prefix + """
             ```lua
             return { rows = { { account = config.accounts[1], key = config.api_key } } }
@@ -896,13 +979,13 @@ struct NrqlScriptCellTests {
 
         #expect(query.isScript)
         #expect(query.nrql.isEmpty)
-        #expect(query.title == "Compare")
+        #expect(query.title == "Lua Script")
         #expect(query.name == "x")
         #expect(NrqlCell(text: script).isRunnable)
     }
 
     @Test func luaFormatIsALeadingComment() {
-        let query = NrqlQuery(from: "```lua\n--[[\ntitle: T\nchart: bar\n]]\n--[[ later ]]\nreturn 1\n```")
+        let query = NrqlQuery(from: "```cell_config\ntitle: T\nchart: bar\n```\n```lua\n--[[ later ]]\nreturn 1\n```")
 
         #expect(query.format?.type == .bar)
         #expect(query.title == "T")
@@ -924,9 +1007,9 @@ struct NrqlScriptCellTests {
 
 struct NrqlDependencyTests {
     private let cells = [
-        NrqlCell(text: "```nrql\n/***\nvar: c\n***/\nFROM A WHERE x = '{{ results.b.rows[1].facet }}'\n```"),
-        NrqlCell(text: "```nrql\n/***\nvar: b\n***/\nFROM B WHERE x = '{{ results.a.rows[1].facet }}'\n```"),
-        NrqlCell(text: "```nrql\n/***\nvar: a\n***/\nFROM C\n```"),
+        NrqlCell(text: "```cell_config\nvar: c\n```\n```nrql\nFROM A WHERE x = '{{ results.b.rows[1].facet }}'\n```"),
+        NrqlCell(text: "```cell_config\nvar: b\n```\n```nrql\nFROM B WHERE x = '{{ results.a.rows[1].facet }}'\n```"),
+        NrqlCell(text: "```cell_config\nvar: a\n```\n```nrql\nFROM C\n```"),
         NrqlCell(text: "```lua\nemit(results['c'].rows)\n```"),
         NrqlCell(text: "```nrql\nFROM D -- results.a is not in a placeholder\n```"),
     ]
@@ -946,8 +1029,8 @@ struct NrqlDependencyTests {
 
     @Test func cyclesDoNotLoop() {
         let loop = [
-            NrqlCell(text: "```nrql\n/***\nvar: x\n***/\nFROM A WHERE a = '{{ results.y.n }}'\n```"),
-            NrqlCell(text: "```nrql\n/***\nvar: y\n***/\nFROM B WHERE a = '{{ results.x.n }}'\n```"),
+            NrqlCell(text: "```cell_config\nvar: x\n```\n```nrql\nFROM A WHERE a = '{{ results.y.n }}'\n```"),
+            NrqlCell(text: "```cell_config\nvar: y\n```\n```nrql\nFROM B WHERE a = '{{ results.x.n }}'\n```"),
         ]
 
         #expect(NrqlDependencies.plan(for: [loop[0]], in: loop, includeFinished: false).count == 2)
@@ -955,13 +1038,86 @@ struct NrqlDependencyTests {
 }
 
 struct NrqlCellActionTests {
+    @MainActor @Test func duplicatesCodeBelowWithIndependentStateAndUniqueBindings() throws {
+        var document = NRQL_EditorDocument(text: """
+            ```cell_config
+            title: Requests
+            var: requests
+            chart: billboard
+            attributes: gauge, max(250)
+            future: preserved
+            ```
+            ```nrql
+            SELECT count(*) FROM Transaction
+            ```
+
+            # Notes
+            """)
+        let original = document.cells[0]
+        original.query.setState(.loaded(try #require(ChartSamples.sampleData(size: .small))))
+        document.perform(.duplicate, on: original.id)
+        let copy = document.cells[1]
+        #expect(document.cells.map(\.kind) == [.nrql, .nrql, .markdown])
+        #expect(copy.id != original.id && copy.query !== original.query)
+        #expect(copy.editorText == original.editorText)
+        #expect(copy.query.title == "Requests (copy)")
+        #expect(copy.query.name == "requests_copy")
+        #expect(copy.query.format?.parameter("max") == "250")
+        #expect(copy.configurationText.contains("future: preserved"))
+        #expect(!copy.query.hasResult && original.query.hasResult)
+        #expect(document.focusedCellId == copy.id && copy.focusOnAppear)
+        document.perform(.duplicate, on: original.id)
+        #expect(document.cells[1].query.name == "requests_copy2")
+        #expect(NRQL_EditorDocument(text: document.text).text == document.text)
+        #expect(document.cells[0].text == original.text)
+    }
+
+    @Test func duplicatesNerdgraphBindingsWithoutChangingExpressionsOrVariables() throws {
+        var document = NRQL_EditorDocument(text: """
+            ```cell_config
+            var: response
+            var: entity = data.actor.entities[1]
+            var: count = #data.actor.entities
+            ```
+            ```graphql
+            query($id: Int!) { actor { user { name } } }
+            ```
+            ```variables
+            {"id": 42}
+            ```
+            """)
+        let original = document.cells[0]
+        document.perform(.duplicate, on: original.id)
+        let copy = document.cells[1]
+        let bindings = try NerdgraphCellSource(stored: copy.text).resultBindings()
+        #expect(bindings.map(\.name) == ["response_copy", "entity_copy", "count_copy"])
+        #expect(bindings.map(\.expression) == [nil, "data.actor.entities[1]", "#data.actor.entities"])
+        #expect(copy.editorText == original.editorText)
+        #expect(copy.query.variables == original.query.variables)
+    }
+
+    @Test func duplicatesMarkdownAndPendingCodeButNotDocumentDefaults() {
+        var document = NRQL_EditorDocument(text: "```config\nauthor: Ada\n```\n\n# Notes\n\n```lua\n-- Title\nreturn 1\n```")
+        #expect(!document.canPerform(.duplicate, on: document.cells[0].id))
+        document.perform(.duplicate, on: document.cells[0].id)
+        #expect(document.cells.count == 3)
+        document.perform(.duplicate, on: document.cells[1].id)
+        #expect(document.cells[1].text == document.cells[2].text)
+        let sourceID = document.cells[3].id
+        document.cells[3].query.text = "```lua\n-- Updated title\nreturn 2\n```"
+        document.perform(.duplicate, on: sourceID)
+        #expect(document.cells[4].editorText == "-- Updated title\nreturn 2")
+        #expect(document.cells[4].query.title == "Updated title (copy)")
+        #expect(document.cells[3].editorText == "-- Title\nreturn 1")
+    }
+
     @Test func scriptCellsHideTheirFence() {
-        let stored = "```lua\n--[[ var: x ]]\nlocal a = 1\n\nreturn a\n```"
+        let stored = "```cell_config\nvar: x\n```\n```lua\nlocal a = 1\n\nreturn a\n```"
         var cell = NrqlCell(text: stored)
         #expect(cell.kind == .lua)
-        #expect(cell.editorText == "--[[ var: x ]]\nlocal a = 1\n\nreturn a")
-        cell.editorText = "--[[ var: x ]]\nreturn 2"
-        #expect(cell.text == "```lua\n--[[ var: x ]]\nreturn 2\n```")
+        #expect(cell.editorText == "local a = 1\n\nreturn a")
+        cell.editorText = "return 2"
+        #expect(cell.text == "```cell_config\nvar: x\n```\n```lua\nreturn 2\n```")
         #expect(cell.query.script?.contains("return 2") == true)
         #expect(cell.query.name == "x")
     }
@@ -991,8 +1147,10 @@ struct NrqlCellActionTests {
             SELECT 1 FROM A WHERE x = '{{ results.later.v }}'
             ```
 
+            ```cell_config
+            var: later
+            ```
             ```nrql
-            /*** var: later ***/
             SELECT 2 FROM B
             ```
             """)
@@ -1033,17 +1191,17 @@ struct MarkdownParserTests {
     @MainActor @Test func markdownInterpolatesConfigAndResultsWithoutChangingSource() throws {
         let document = NRQL_EditorDocument(text: """
             ```config
-            /***
             var appName = "Foo"
-            ***/
             ```
 
             # {{ config.appName }}
 
             Entity: **{{ results.entity.data.name }}**
 
+            ```cell_config
+            var: entity
+            ```
             ```graphql
-            # var: entity
             { actor { user { name } } }
             ```
             """)
@@ -1085,8 +1243,8 @@ struct MarkdownParserTests {
 
 struct NrqlStaleTests {
     @Test func cellIsStaleWhenADependencyRunsAgain() async {
-        let a = NrqlCell(text: "```lua\n--[[\nvar: a\n]]\nreturn { { n = 1 } }\n```")
-        let b = NrqlCell(text: "```lua\n--[[\nvar: b\n]]\nreturn { { n = results.a.rows[1].n } }\n```")
+        let a = NrqlCell(text: "```cell_config\nvar: a\n```\n```lua\nreturn { { n = 1 } }\n```")
+        let b = NrqlCell(text: "```cell_config\nvar: b\n```\n```lua\nreturn { { n = results.a.rows[1].n } }\n```")
         let c = NrqlCell(text: "```lua\nreturn { { n = results.b.rows[1].n } }\n```")
         let cells = [a, b, c]
 
@@ -1115,8 +1273,10 @@ struct NrqlConnectionStaleTests {
 
     @Test func configReadersTrackAccountOrderAndInvalidateTheirReaders() throws {
         let document = NRQL_EditorDocument(text: """
+            ```cell_config
+            var: selected
+            ```
             ```lua
-            --[[ var: selected ]]
             return { rows = { { id = config.accounts[1] } } }
             ```
 
@@ -1156,7 +1316,7 @@ struct NrqlConnectionStaleTests {
         for cell in NrqlDependencies.plan(for: document.cells, in: document.cells, includeFinished: true) {
             let snapshot: NrqlConnection.Snapshot?
             if cell.kind == .nrql {
-                snapshot = try NrqlConnection.parse(NrqlConnection.metadataBody(in: cell.editorText))
+                snapshot = try NrqlConnection.parse(cell.configurationText)
                     .inheriting(document.connection.get())
                     .snapshot(profiles: profiles)
             } else {
@@ -1170,37 +1330,43 @@ struct NrqlConnectionStaleTests {
     func documentChangesOnlyInvalidateInheritedFieldsAndTheirReaders(changingKey: Bool) throws {
         var document = NRQL_EditorDocument(text: """
             ```config
-            /***
             api-key: Production
             accounts: 10
-            ***/
             ```
 
+            ```cell_config
+            var: source
+            ```
             ```nrql
-            /*** var: source ***/
             SELECT 1
             ```
 
+            ```cell_config
+            api-key: Staging
+            ```
             ```nrql
-            /*** api-key: Staging ***/
             SELECT 2
             ```
 
+            ```cell_config
+            accounts: 30
+            ```
             ```nrql
-            /*** accounts: 30 ***/
             SELECT 3
             ```
 
-            ```nrql
-            /***
+            ```cell_config
             api-key: Staging
             accounts: 30
-            ***/
+            ```
+            ```nrql
             SELECT 4
             ```
 
+            ```cell_config
+            var: derived
+            ```
             ```lua
-            --[[ var: derived ]]
             return results.source
             ```
 
@@ -1236,11 +1402,13 @@ struct NrqlConnectionStaleTests {
     func pendingEditorChangesInvalidateCachedResults(editingDocumentConfig: Bool) throws {
         let document = NRQL_EditorDocument(text: """
             ```config
-            /*** api-key: Production ***/
+            api-key: Production
             ```
 
+            ```cell_config
+            var: source
+            ```
             ```nrql
-            /*** var: source ***/
             SELECT 1
             ```
 
@@ -1251,9 +1419,9 @@ struct NrqlConnectionStaleTests {
         try cacheResults(in: document, profiles: profiles)
         let text = document.text
         if editingDocumentConfig {
-            document.cells[0].query.text = "```config\n/*** api-key: Staging ***/\n```"
+            document.cells[0].query.text = "```config\napi-key: Staging\n```"
         } else {
-            document.cells[1].query.text = "```nrql\n/***\nvar: source\naccounts: 30\n***/\nSELECT 1\n```"
+            document.cells[1].query.text = "```cell_config\nvar: source\naccounts: 30\n```\n```nrql\nSELECT 1\n```"
         }
         #expect(document.text == text)
         #expect(document.staleCellIds(profiles: profiles) == [document.cells[1].id, document.cells[2].id])
@@ -1262,8 +1430,10 @@ struct NrqlConnectionStaleTests {
     @Test(arguments: [true, false])
     func inheritedAppDefaultsAndPreferredAccountsAreTracked(changingKey: Bool) throws {
         let document = NRQL_EditorDocument(text: """
+            ```cell_config
+            var: source
+            ```
             ```nrql
-            /*** var: source ***/
             SELECT 1
             ```
 
@@ -1271,11 +1441,11 @@ struct NrqlConnectionStaleTests {
             return results.source
             ```
 
-            ```nrql
-            /***
+            ```cell_config
             api-key: Staging
             accounts: 30
-            ***/
+            ```
+            ```nrql
             SELECT 2
             ```
             """)

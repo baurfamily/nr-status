@@ -53,6 +53,8 @@ struct EditorMenuView : View {
                 ForEach(NrqlCellKind.allCases.filter { $0 != .config }) { cellButton($0.title, .add($0, above: false)) }
             }
             Divider()
+            cellButton("Duplicate Cell", .duplicate)
+            Divider()
             cellButton("Move Cell Up", .moveUp)
             cellButton("Move Cell Down", .moveDown)
             Divider()

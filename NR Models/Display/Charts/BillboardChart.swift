@@ -16,7 +16,9 @@ struct BillboardChart: View {
     }
     
     var data: [NrdbResults.MiniDatum] {
-        config.resultContainer.results.data.flatMap { datum in
+        config.resultContainer.results.data.filter {
+            $0.facet == nil || selectedFacets.contains($0.facet!)
+        }.flatMap { datum in
             config.selectedFields.map { field in
                 NrdbResults.MiniDatum(
                     field: field,

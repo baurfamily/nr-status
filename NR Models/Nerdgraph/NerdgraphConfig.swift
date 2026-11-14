@@ -4,42 +4,35 @@
 //
 
 import Foundation
+import os
 
-/// Connection settings for NerdGraph. The host and API key live together in one
-/// keychain credential (shared with widgets through an access group); account IDs are
-/// just a default for queries, so they stay in the shared App Group defaults that
-/// `PreferencesView` writes through `@AppStorage`.
-struct NerdgraphConfig: Equatable {
+/// A resolved connection. Documents store profile names, never this value.
+struct NerdgraphConfig: Equatable, Hashable, Sendable {
     static let defaultHost = "api.newrelic.com"
     static let defaultApiKey = "NRAK-"
 
     static let appGroup = "EHM929N34N.net.baurhome.NR-Status"
-
-    static let credentialStore: CredentialStore = KeychainStore.shared
 
     /// Shared with the widget extension.
     static let sharedDefaults = UserDefaults(suiteName: appGroup) ?? .standard
 
     var host: String
     var apiKey: String
-    // comma separated, exactly as entered in preferences
+    // comma-separated IDs for the NerdGraph request
     var accountIds: String
 
     static var current: NerdgraphConfig {
-        let credential = credentialStore.load()
+        do {
+            if let config = try NerdgraphProfiles.shared.defaultConfig() { return config }
+        } catch {
+            Logger(subsystem: "com.baurfamily.nrstatus", category: "Configuration")
+                .error("Could not load API key settings: \(error.localizedDescription, privacy: .public)")
+        }
         return NerdgraphConfig(
-            host: credential?.host ?? defaultHost,
-            apiKey: credential?.apiKey ?? defaultApiKey,
-            accountIds: sharedDefaults.string(forKey: "accountIds") ?? ""
+            host: defaultHost,
+            apiKey: defaultApiKey,
+            accountIds: ""
         )
-    }
-
-    static func saveCredentials(host: String, apiKey: String) {
-        let trimmedHost = host.trimmingCharacters(in: .whitespaces)
-        credentialStore.save(Credential(
-            host: trimmedHost.isEmpty ? defaultHost : trimmedHost,
-            apiKey: apiKey
-        ))
     }
 
     var url: URL {

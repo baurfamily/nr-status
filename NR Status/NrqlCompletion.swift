@@ -110,7 +110,7 @@ enum NrqlCompletion {
         return CharacterSet.alphanumerics.contains(scalar) || char == 0x5F || char == 0x2E || (allowingDash && char == 0x2D)
     }
 
-    static func analyse(text: String, location: Int) -> Analysis {
+    static func analyse(text: String, location: Int, configuration: Bool = false) -> Analysis {
         let ns = text as NSString
         let cursor = min(max(location, 0), ns.length)
         let upToCursor = ns.substring(to: cursor)
@@ -124,8 +124,8 @@ enum NrqlCompletion {
 
         var start = cursor
         while start > 0, isWordCharacter(ns.character(at: start - 1), allowingDash: isFormatBlock) { start -= 1 }
-        let prefixRange = NSRange(location: start, length: cursor - start)
-        let prefix = ns.substring(with: prefixRange)
+        var prefixRange = NSRange(location: start, length: cursor - start)
+        var prefix = ns.substring(with: prefixRange)
 
         func result(_ context: Context) -> Analysis {
             Analysis(context: context, prefixRange: prefixRange, prefix: prefix)
@@ -134,11 +134,19 @@ enum NrqlCompletion {
         let lineStart = ns.lineRange(for: NSRange(location: start, length: 0)).location
         let lineBeforePrefix = ns.substring(with: NSRange(location: lineStart, length: start - lineStart))
 
-        if let blockStart {
+        if blockStart != nil {
             guard isFormatBlock else { return result(.none) }
             if let colon = lineBeforePrefix.firstIndex(of: ":") {
                 let key = lineBeforePrefix[..<colon].trimmingCharacters(in: .whitespaces).lowercased()
-                let block = String(upToCursor[blockStart...])
+                if key == "api-key" {
+                    // A saved name may contain spaces; replace the whole value, not just its last word.
+                    let valueStart = lineBeforePrefix.index(after: colon)
+                    let leading = lineBeforePrefix[valueStart...].prefix(while: \.isWhitespace).utf16.count
+                    let offset = lineStart + lineBeforePrefix[..<valueStart].utf16.count + leading
+                    prefixRange = NSRange(location: offset, length: cursor - offset)
+                    prefix = ns.substring(with: prefixRange)
+                }
+                let block = blockStart.map { String(upToCursor[$0...]) } ?? upToCursor
                 let type = typeLine.firstMatch(in: block, range: NSRange(block.startIndex..., in: block))
                     .flatMap { Range($0.range(at: 1), in: block) }
                     .flatMap { ChartType(rawValue: block[$0].lowercased()) }
@@ -146,6 +154,8 @@ enum NrqlCompletion {
             }
             return result(lineBeforePrefix.trimmingCharacters(in: .whitespaces).isEmpty ? .formatKey : .none)
         }
+
+        if configuration { return result(.none) }
 
         // no completions inside line comments, strings or quoted names
         if lineBeforePrefix.contains("//") { return result(.none) }
@@ -219,8 +229,8 @@ enum NrqlCompletion {
 
     /// Whether the cursor sits where the next word is a name we can list (after a comma, `FROM `, `WHERE `, ...),
     /// so the panel should stay up or come back after a separator is typed.
-    static func offersAfterSeparator(text: String, location: Int) -> Bool {
-        let analysis = analyse(text: text, location: location)
+    static func offersAfterSeparator(text: String, location: Int, configuration: Bool = false) -> Bool {
+        let analysis = analyse(text: text, location: location, configuration: configuration)
         guard analysis.prefix.isEmpty else { return false }
 
         let ns = text as NSString
@@ -228,7 +238,7 @@ enum NrqlCompletion {
 
         switch analysis.context {
         case .formatValue(let key, _):
-            return key == "attributes" || before.hasSuffix(":")
+            return key == "attributes" || key == "accounts" || before.hasSuffix(":")
         case .events:
             return true
         case .attributes:
@@ -243,9 +253,10 @@ enum NrqlCompletion {
     // MARK: - Items
 
     static func items(
-        text: String, location: Int, metadata: NrqlMetadataProviding
+        text: String, location: Int, metadata: NrqlMetadataProviding,
+        profiles: [NerdgraphProfile] = [], defaultKeyName: String? = nil, configuration: Bool = false
     ) async -> (items: [Item], range: NSRange) {
-        let analysis = analyse(text: text, location: location)
+        let analysis = analyse(text: text, location: location, configuration: configuration)
         var candidates: [Item] = []
 
         func keywordItems(_ words: [String]) -> [Item] {
@@ -256,7 +267,8 @@ enum NrqlCompletion {
         case .none:
             break
         case .formatKey:
-            candidates = ["title", "name", "chart", "attributes"].map {
+            let keys = configuration ? ["api-key", "accounts"] : ["title", "name", "chart", "attributes", "api-key", "accounts"]
+            candidates = keys.map {
                 Item(name: $0, kind: .formatKey, detail: nil, insertText: "\($0): ")
             }
         case .formatValue(let key, let type):
@@ -266,6 +278,13 @@ enum NrqlCompletion {
             } else if key == "attributes" {
                 values = type.map { ChartFormat.attributeNames[$0] ?? [] }
                     ?? ChartFormat.attributeNames.values.flatMap { $0 }.sorted()
+            } else if key == "api-key" {
+                values = profiles.map(\.name)
+            } else if key == "accounts" {
+                let body = NrqlConnection.metadataBody(in: text, allowUnclosed: true)
+                let name = NrqlConnection.keyName(in: body) ?? defaultKeyName
+                let profile = profiles.first { $0.name.caseInsensitiveCompare(name ?? "") == .orderedSame }
+                values = profile?.preferredAccountIds.map(String.init) ?? []
             }
             candidates = values.map { Item(name: $0, kind: .formatValue, detail: nil, insertText: $0) }
         case .events:

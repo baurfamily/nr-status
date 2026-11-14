@@ -58,7 +58,7 @@ struct NrqlCell: Identifiable {
 
     // comment-only cells have nothing to run
     var isRunnable: Bool {
-        guard kind != .markdown else { return false }
+        guard kind == .nrql || kind == .lua else { return false }
         let code = query.script ?? query.nrql
         return !code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
@@ -67,6 +67,12 @@ struct NrqlCell: Identifiable {
 struct NRQL_EditorDocument: FileDocument {
     var cells: [NrqlCell]
     var focusedCellId: NrqlCell.ID?
+
+    // Document copies share the runs just as they share the cells' query objects.
+    private final class Execution {
+        @MainActor var tasks: [UUID: Task<Void, Never>] = [:]
+    }
+    private let execution = Execution()
 
     var text: String {
         NrqlDocumentParser.join(cells.map(\.text))
@@ -97,6 +103,55 @@ struct NRQL_EditorDocument: FileDocument {
 
     var focusedCell: NrqlCell? {
         cells.first { $0.id == focusedCellId }
+    }
+
+    var connection: Result<NrqlConnection, Error> {
+        Result {
+            let configs = cells.enumerated().filter { $0.element.kind == .config }
+            guard configs.count <= 1, configs.first.map({ $0.offset == 0 }) ?? true else {
+                throw NrqlConnection.ConfigurationError(message: "Place a single config fence at the top of the document.")
+            }
+            guard let cell = configs.first?.element else { return NrqlConnection() }
+            let text = cell.query.text
+            guard text.components(separatedBy: "\n").last.map(NrqlCellKind.isClosingFence) == true else {
+                throw NrqlConnection.ConfigurationError(message: "Close the document config with ```.")
+            }
+            return try NrqlConnection.parseDocumentConfig(cell.kind.unwrap(text))
+        }
+    }
+
+    /// Adds an editable, non-runnable defaults cell without changing existing queries.
+    mutating func addConfiguration() {
+        if let index = cells.firstIndex(where: { $0.kind == .config }) {
+            cells[index].isCollapsed = false
+            cells[index].focusOnAppear = true
+            focusedCellId = cells[index].id
+            return
+        }
+        let cell = NrqlCell(text: NrqlCellKind.config.template, focusOnAppear: true)
+        cells.insert(cell, at: 0)
+        focusedCellId = cell.id
+    }
+
+    mutating func setDefaultApiKey(_ name: String?) throws {
+        var options = try connection.get()
+        options.apiKeyName = name
+        try updateConfiguration(options)
+    }
+
+    mutating func setDefaultAccountIds(_ ids: [Int]?) throws {
+        var options = try connection.get()
+        options.accountIds = ids
+        try updateConfiguration(options)
+    }
+
+    private mutating func updateConfiguration(_ options: NrqlConnection) throws {
+        let text = try options.documentConfigText()
+        if let index = cells.firstIndex(where: { $0.kind == .config }) {
+            cells[index].editorText = text
+        } else if !text.isEmpty {
+            cells.insert(NrqlCell(text: NrqlCellKind.config.wrap(text)), at: 0)
+        }
     }
 
     @discardableResult
@@ -163,9 +218,11 @@ struct NRQL_EditorDocument: FileDocument {
         }
     }
 
-    /// Hides or shows the query text of every code cell; Markdown cells have nothing to collapse.
+    /// Hides or shows code and document config; Markdown cells have nothing to collapse.
     mutating func setAllCollapsed(_ collapsed: Bool) {
-        for index in cells.indices where cells[index].kind != .markdown { cells[index].isCollapsed = collapsed }
+        for index in cells.indices where cells[index].kind != .markdown {
+            cells[index].isCollapsed = collapsed
+        }
     }
 
     /// What a Lua expression in the given cell can read from the other cells.
@@ -178,19 +235,26 @@ struct NRQL_EditorDocument: FileDocument {
     }
 
     /// Runs every query, each after the ones it reads.
-    func runAllQueries() {
+    @discardableResult
+    @MainActor func runAllQueries() -> Task<Void, Never> {
         let all = cells
         let roots = all.filter { $0.isRunnable && !$0.query.isRunning }
-        run(NrqlDependencies.plan(for: roots, in: all, includeFinished: true), in: all)
+        return run(NrqlDependencies.plan(for: roots, in: all, includeFinished: true), in: all)
     }
 
-    func runFocusedQuery() {
+    @MainActor func clearResults() {
+        for task in execution.tasks.values { task.cancel() }
+        execution.tasks.removeAll()
+        for cell in cells { cell.query.clearResults() }
+    }
+
+    @MainActor func runFocusedQuery() {
         guard let id = focusedCellId else { return }
         runCell(id)
     }
 
     /// Runs a cell, first running any cell it reads that has no result yet.
-    func runCell(_ id: NrqlCell.ID) {
+    @MainActor func runCell(_ id: NrqlCell.ID) {
         guard let cell = cells.first(where: { $0.id == id }), cell.isRunnable else { return }
         run(NrqlDependencies.plan(for: [cell], in: cells, includeFinished: false), in: cells)
     }
@@ -207,11 +271,25 @@ struct NRQL_EditorDocument: FileDocument {
         return NrqlDependencies.plan(for: [cell], in: cells, includeFinished: false).filter { $0.id != id }
     }
 
-    private func run(_ order: [NrqlCell], in all: [NrqlCell]) {
-        Task {
+    @discardableResult
+    @MainActor private func run(_ order: [NrqlCell], in all: [NrqlCell]) -> Task<Void, Never> {
+        let connection = connection
+        let execution = execution
+        let id = UUID()
+        let task = Task {
+            defer { execution.tasks[id] = nil }
             for cell in order {
-                await cell.query.getData(results: Self.priorResults(in: all))
+                guard !Task.isCancelled else { return }
+                do {
+                    let defaults = cell.kind == .lua ? NrqlConnection() : try connection.get()
+                    await cell.query.getData(results: Self.priorResults(in: all), defaults: defaults)
+                } catch {
+                    guard !Task.isCancelled else { return }
+                    cell.query.setState(.failed(error.localizedDescription))
+                }
             }
         }
+        execution.tasks[id] = task
+        return task
     }
 }

@@ -16,7 +16,7 @@ enum NrqlDocumentParser {
         var text: String
     }
 
-    /// Splits text into cells: each ```nrql or ```lua fenced block is a code cell, and
+    /// Splits text into cells: each ```nrql, ```lua or ```config fence is a cell, and
     /// whatever lies between them is one Markdown cell (blank lines included).
     /// Other fences, such as ```swift, are Markdown content, so a ```nrql inside one stays text.
     static func blocks(_ text: String) -> [String] {

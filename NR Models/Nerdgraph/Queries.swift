@@ -26,6 +26,11 @@ struct Queries {
     let config: NerdgraphConfig
     private let client: NerdgraphClient
 
+    init(config: NerdgraphConfig, session: URLSession = .shared) {
+        self.config = config
+        self.client = NerdgraphClient(config: config, session: session)
+    }
+
     /// Any value passed here overrides the stored preference (used by widgets,
     /// which carry their own credentials).
     init(host: String? = nil, apiKey: String? = nil, accountIds: String? = nil) {

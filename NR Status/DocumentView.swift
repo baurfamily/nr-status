@@ -12,12 +12,46 @@ import LanguageSupport
 /// A notebook-style document: each query is a cell with its results below it.
 struct DocumentView: View {
     @Binding var document: NRQL_EditorDocument
+    @AppStorage("nerdgraphProfiles", store: NerdgraphConfig.sharedDefaults) private var profileSettingsData = Data()
+    @State private var profileSettings = NerdgraphProfiles.Settings()
+    @State private var configurationError: String?
+    @State private var configRevealRequest = UUID()
 
     var body: some View {
+        ScrollViewReader { proxy in
+            notebook
+                .onChange(of: configRevealRequest) {
+                    if let id = document.focusedCellId {
+                        withAnimation { proxy.scrollTo(id, anchor: .top) }
+                    }
+                }
+        }
+        .toolbar { documentToolbar }
+        .task(id: profileSettingsData) {
+            do {
+                profileSettings = try NerdgraphProfiles.shared.load()
+            } catch {
+                configurationError = error.localizedDescription
+            }
+        }
+        .alert("Document Configuration", isPresented: Binding(
+            get: { configurationError != nil },
+            set: { if !$0 { configurationError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(configurationError ?? "")
+        }
+    }
+
+    private var notebook: some View {
         let stale = document.staleCellIds
         let readingBelow = document.readingBelowCellIds
         return ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
+                if case .failure(let error) = document.connection {
+                    Text(error.localizedDescription).foregroundStyle(.red)
+                }
                 ForEach($document.cells) { $cell in
                     CellView(
                         cell: $cell,
@@ -26,6 +60,7 @@ struct DocumentView: View {
                         readsFromBelow: readingBelow.contains(cell.id),
                         onFocus: { document.focusedCellId = cell.id },
                         completionScope: { document.completionScope(excluding: cell.id) },
+                        connectionSource: { document.connection },
                         onRun: { document.runCell(cell.id) },
                         pendingTitles: document.pendingDependencies(for: cell.id).map(\.query.title),
                         canPerform: { document.canPerform($0, on: cell.id) },
@@ -49,18 +84,136 @@ struct DocumentView: View {
         }
         // a click on empty space leaves the focused cell, which renders a Markdown cell
         .background(Color.clear.contentShape(Rectangle()).onTapGesture { document.focusedCellId = nil })
-        .toolbar {
-            ToolbarItemGroup {
-                Button("Collapse All", systemImage: "rectangle.compress.vertical") { document.setAllCollapsed(true) }
-                    .help("Hide the query text of every cell")
-                Button("Expand All", systemImage: "rectangle.expand.vertical") { document.setAllCollapsed(false) }
-                    .help("Show the query text of every cell")
+    }
+
+    @ToolbarContentBuilder private var documentToolbar: some ToolbarContent {
+        ToolbarItemGroup {
+            Button("Collapse All", systemImage: "rectangle.compress.vertical") { document.setAllCollapsed(true) }
+                .help("Hide code and document configuration")
+            Button("Expand All", systemImage: "rectangle.expand.vertical") { document.setAllCollapsed(false) }
+                .help("Show code and document configuration")
+        }
+        if #available(macOS 26.0, *) {
+            ToolbarSpacer(.fixed)
+        }
+        ToolbarItem {
+            ControlGroup("Document Config") {
+                Button("Document Config", systemImage: "gearshape") {
+                    document.addConfiguration()
+                    configRevealRequest = UUID()
+                }
+                .help("Show and expand the document configuration")
+                keyMenu
+                accountsMenu
             }
-            ToolbarItem {
-                Button("Run All", systemImage: "play.fill") { document.runAllQueries() }
-                    .help("Run every query in this document")
-                    .disabled(!document.cells.contains { $0.isRunnable })
+            .labelStyle(.iconOnly)
+        }
+        if #available(macOS 26.0, *) {
+            ToolbarSpacer(.flexible)
+        }
+        ToolbarItemGroup {
+            Button("Clear Results", systemImage: "eraser") { document.clearResults() }
+                .help("Clear all cached results and charts in this document")
+            Button("Run All", systemImage: "play.fill") { document.runAllQueries() }
+                .help("Run every query in this document")
+                .disabled(!document.cells.contains { $0.isRunnable })
+        }
+    }
+
+    private var selectedConnection: NrqlConnection? {
+        if case .success(let options) = document.connection { return options }
+        return nil
+    }
+
+    private var selectedKeyName: String? {
+        guard let name = selectedConnection?.apiKeyName else { return nil }
+        return profileSettings.profiles.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }?.name ?? name
+    }
+
+    private var selectedProfile: NerdgraphProfile? {
+        profileSettings.profiles.first {
+            if let selectedKeyName { return $0.name == selectedKeyName }
+            return $0.id == profileSettings.defaultProfileID
+        }
+    }
+
+    private var keyMenu: some View {
+        Menu {
+            Picker("API key", selection: Binding(
+                get: { selectedKeyName },
+                set: { name in changeConfiguration { try document.setDefaultApiKey(name) } }
+            )) {
+                Text("Default (from Settings)").tag(String?.none)
+                ForEach(profileSettings.profiles) { profile in
+                    Text(profile.name).tag(Optional(profile.name))
+                }
+                if let name = selectedKeyName, !profileSettings.profiles.contains(where: { $0.name == name }) {
+                    Text("\(name) (unavailable)").tag(Optional(name))
+                }
             }
+            .pickerStyle(.inline)
+        } label: {
+            Label("API Key", systemImage: "key")
+                .labelStyle(.iconOnly)
+        }
+        .menuIndicator(.visible)
+        .disabled(selectedConnection == nil)
+        .accessibilityValue(selectedConnection == nil ? "Invalid configuration" : selectedKeyName == nil ? "Default" : "Custom")
+        .help("Override the app's default API key for this document")
+    }
+
+    private var accountCandidates: [Int] {
+        Array(Set((selectedProfile?.preferredAccountIds ?? []) + (selectedConnection?.accountIds ?? []))).sorted()
+    }
+
+    private var accountsMenu: some View {
+        Menu {
+            Button {
+                changeConfiguration { try document.setDefaultAccountIds(nil) }
+            } label: {
+                if selectedConnection?.accountIds == nil {
+                    Label("Default", systemImage: "checkmark")
+                } else {
+                    Text("Default")
+                }
+            }
+            Divider()
+            ForEach(accountCandidates, id: \.self) { id in
+                Toggle(String(id), isOn: Binding(
+                    get: { selectedConnection?.accountIds?.contains(id) == true },
+                    set: { selectAccount(id, selected: $0) }
+                ))
+            }
+            if accountCandidates.isEmpty {
+                Text("Add preferred accounts in Settings or enter IDs in the config block.")
+            }
+        } label: {
+            Label("Accounts", systemImage: "building.2")
+                .labelStyle(.iconOnly)
+        }
+        .menuIndicator(.visible)
+        .disabled(selectedConnection == nil)
+        .accessibilityValue(selectedConnection == nil ? "Invalid configuration" : selectedConnection?.accountIds == nil ? "Default" : "Custom")
+        .help("Default uses the selected key's preferred accounts. Select multiple accounts to override.")
+    }
+
+    private func selectAccount(_ id: Int, selected: Bool) {
+        changeConfiguration {
+            var ids = try document.connection.get().accountIds ?? []
+            if selected {
+                if !ids.contains(id) { ids.append(id) }
+            } else {
+                ids.removeAll { $0 == id }
+            }
+            try document.setDefaultAccountIds(ids.isEmpty ? nil : ids)
+        }
+    }
+
+    private func changeConfiguration(_ update: () throws -> Void) {
+        do {
+            try update()
+        } catch {
+            configurationError = error.localizedDescription
         }
     }
 }
@@ -74,6 +227,7 @@ struct CellView: View {
     let readsFromBelow: Bool
     let onFocus: () -> Void
     let completionScope: () -> LuaCompletion.Scope
+    let connectionSource: () -> Result<NrqlConnection, Error>
     let onRun: () -> Void
     let pendingTitles: [String]
     let canPerform: (NRQL_EditorDocument.CellAction) -> Bool
@@ -83,6 +237,7 @@ struct CellView: View {
     @State private var messages: Set<TextLocated<Message>> = Set()
     @State private var languageService = NrqlLanguageService()
     @State private var luaService = NrqlLanguageService(language: .lua)
+    @State private var configService = NrqlLanguageService(language: .config)
     // the chart settings inspector is hidden until asked for
     @State private var showsChartSettings = false
     @State private var showsSentQuery = false
@@ -125,7 +280,7 @@ struct CellView: View {
                 editor
             }
 
-            if cell.kind != .markdown {
+            if cell.kind == .nrql || cell.kind == .lua {
                 CellResultView(query: cell.query, configurationShowing: $showsChartSettings)
             }
         }
@@ -157,21 +312,29 @@ struct CellView: View {
 
     private var editor: some View {
         CodeEditor(
-            text: Binding(get: { liveText }, set: { draft = $0 }),
+            text: Binding(get: { liveText }, set: {
+                draft = $0
+                // Execution must see routing edits immediately, even before the document's debounce.
+                cell.query.text = cell.kind.wrap($0)
+            }),
             position: $position,
             messages: $messages,
-            language: cell.kind == .nrql ? .nrql(languageService) : cell.kind == .lua ? .lua(luaService) : .none
+            language: cell.kind == .nrql ? .nrql(languageService)
+                : cell.kind == .lua ? .lua(luaService)
+                : cell.kind == .config ? .nrql(configService) : .none
         )
         .onAppear {
             CompletionKeyRouter.installIfNeeded()
-            for service in [languageService, luaService] {
+            for service in [languageService, luaService, configService] {
                 service.setTextSource { draft ?? cell.editorText }
                 service.setScopeSource(completionScope)
+                service.setConnectionSource(connectionSource)
             }
         }
         .environment(\.codeEditorSetActions, CodeEditor.SetActions {
             languageService.setCompletionAction($0.completions)
             luaService.setCompletionAction($0.completions)
+            configService.setCompletionAction($0.completions)
         })
         .environment(\.codeEditorLayoutConfiguration, CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true))
         .environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight))
@@ -205,7 +368,12 @@ struct CellView: View {
 
     private var header: some View {
         HStack {
-            if cell.kind == .markdown {
+            if cell.kind == .config {
+                collapseButton
+                Text("Document Config").font(.headline)
+                Spacer()
+                actionsMenu
+            } else if cell.kind == .markdown {
                 if !isRenderedMarkdown {
                     Text("Markdown").font(.headline)
                 }
@@ -217,14 +385,20 @@ struct CellView: View {
         }
     }
 
+    private var collapseButton: some View {
+        let title = cell.kind == .config
+            ? (cell.isCollapsed ? "Show config" : "Hide config")
+            : (cell.isCollapsed ? "Show query" : "Hide query")
+        return Button(title, systemImage: cell.isCollapsed ? "chevron.right" : "chevron.down") {
+            cell.isCollapsed.toggle()
+        }
+        .labelStyle(.iconOnly)
+        .buttonStyle(.borderless)
+    }
+
     private var codeHeader: some View {
         HStack {
-            Button(cell.isCollapsed ? "Show query" : "Hide query",
-                   systemImage: cell.isCollapsed ? "chevron.right" : "chevron.down") {
-                cell.isCollapsed.toggle()
-            }
-            .labelStyle(.iconOnly)
-            .buttonStyle(.borderless)
+            collapseButton
 
             Text(cell.query.title)
                 .font(.headline)
@@ -287,17 +461,17 @@ struct CellView: View {
     private var actionsMenu: some View {
         Menu("Cell Actions", systemImage: "ellipsis") {
             Menu("Add Above") {
-                ForEach(NrqlCellKind.allCases) { kind in
+                ForEach(NrqlCellKind.allCases.filter { $0 != .config }) { kind in
                     Button(kind.title) { onAction(.add(kind, above: true)) }
                 }
             }
             Menu("Add Below") {
-                ForEach(NrqlCellKind.allCases) { kind in
+                ForEach(NrqlCellKind.allCases.filter { $0 != .config }) { kind in
                     Button(kind.title) { onAction(.add(kind, above: false)) }
                 }
             }
             Menu("Convert To") {
-                ForEach(NrqlCellKind.allCases) { kind in
+                ForEach(NrqlCellKind.allCases.filter { $0 != .config }) { kind in
                     Button(kind.title) { onAction(.convert(kind)) }
                         .disabled(!canPerform(.convert(kind)))
                 }
@@ -344,10 +518,16 @@ struct CellResultView: View {
                     .frame(maxWidth: .infinity, minHeight: 300)
             }
         case .failed(let message):
-            VStack(alignment: .leading) {
-                Text("The query failed")
-                    .font(.headline)
-                Text(message)
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "xmark.octagon.fill")
+                    .font(.title2)
+                    .foregroundStyle(.red)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading) {
+                    Text("The query failed")
+                        .font(.headline)
+                    Text(message)
+                }
             }
             .foregroundStyle(.secondary)
         }

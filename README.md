@@ -14,6 +14,10 @@ This is current a passion project of mine. I love playing with data and I wanted
 ### NRQL Editor
 <img width="1263" alt="Editor Example" src="https://github.com/user-attachments/assets/2186b07e-22cc-4997-b854-d182604c8264" />
 
+Notebook files are registered as **NR Markdown** (`.nrmd`): plain-text Markdown
+with NRQL, Lua, Nerdgraph, and configuration cells. Existing `.nrql` notebooks
+can be renamed to `.nrmd`; their contents do not need to change.
+
 #### API keys and accounts
 
 In Settings, add a named API key (and its API host), then **Test & Load Accounts**.

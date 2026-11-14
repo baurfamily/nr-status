@@ -9,8 +9,8 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 extension UTType {
-    static var nrql: UTType {
-        UTType(exportedAs: "net.baurhome.nrql")
+    static var nrMarkdown: UTType {
+        UTType(exportedAs: "net.baurhome.nrmd", conformingTo: .plainText)
     }
 }
 
@@ -82,7 +82,7 @@ struct NRQL_EditorDocument: FileDocument {
         cells = Self.cells(from: text)
     }
 
-    static var readableContentTypes: [UTType] { [.nrql] }
+    static var readableContentTypes: [UTType] { [.nrMarkdown] }
 
     init(configuration: ReadConfiguration) throws {
         guard let data = configuration.file.regularFileContents,

@@ -46,7 +46,7 @@ Decide whether the current editor library (`CodeEditorView`, with `CodeEditor`/`
 - Chart rendering/config already exists in `NR Models/Display` (`ChartSelector`, `ConfigurableChartView`, `ChartConfiguration`, ...), reusable for inline results.
 
 ## Design decision: single file, derived cells
-- One plain-text file (e.g. `myQueries.nrql`) is the source of truth; cells are a *view* over it. The parser splits the text into cells where each new query begins (doc-comment blocks attach to the query below). Cell edits are written back into that slice of the text.
+- One plain-text NR Markdown file (e.g. `myQueries.nrmd`) is the source of truth; cells are a *view* over it. The parser splits the text into cells where each new query begins (doc-comment blocks attach to the query below). Cell edits are written back into that slice of the text.
 - In the file: query text, doc-comments, and later Lua blocks / `{{ }}` interpolations. Not in the file: results, run state, collapsed state (transient, or sidecar/`FileDocument` metadata if persisted).
 - Works without scripting: a plain-NRQL document gets inline results and Cmd-Return too. Lua only adds new segment types; cell dependencies (`results[1]`) are derived from text references.
 - Open question (decide in Phase 1): boundary detection. Default blank-line separation is ambiguous for queries containing blank lines; add an explicit delimiter (`;` or a doc-comment) as override.

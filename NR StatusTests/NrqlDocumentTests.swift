@@ -1038,6 +1038,79 @@ struct NrqlDependencyTests {
 }
 
 struct NrqlCellActionTests {
+    @MainActor @Test func duplicatesCodeBelowWithIndependentStateAndUniqueBindings() throws {
+        var document = NRQL_EditorDocument(text: """
+            ```cell_config
+            title: Requests
+            var: requests
+            chart: billboard
+            attributes: gauge, max(250)
+            future: preserved
+            ```
+            ```nrql
+            SELECT count(*) FROM Transaction
+            ```
+
+            # Notes
+            """)
+        let original = document.cells[0]
+        original.query.setState(.loaded(try #require(ChartSamples.sampleData(size: .small))))
+        document.perform(.duplicate, on: original.id)
+        let copy = document.cells[1]
+        #expect(document.cells.map(\.kind) == [.nrql, .nrql, .markdown])
+        #expect(copy.id != original.id && copy.query !== original.query)
+        #expect(copy.editorText == original.editorText)
+        #expect(copy.query.title == "Requests (copy)")
+        #expect(copy.query.name == "requests_copy")
+        #expect(copy.query.format?.parameter("max") == "250")
+        #expect(copy.configurationText.contains("future: preserved"))
+        #expect(!copy.query.hasResult && original.query.hasResult)
+        #expect(document.focusedCellId == copy.id && copy.focusOnAppear)
+        document.perform(.duplicate, on: original.id)
+        #expect(document.cells[1].query.name == "requests_copy2")
+        #expect(NRQL_EditorDocument(text: document.text).text == document.text)
+        #expect(document.cells[0].text == original.text)
+    }
+
+    @Test func duplicatesNerdgraphBindingsWithoutChangingExpressionsOrVariables() throws {
+        var document = NRQL_EditorDocument(text: """
+            ```cell_config
+            var: response
+            var: entity = data.actor.entities[1]
+            var: count = #data.actor.entities
+            ```
+            ```graphql
+            query($id: Int!) { actor { user { name } } }
+            ```
+            ```variables
+            {"id": 42}
+            ```
+            """)
+        let original = document.cells[0]
+        document.perform(.duplicate, on: original.id)
+        let copy = document.cells[1]
+        let bindings = try NerdgraphCellSource(stored: copy.text).resultBindings()
+        #expect(bindings.map(\.name) == ["response_copy", "entity_copy", "count_copy"])
+        #expect(bindings.map(\.expression) == [nil, "data.actor.entities[1]", "#data.actor.entities"])
+        #expect(copy.editorText == original.editorText)
+        #expect(copy.query.variables == original.query.variables)
+    }
+
+    @Test func duplicatesMarkdownAndPendingCodeButNotDocumentDefaults() {
+        var document = NRQL_EditorDocument(text: "```config\nauthor: Ada\n```\n\n# Notes\n\n```lua\n-- Title\nreturn 1\n```")
+        #expect(!document.canPerform(.duplicate, on: document.cells[0].id))
+        document.perform(.duplicate, on: document.cells[0].id)
+        #expect(document.cells.count == 3)
+        document.perform(.duplicate, on: document.cells[1].id)
+        #expect(document.cells[1].text == document.cells[2].text)
+        let sourceID = document.cells[3].id
+        document.cells[3].query.text = "```lua\n-- Updated title\nreturn 2\n```"
+        document.perform(.duplicate, on: sourceID)
+        #expect(document.cells[4].editorText == "-- Updated title\nreturn 2")
+        #expect(document.cells[4].query.title == "Updated title (copy)")
+        #expect(document.cells[3].editorText == "-- Title\nreturn 1")
+    }
+
     @Test func scriptCellsHideTheirFence() {
         let stored = "```cell_config\nvar: x\n```\n```lua\nlocal a = 1\n\nreturn a\n```"
         var cell = NrqlCell(text: stored)

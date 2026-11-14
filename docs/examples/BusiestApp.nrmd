@@ -20,10 +20,15 @@ LIMIT 4
 ```cell_config
 title: Metrics for the busiest app
 chart: line
-attributes: donut, lines, points, smoothed, stacked
+attributes: donut, lines, smoothed
 ```
 ```nrql
-FROM Metric SELECT count(*) WHERE appName = '{{ results.top_app.rows[1].facet }}' SINCE 12 months ago TIMESERIES 1 week
+FROM Metric
+SELECT count(*)
+WHERE appName = '{{ results.top_app.rows[1].facet }}'
+SINCE 1 months ago
+TIMESERIES 1 DAY
+COMPARE WITH 1 month ago
 
 ```
 

@@ -203,7 +203,7 @@ struct NRQL_EditorDocument: FileDocument {
     enum CellAction: Equatable {
         case add(NrqlCellKind, above: Bool)
         case convert(NrqlCellKind)
-        case moveUp, moveDown, delete
+        case duplicate, moveUp, moveDown, delete
     }
 
     func canPerform(_ action: CellAction, on id: NrqlCell.ID) -> Bool {
@@ -212,6 +212,7 @@ struct NRQL_EditorDocument: FileDocument {
         case .moveUp: return index > 0
         case .moveDown: return index < cells.count - 1
         case .convert(let kind): return cells[index].kind != kind
+        case .duplicate: return cells[index].kind != .config
         default: return true
         }
     }
@@ -224,6 +225,36 @@ struct NRQL_EditorDocument: FileDocument {
         case .moveUp: cells.swapAt(index, index - 1)
         case .moveDown: cells.swapAt(index, index + 1)
         case .convert(let kind): cells[index].convert(to: kind)
+        case .duplicate:
+            let original = cells[index]
+            var copy = NrqlCell(text: original.query.text, kind: original.kind, focusOnAppear: true)
+            if copy.kind != .markdown {
+                var configuration = NrqlCellSource.updating(
+                    "title", values: [original.query.title + " (copy)"], in: copy.configurationText
+                )
+                var usedNames = Set(cells.flatMap(\.query.resultNames))
+                let bindings = NrqlCellSource.values("var", in: configuration).map { declaration in
+                    let binding = copy.kind == .nerdgraph
+                        ? try? LuaRuntime.Variable.parse(declaration)
+                        : LuaRuntime.Variable(name: declaration, expression: nil)
+                    guard let binding, !binding.name.isEmpty else { return declaration }
+                    let base = binding.name + "_copy"
+                    var name = base
+                    var suffix = 2
+                    while usedNames.contains(name) {
+                        name = "\(base)\(suffix)"
+                        suffix += 1
+                    }
+                    usedNames.insert(name)
+                    return name + (binding.expression.map { " = \($0)" } ?? "")
+                }
+                if !bindings.isEmpty {
+                    configuration = NrqlCellSource.updating("var", values: bindings, in: configuration, includeEmptyValues: true)
+                }
+                copy.configurationText = configuration
+            }
+            cells.insert(copy, at: index + 1)
+            focusedCellId = copy.id
         case .delete: removeCell(id)
         }
     }

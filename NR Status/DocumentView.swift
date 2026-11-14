@@ -708,6 +708,9 @@ struct CellView: View {
                 }
             }
             Divider()
+            Button("Duplicate Cell", systemImage: "doc.on.doc") { onAction(.duplicate) }
+                .disabled(!canPerform(.duplicate))
+            Divider()
             Button("Move Up") { onAction(.moveUp) }
                 .disabled(!canPerform(.moveUp))
             Button("Move Down") { onAction(.moveDown) }

@@ -177,7 +177,11 @@ enum NrqlExport {
     static func html(for document: NRQL_EditorDocument) -> String {
         let sections = document.cells.map { cell -> String in
             if cell.kind == .markdown {
-                return "<section>\n\(MarkdownParser.html(cell.text))\n</section>"
+                do {
+                    return "<section>\n\(MarkdownParser.html(try document.markdownText(for: cell)))\n</section>"
+                } catch {
+                    return "<section><p class=\"error\">\(escape(error.localizedDescription))</p></section>"
+                }
             }
             var section = "<section>\n<h2>\(escape(cell.query.title))</h2>\n<pre>\(escape(queryText(for: cell)))</pre>\n"
             if let table = tableData(for: cell) {
@@ -224,12 +228,16 @@ enum NrqlExport {
         var keepWithNext = false
     }
 
-    private static func pdfBlocks(for cell: NrqlCell) -> [PDFBlock] {
+    private static func pdfBlocks(for cell: NrqlCell, document: NRQL_EditorDocument) -> [PDFBlock] {
         if cell.kind == .markdown {
-            return MarkdownParser.blocks(cell.text).map { block in
-                var isHeading = false
-                if case .heading = block { isHeading = true }
-                return PDFBlock(view: AnyView(MarkdownView(blocks: [block])), keepWithNext: isHeading)
+            do {
+                return MarkdownParser.blocks(try document.markdownText(for: cell)).map { block in
+                    var isHeading = false
+                    if case .heading = block { isHeading = true }
+                    return PDFBlock(view: AnyView(MarkdownView(blocks: [block])), keepWithNext: isHeading)
+                }
+            } catch {
+                return [PDFBlock(view: AnyView(Text(error.localizedDescription).foregroundStyle(.red)))]
             }
         }
         return [PDFBlock(view: AnyView(codeBlockView(for: cell)))]
@@ -288,7 +296,7 @@ enum NrqlExport {
               let context = CGContext(consumer: consumer, mediaBox: &box, nil)
         else { return nil }
 
-        let blocks = document.cells.flatMap(pdfBlocks(for:))
+        let blocks = document.cells.flatMap { pdfBlocks(for: $0, document: document) }
         let heights = blocks.map(pdfHeight(of:))
         let contentHeight = pageSize.height - pageMargin * 2
 

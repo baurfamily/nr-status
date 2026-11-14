@@ -14,9 +14,7 @@ enum NrqlDependencies {
     ]
 
     static func referencedNames(by cell: NrqlCell) -> Set<String> {
-        guard cell.kind != .markdown else { return [] }
-        let interpolated = cell.kind == .nerdgraph ? cell.query.variables : cell.query.nrql
-        let code = cell.query.script ?? NrqlInterpolation.expressions(in: interpolated).joined(separator: "\n")
+        let code = cell.query.expressionCode
         let range = NSRange(code.startIndex..., in: code)
         var names = Set<String>()
         for pattern in references {
@@ -29,8 +27,13 @@ enum NrqlDependencies {
 
     /// The cells whose results `cell` reads.
     static func dependencies(of cell: NrqlCell, in cells: [NrqlCell]) -> [NrqlCell] {
-        referencedNames(by: cell).sorted().compactMap { name in
-            cells.first { $0.query.name == name && $0.id != cell.id }
+        var seen = Set<NrqlCell.ID>()
+        return referencedNames(by: cell).sorted().compactMap { name in
+            guard let source = cells.first(where: {
+                $0.id != cell.id && ($0.query.resultNames.contains(name)
+                    || $0.query.loadedBindings?.contains(where: { $0.name == name }) == true)
+            }), seen.insert(source.id).inserted else { return nil }
+            return source
         }
     }
 

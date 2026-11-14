@@ -71,7 +71,11 @@ struct DocumentView: View {
                         isStale: stale.contains(cell.id),
                         readsFromBelow: readingBelow.contains(cell.id),
                         onFocus: { document.focusedCellId = cell.id },
-                        completionScope: { document.completionScope(excluding: cell.id) },
+                        completionScope: {
+                            var scope = document.completionScope(excluding: cell.id)
+                            scope.revision += String(describing: profileSettings)
+                            return scope
+                        },
                         connectionSource: { document.connection },
                         onRun: { document.runCell(cell.id) },
                         pendingTitles: document.pendingDependencies(for: cell.id, stale: stale).map(\.query.title),
@@ -265,6 +269,8 @@ struct CellView: View {
     // what the editor shows while typing; copied into the document after a pause so each
     // keystroke doesn't refresh the editor (which would break its undo coalescing)
     @State private var draft: String?
+    @State private var markdownText: String?
+    @State private var markdownError: String?
 
     private var liveText: String { draft ?? cell.editorText }
 
@@ -440,11 +446,36 @@ struct CellView: View {
     }
 
     private var renderedMarkdown: some View {
-        Group {
-            if cell.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        let scope = completionScope()
+        let text = liveText
+        let interpolates = NrqlInterpolation.containsPlaceholders(text)
+        return Group {
+            if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Text("Empty Markdown cell. Click to edit.").foregroundStyle(.secondary)
+            } else if let markdownError, interpolates {
+                Text(markdownError).foregroundStyle(.red).textSelection(.enabled)
+            } else if !interpolates {
+                MarkdownView(text: text)
+            } else if let markdownText {
+                MarkdownView(text: markdownText)
             } else {
-                MarkdownView(text: cell.text)
+                ProgressView("Rendering Markdown...")
+            }
+        }
+        .task(id: text + scope.revision + String(describing: connectionSource())) {
+            markdownText = nil
+            markdownError = nil
+            guard interpolates else { return }
+            do {
+                let config = try connectionSource().get().effectiveConfiguration(profiles: NerdgraphProfiles.shared.load())
+                let expanded = try await Task.detached {
+                    try NrqlInterpolation.expand(text, results: scope.results, config: config)
+                }.value
+                guard !Task.isCancelled else { return }
+                markdownText = expanded
+            } catch {
+                guard !Task.isCancelled else { return }
+                markdownError = error.localizedDescription
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

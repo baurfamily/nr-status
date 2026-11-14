@@ -1,17 +1,10 @@
-# Testing the NR Markdown workbook
-
-## Cell types
-
-We can have three different kinds of cells
-
-* Markdown (the default)
-* NRQL
-* Lua
-
-Code cells (NRQL and Lua) are fended with standard markdown code blocks. ie: Three backticks and then `nrql` or `lua`
-
-Can this contain variables?
-{{ results.top_app.rows[1].facet }}
+```config
+/***
+  author: Me
+  description: A few examples of ways to use NR Markdown notebooks
+  var: main_app = "TaT (production)"
+***/
+```
 
 ```nrql
 /***
@@ -79,9 +72,10 @@ emit({
 
 # title: Entity Search
 # var: entity_search
+# var: entities = data.actor.entitySearch.results.entities
 query FindEntity($account_id: Int!, $query: String) {
   actor {
-    account(id: $account_id)
+    account(id: $account_id) { name }
     entitySearch(query: $query) {
       results { entities {
         guid 
@@ -96,7 +90,7 @@ query FindEntity($account_id: Int!, $query: String) {
 ```
 ```variables
 {
-  "account_id": {{ config.account_id }},
+  "account_id": {{ config.accounts[1] }},
   "query": "name = '{{ results.top_app.rows[1].facet }}'"
 }
 ```
@@ -107,12 +101,44 @@ title: Entity tag count
 chart: billboard
 ]]
 
-local entities = results.entity_search.data.actor.entitySearch.results.entities
-local entity = assert(entities[1], "No matching entity found")
+local entity = assert(results.entities[1], "No matching entity found")
 
 emit({
   rows = {
     { ["Tag Count"] = #entity.tags }
   }
 })
+```
+
+### Using config variables
+
+This query example shows how to use config block and global variables. In the config block, variables can be added which can be referred to as either `config.var_name` or simply `var_name`.
+
+There are two intrinsic config variables as well:
+* `config.accounts` (array, remember lua in 1-indexed!)
+* `config.api_key` (only the name, not the key itself)
+
+```graphql
+
+# title: Entity Search
+# var: entity_search
+query FindEntity($account_id: Int!, $query: String) {
+  actor {
+    account(id: $account_id) {
+      name
+    }    
+    entitySearch(query: $query) {
+      results { entities {
+        guid
+        name
+      }}
+    }
+  }
+}
+```
+```variables
+{
+  "account_id": {{config.accounts[1]}},
+  "query": "name = '{{ main_app }}'"
+}
 ```

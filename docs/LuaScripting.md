@@ -52,6 +52,8 @@ index: `results.top_apps`, `results[1]`. The old `name` config key is not recogn
 | Function | Purpose |
 |---|---|
 | `results.<name>` / `results[i]` | Read-only result of an earlier cell. |
+| `config.accounts` / `config.api_key` | Snapshot of the effective document account list (1-based) and saved API key name, including inherited defaults. Available in scripts and interpolation; never includes the secret key. |
+| `config.appName` | Data declared by `var appName = "Foo"` in the document config. Declarations are evaluated in order and are not bare globals. |
 | `query(nrql)` | Run an NRQL string, return a result table. Async on the Swift side; Lua sees a blocking call (coroutine-based). |
 | `emit(result)` | Make this cell's result the given table; it flows through the chart pipeline. |
 | `names(result)`, `column(result, field)`, `values(...)` | Helpers for building `IN (...)` lists etc. |

@@ -214,14 +214,14 @@ struct NRQL_EditorDocument: FileDocument {
     var priorResults: [LuaRuntime.PriorResult] { Self.priorResults(in: cells) }
 
     private static func priorResults(in cells: [NrqlCell]) -> [LuaRuntime.PriorResult] {
-        cells.compactMap { cell in
-            guard let name = cell.query.name else { return nil }
-            if let value = cell.query.jsonResult {
-                return LuaRuntime.PriorResult(name: name, value: value.luaValue)
-            }
-            guard let container = cell.query.resultContainer else { return nil }
-            return LuaRuntime.PriorResult(name: name, value: LuaResultBridge.luaValue(from: container))
-        }
+        cells.flatMap(\.query.namedResults)
+    }
+
+    func markdownText(for cell: NrqlCell, profiles: NerdgraphProfiles.Settings? = nil) throws -> String {
+        let text = cell.query.text
+        guard NrqlInterpolation.containsPlaceholders(text) else { return text }
+        let config = try connection.get().effectiveConfiguration(profiles: profiles ?? NerdgraphProfiles.shared.load())
+        return try NrqlInterpolation.expand(text, results: priorResults, config: config)
     }
 
     /// Hides or shows code and document config; Markdown cells have nothing to collapse.
@@ -235,8 +235,10 @@ struct NRQL_EditorDocument: FileDocument {
     func completionScope(excluding id: NrqlCell.ID) -> LuaCompletion.Scope {
         let others = cells.filter { $0.id != id && $0.kind != .markdown }
         return LuaCompletion.Scope(
-            names: others.compactMap(\.query.name),
-            results: Self.priorResults(in: others)
+            names: others.flatMap(\.query.resultNames),
+            results: Self.priorResults(in: others),
+            variables: (try? connection.get().variables.map(\.name)) ?? [],
+            revision: others.map { "\($0.id):\($0.query.text):\($0.query.loadedAt?.timeIntervalSince1970 ?? 0):\($0.query.hasResult)" }.joined()
         )
     }
 
@@ -274,6 +276,25 @@ struct NRQL_EditorDocument: FileDocument {
     func staleCellIds(profiles: NerdgraphProfiles.Settings) -> Set<NrqlCell.ID> {
         var invalidated = Set<NrqlCell.ID>()
         for cell in cells {
+            if cell.kind == .nerdgraph, cell.query.hasResult, let sent = cell.query.executedNrql {
+                do {
+                    if try NerdgraphCellSource(editorText: sent).resultBindings()
+                        != NerdgraphCellSource(stored: cell.query.text).resultBindings() {
+                        invalidated.insert(cell.id)
+                    }
+                } catch {
+                    invalidated.insert(cell.id)
+                }
+            }
+            if let loaded = cell.query.loadedDocumentConfig {
+                do {
+                    if try connection.get().effectiveConfiguration(profiles: profiles) != loaded {
+                        invalidated.insert(cell.id)
+                    }
+                } catch {
+                    invalidated.insert(cell.id)
+                }
+            }
             guard cell.kind == .nrql || cell.kind == .nerdgraph, let loaded = cell.query.loadedConnection else { continue }
             do {
                 let metadata = cell.kind == .nerdgraph ? NerdgraphCellSource(stored: cell.query.text).metadata
@@ -311,7 +332,7 @@ struct NRQL_EditorDocument: FileDocument {
             for cell in order {
                 guard !Task.isCancelled else { return }
                 do {
-                    let defaults = cell.kind == .lua ? NrqlConnection() : try connection.get()
+                    let defaults = try connection.get()
                     await cell.query.getData(results: Self.priorResults(in: all), defaults: defaults)
                 } catch {
                     guard !Task.isCancelled else { return }

@@ -59,6 +59,39 @@ struct NerdgraphCellSource {
             .joined(separator: "\n")
     }
 
-    var format: ChartFormat? { metadata.isEmpty ? nil : ChartFormat.parseMetadata(metadata) }
+    private var variableDeclarations: [String] {
+        metadata.components(separatedBy: "\n").compactMap { line in
+            guard let colon = line.firstIndex(of: ":"),
+                  line[..<colon].trimmingCharacters(in: .whitespaces).lowercased() == "var" else { return nil }
+            let value = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
+            return value.isEmpty ? nil : value
+        }
+    }
+
+    func resultBindings() throws -> [LuaRuntime.Variable] {
+        var names = Set<String>()
+        return try variableDeclarations.map { declaration in
+            let variable = try LuaRuntime.Variable.parse(declaration)
+            guard names.insert(variable.name).inserted else {
+                throw NrqlConnection.ConfigurationError(message: "Duplicate Nerdgraph variable '\(variable.name)'.")
+            }
+            return variable
+        }
+    }
+
+    var bindingNames: [String] {
+        variableDeclarations.compactMap { try? LuaRuntime.Variable.parse($0).name }
+    }
+
+    var bindingExpressions: [String] {
+        variableDeclarations.compactMap { try? LuaRuntime.Variable.parse($0).expression }
+    }
+
+    var format: ChartFormat? {
+        guard !metadata.isEmpty else { return nil }
+        var format = ChartFormat.parseMetadata(metadata)
+        format.name = bindingNames.first
+        return format
+    }
     var operation: String { query }
 }

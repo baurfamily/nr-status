@@ -15,6 +15,8 @@ enum LuaCompletion {
         var names: [String] = []
         /// Results of the named cells that have run.
         var results: [LuaRuntime.PriorResult] = []
+        var variables: [String] = []
+        var revision = ""
 
         static let empty = Scope()
     }
@@ -28,7 +30,7 @@ enum LuaCompletion {
     private static let globalFunctions = [
         "emit", "print", "pairs", "ipairs", "tostring", "tonumber", "type", "select", "pcall", "error", "assert",
     ]
-    private static let globalTables = ["results", "string", "table", "math"]
+    private static let globalTables = ["config", "results", "string", "table", "math"]
 
     private static let library: [String: [String]] = [
         "string": ["byte", "char", "find", "format", "gmatch", "gsub", "len", "lower", "match", "rep", "reverse", "sub", "upper"],
@@ -163,6 +165,13 @@ enum LuaCompletion {
 
     private static func members(of chain: [Step], scope: Scope) -> [NrqlCompletion.Item] {
         guard case .name(let root) = chain[0] else { return [] }
+
+        if root == "config", chain.count == 1 {
+            return [
+                item("accounts", .field, detail: "Document account IDs (1-based list)"),
+                item("api_key", .field, detail: "Saved document API key name, not the secret")
+            ] + scope.variables.map { item($0, .field, detail: "document variable") }
+        }
 
         if root == "results" {
             if chain.count == 1 {

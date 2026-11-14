@@ -25,6 +25,32 @@ Search accounts by name or ID, select the ones you commonly use, and **Save**.
 You can also enter preferred account IDs as CSV. Secrets are stored in Keychain;
 documents contain only the names you assign. The existing key and account settings
 are migrated to a profile named `Default`.
+
+Lua scripts and `{{ }}` expressions can read the effective document settings
+through `config.accounts` (an ordered, 1-based list of account IDs) and
+`config.api_key` (the saved key's name, never its secret). Document overrides
+take precedence over the selected profile's defaults, even without an explicit
+`config` block. Cell-level overrides do not change this global. For example,
+`config.accounts[1]` reads the first account, and GraphQL variables can use
+`{"accountId": {{ config.accounts[1] }}}`. Without any configured accounts,
+the list is empty. Each Lua evaluation receives its own snapshot; editing it
+does not change document settings. Results that reference `config` become stale
+when these effective settings change, including account order.
+
+Declare document data with `var appName = "Foo"` (or `var: appName = "Foo"`)
+inside the config comment. It is available only as `config.appName`
+in scripts and interpolation. Declarations are evaluated in order as Lua
+expressions, so they can use earlier variables through `config`; strings,
+numbers, booleans, and tables are supported. Names must be unique and cannot
+replace `config.accounts` / `config.api_key`. Missing values and
+invalid expressions are reported, not silently ignored.
+
+Markdown sections also expand `{{ }}` expressions before rendering, including
+headings such as `# {{ config.appName }}` and text such as
+`Tags: {{ results.tagCount }}`. They refresh as available results or settings
+change, without rewriting the source or automatically running queries.
+HTML and PDF exports use the same substitutions.
+
 Keychain entries are named `NR Status named API key (<key name>)`, and the account
 field also uses the configured name. Both follow renames; the UUID is kept in a
 separate identifier attribute. Existing UUID-based labels and account fields are
@@ -112,6 +138,24 @@ can override `api-key` (`api_key` is also accepted), set a
 `title`, and bind the result using `var`. Overrides reference saved key names, not
 secret values.
 Use `var` in NRQL and Lua metadata blocks too; `name` no longer binds results.
+
+Nerdgraph supports multiple result declarations. A plain `# var: response`
+binds the complete response; an expression binds an extracted value instead:
+
+```graphql
+# var: response
+# var: entity = data.actor.entitySearch.results.entities[1]
+# var: tagCount = #data.actor.entitySearch.results.entities[1].tags
+```
+
+Later cells read `results.entity.name` or `results.tagCount`. Expressions use
+Lua's 1-based indexes and resolve `data`, `errors`, and `extensions` against
+that cell's response. Each expression is evaluated independently; document
+variables and earlier cell results are also available. Numeric `results[i]`
+access follows exported bindings in cell/declaration order. Duplicate names or
+missing paths fail the cell with a named error rather than exporting stale or
+partial bindings. Successful runs still show the complete response in the JSON
+viewer.
 
 ````text
 ```graphql

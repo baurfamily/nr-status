@@ -7,7 +7,7 @@ import Foundation
 import LuaSwift
 
 /// Replaces each `{{ expression }}` in a query with the value of the Lua
-/// expression, which can read earlier cell results through `results`.
+/// expression, which can read `results` and the effective document `config`.
 enum NrqlInterpolation {
     enum InterpolationError: LocalizedError {
         case evaluation(expression: String, message: String)
@@ -39,7 +39,9 @@ enum NrqlInterpolation {
         }
     }
 
-    static func expand(_ nrql: String, results: [LuaRuntime.PriorResult] = []) throws -> String {
+    static func expand(
+        _ nrql: String, results: [LuaRuntime.PriorResult] = [], config: NrqlConnection = NrqlConnection()
+    ) throws -> String {
         let ns = nrql as NSString
         var expanded = ""
         var cursor = 0
@@ -47,14 +49,16 @@ enum NrqlInterpolation {
         for match in placeholder.matches(in: nrql, range: NSRange(location: 0, length: ns.length)) {
             expanded += ns.substring(with: NSRange(location: cursor, length: match.range.location - cursor))
             let expression = ns.substring(with: match.range(at: 1)).trimmingCharacters(in: .whitespacesAndNewlines)
-            expanded += try evaluate(expression, results: results)
+            expanded += try evaluate(expression, results: results, config: config)
             cursor = match.range.location + match.range.length
         }
         return expanded + ns.substring(from: cursor)
     }
 
     /// Outside JSON strings a placeholder inserts a typed JSON value; inside strings it inserts escaped text.
-    static func expandJSON(_ text: String, results: [LuaRuntime.PriorResult] = []) throws -> JSONValue {
+    static func expandJSON(
+        _ text: String, results: [LuaRuntime.PriorResult] = [], config: NrqlConnection = NrqlConnection()
+    ) throws -> JSONValue {
         let ns = text as NSString
         var expanded = ""
         var cursor = 0
@@ -69,7 +73,7 @@ enum NrqlInterpolation {
             }
             expanded += segment
             let expression = ns.substring(with: match.range(at: 1)).trimmingCharacters(in: .whitespacesAndNewlines)
-            let value = try evaluateValue(expression, results: results)
+            let value = try evaluateValue(expression, results: results, config: config)
             if case .nil = value { throw InterpolationError.noValue(expression: expression) }
             if inString {
                 let string = try textual(value, expression: expression)
@@ -88,16 +92,20 @@ enum NrqlInterpolation {
         return value
     }
 
-    private static func evaluateValue(_ expression: String, results: [LuaRuntime.PriorResult]) throws -> LuaValue {
+    private static func evaluateValue(
+        _ expression: String, results: [LuaRuntime.PriorResult], config: NrqlConnection
+    ) throws -> LuaValue {
         do {
-            return try LuaRuntime.run("return (\(expression))", results: results).value
+            return try LuaRuntime.run("return (\(expression))", results: results, config: config).value
         } catch {
             throw InterpolationError.evaluation(expression: expression, message: error.localizedDescription)
         }
     }
 
-    private static func evaluate(_ expression: String, results: [LuaRuntime.PriorResult]) throws -> String {
-        try textual(evaluateValue(expression, results: results), expression: expression)
+    private static func evaluate(
+        _ expression: String, results: [LuaRuntime.PriorResult], config: NrqlConnection
+    ) throws -> String {
+        try textual(evaluateValue(expression, results: results, config: config), expression: expression)
     }
 
     private static func textual(_ value: LuaValue, expression: String) throws -> String {

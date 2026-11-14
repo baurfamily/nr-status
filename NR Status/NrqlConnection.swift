@@ -4,6 +4,7 @@ import Foundation
 struct NrqlConnection: Equatable, Sendable {
     var apiKeyName: String?
     var accountIds: [Int]?
+    var variables: [LuaRuntime.Variable] = []
 
     struct Snapshot: Equatable, Sendable {
         let profileID: UUID
@@ -62,6 +63,15 @@ struct NrqlConnection: Equatable, Sendable {
         for line in body.components(separatedBy: .newlines) {
             let line = line.trimmingCharacters(in: .whitespaces)
             if line.isEmpty || line.hasPrefix("//") { continue }
+            if strict, line.hasPrefix("var ") || line.hasPrefix("var:") {
+                let declaration = line.dropFirst(4).trimmingCharacters(in: .whitespaces)
+                let variable = try LuaRuntime.Variable.parse(declaration, requiresExpression: true)
+                guard !LuaRuntime.reservedConfigFields.contains(variable.name), seen.insert("var." + variable.name).inserted else {
+                    throw ConfigurationError(message: "Duplicate or reserved config variable '\(variable.name)'.")
+                }
+                connection.variables.append(variable)
+                continue
+            }
             guard let colon = line.firstIndex(of: ":") else {
                 if strict || line == "api-key" || line == "api_key" || line == "accounts" {
                     throw ConfigurationError(message: "Expected 'key: value' in connection configuration.")
@@ -92,7 +102,22 @@ struct NrqlConnection: Equatable, Sendable {
     }
 
     func inheriting(_ defaults: NrqlConnection) -> NrqlConnection {
-        NrqlConnection(apiKeyName: apiKeyName ?? defaults.apiKeyName, accountIds: accountIds ?? defaults.accountIds)
+        NrqlConnection(apiKeyName: apiKeyName ?? defaults.apiKeyName, accountIds: accountIds ?? defaults.accountIds,
+                       variables: variables.isEmpty ? defaults.variables : variables)
+    }
+
+    func effectiveConfiguration(profiles: NerdgraphProfiles.Settings) throws -> NrqlConnection {
+        let profile = profiles.profiles.first {
+            if let apiKeyName { return $0.name.caseInsensitiveCompare(apiKeyName) == .orderedSame }
+            return $0.id == profiles.defaultProfileID
+        }
+        guard let profile else {
+            guard apiKeyName == nil, profiles.defaultProfileID == nil else {
+                throw NerdgraphProfiles.ProfileError.missingProfile
+            }
+            return NrqlConnection(accountIds: accountIds ?? [], variables: variables)
+        }
+        return NrqlConnection(apiKeyName: profile.name, accountIds: accountIds ?? profile.preferredAccountIds, variables: variables)
     }
 
     func resolve(profiles: NerdgraphProfiles = .shared, requiresAccounts: Bool = true) throws -> NerdgraphConfig {

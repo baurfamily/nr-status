@@ -123,6 +123,25 @@ struct NrqlDocumentParserTests {
 
 @MainActor
 struct NerdgraphCellTests {
+    @Test func parsesMultipleWholeResponseAndExtractedBindings() throws {
+        let source = NerdgraphCellSource(editorText: """
+            # var: response
+            # var: entity = data.actor.entitySearch.results.entities[1]
+            # var: count = #data.actor.entitySearch.results.entities
+            { actor { user { name } } }
+            """)
+        #expect(source.bindingNames == ["response", "entity", "count"])
+        #expect(try source.resultBindings().first?.expression == nil)
+        #expect(source.format?.name == "response")
+        #expect(try NerdgraphCellSource(editorText: "# var: whole response\n{}").resultBindings().first?.name == "whole response")
+        let query = NrqlCell(text: source.storedText)
+        let reader = NrqlCell(text: "```lua\nreturn results.entity\n```")
+        #expect(NrqlDependencies.dependencies(of: reader, in: [query, reader]).map(\.id) == [query.id])
+        #expect(throws: NrqlConnection.ConfigurationError.self) {
+            try NerdgraphCellSource(editorText: "# var: entity\n# var: entity = data.actor\n{}").resultBindings()
+        }
+    }
+
     @Test func variablesInterpolateTypedValuesAndEscapeStrings() throws {
         let prior = [LuaRuntime.PriorResult(name: "input", value: .table([
             "id": .number(42), "text": .string("quote \" and newline\n"),
@@ -622,6 +641,18 @@ struct NrqlInterpolationTests {
         #expect(try NrqlInterpolation.expand("SELECT 1") == "SELECT 1")
     }
 
+    @Test func configWorksInQueryTextAndTypedJSONVariables() throws {
+        let config = NrqlConnection(apiKeyName: "Production", accountIds: [42, 17])
+        #expect(try NrqlInterpolation.expand("SELECT {{ config.accounts[1] }}", config: config) == "SELECT 42")
+        let variables = try NrqlInterpolation.expandJSON(
+            #"{"id": {{ config.accounts[1] }}, "accounts": {{ config.accounts }}, "key": "{{ config.api_key }}"}"#,
+            config: config
+        )
+        #expect(variables["id"] == .number(42))
+        #expect(variables["accounts"] == .array([.number(42), .number(17)]))
+        #expect(variables["key"] == .string("Production"))
+    }
+
     @Test func reportsMissingResults() {
         #expect(throws: NrqlInterpolation.InterpolationError.self) {
             try NrqlInterpolation.expand("WHERE a = '{{ results.nope.rows[1].facet }}'", results: results)
@@ -729,6 +760,69 @@ struct NrqlClearResultsTests {
 
 struct NrqlScriptCellTests {
     private let script = "```lua\n--[[\nvar: x\n]]\n-- Compare\n\nemit({ rows = { { facet = 'A', count = results.a.rows[1].count } } })\n```"
+
+    @Test func documentVariablesAreExecutedAndTrackedForStaleness() async throws {
+        let suite = "NR Status document globals test \(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set(try JSONEncoder().encode(NerdgraphProfiles.Settings()), forKey: "nerdgraphProfiles")
+        let document = NRQL_EditorDocument(text: """
+            ```config
+            /***
+            var appName = "Foo"
+            ***/
+            ```
+
+            ```lua
+            return { rows = { { name = config.appName } } }
+            ```
+            """)
+        let query = document.cells[1].query
+        await query.getData(defaults: try document.connection.get(), profiles: NerdgraphProfiles(defaults: defaults))
+        #expect(query.errorMessage == nil)
+        #expect(query.resultContainer?.data.first?.stringFields["name"] == "Foo")
+        document.cells[0].query.text = "```config\n/***\nvar appName = \"Bar\"\n***/\n```"
+        #expect(document.staleCellIds(profiles: .init()) == [document.cells[1].id])
+    }
+
+    @Test(arguments: [true, false])
+    func scriptsReadDocumentOverridesOrProfileDefaults(explicitConfig: Bool) async throws {
+        let suite = "NR Status Lua config test \(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let profile = NerdgraphProfile(name: "Production", preferredAccountIds: [42, 17])
+        defaults.set(
+            try JSONEncoder().encode(NerdgraphProfiles.Settings(profiles: [profile], defaultProfileID: profile.id)),
+            forKey: "nerdgraphProfiles"
+        )
+        let profiles = NerdgraphProfiles(defaults: defaults)
+        let prefix = explicitConfig ? "```config\n/***\naccounts: 23, 11\n***/\n```\n\n" : ""
+        let document = NRQL_EditorDocument(text: prefix + """
+            ```lua
+            return { rows = { { account = config.accounts[1], key = config.api_key } } }
+            ```
+            """)
+        let query = try #require(document.cells.last?.query)
+        await query.getData(defaults: try document.connection.get(), profiles: profiles)
+        #expect(query.errorMessage == nil)
+        #expect(query.resultContainer?.data.first?.numberFields["account"] == (explicitConfig ? 23 : 42))
+        #expect(query.resultContainer?.data.first?.stringFields["key"] == "Production")
+        #expect(query.loadedDocumentConfig?.accountIds == (explicitConfig ? [23, 11] : [42, 17]))
+    }
+
+    @Test func configAllowsNoProfilesButReportsAnUnknownConfiguredKey() async throws {
+        let suite = "NR Status empty config test \(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set(try JSONEncoder().encode(NerdgraphProfiles.Settings()), forKey: "nerdgraphProfiles")
+        let profiles = NerdgraphProfiles(defaults: defaults)
+        let query = NrqlQuery(from: "```lua\nreturn { rows = { { count = #config.accounts } } }\n```")
+        await query.getData(profiles: profiles)
+        #expect(query.errorMessage == nil)
+        #expect(query.resultContainer?.data.first?.numberFields["count"] == 0)
+        await query.getData(defaults: NrqlConnection(apiKeyName: "Unknown"), profiles: profiles)
+        #expect(query.errorMessage == NerdgraphProfiles.ProfileError.missingProfile.localizedDescription)
+    }
 
     @Test func fencedScriptSurvivesBlankLinesAndRoundTrips() {
         let text = "```nrql\nFROM A SELECT 1\n```\n\n\(script)\n\n```nrql\nFROM B SELECT 2\n```\n"
@@ -878,6 +972,40 @@ struct NrqlCellActionTests {
 }
 
 struct MarkdownParserTests {
+    @MainActor @Test func markdownInterpolatesConfigAndResultsWithoutChangingSource() throws {
+        let document = NRQL_EditorDocument(text: """
+            ```config
+            /***
+            var appName = "Foo"
+            ***/
+            ```
+
+            # {{ config.appName }}
+
+            Entity: **{{ results.entity.data.name }}**
+
+            ```graphql
+            # var: entity
+            { actor { user { name } } }
+            ```
+            """)
+        let markdown = document.cells[1]
+        let source = document.cells[2].query
+        let original = document.text
+        source.setState(.jsonLoaded(.object(["data": .object(["name": .string("Ada")])])))
+        let rendered = try document.markdownText(for: markdown, profiles: .init())
+        #expect(rendered.contains("# Foo"))
+        #expect(rendered.contains("**Ada**"))
+        #expect(NrqlExport.html(for: document).contains("<strong>Ada</strong>"))
+        #expect(document.text == original)
+        source.setState(.jsonLoaded(.object(["data": .object(["name": .string("Grace")])])))
+        #expect(try document.markdownText(for: markdown, profiles: .init()).contains("**Grace**"))
+        source.clearResults()
+        #expect(throws: NrqlInterpolation.InterpolationError.self) {
+            try document.markdownText(for: markdown, profiles: .init())
+        }
+    }
+
     @Test func parsesBlocks() {
         let blocks = MarkdownParser.blocks("# Title\nline one\nline two\n\n- a\n- b\n\n1. x\n\n> q\n\n```\ncode\n\nmore\n```\n---")
 
@@ -925,6 +1053,44 @@ struct NrqlConnectionStaleTests {
 
     private var profiles: NerdgraphProfiles.Settings {
         NerdgraphProfiles.Settings(profiles: [production, staging], defaultProfileID: production.id)
+    }
+
+    @Test func configReadersTrackAccountOrderAndInvalidateTheirReaders() throws {
+        let document = NRQL_EditorDocument(text: """
+            ```lua
+            --[[ var: selected ]]
+            return { rows = { { id = config.accounts[1] } } }
+            ```
+
+            ```lua
+            return results.selected
+            ```
+
+            ```lua
+            return { rows = {} }
+            ```
+
+            ```graphql
+            query($id: Int!) { actor { account(id: $id) { id } } }
+            ```
+            ```variables
+            {"id": {{ config.accounts[1] }}}
+            ```
+            """)
+        let config = try document.connection.get().effectiveConfiguration(profiles: profiles)
+        let data = try #require(ChartSamples.sampleData(size: .small))
+        for cell in document.cells {
+            cell.query.setState(.loaded(data), documentConfig: cell.query.readsDocumentConfig ? config : nil)
+        }
+        #expect(document.staleCellIds(profiles: profiles).isEmpty)
+        var reordered = profiles
+        reordered.profiles[0].preferredAccountIds = [20, 10]
+        #expect(document.staleCellIds(profiles: reordered) == [
+            document.cells[0].id, document.cells[1].id, document.cells[3].id
+        ])
+        document.clearResults()
+        #expect(document.staleCellIds(profiles: reordered).isEmpty)
+        #expect(document.cells[0].query.loadedDocumentConfig == nil)
     }
 
     private func cacheResults(in document: NRQL_EditorDocument, profiles: NerdgraphProfiles.Settings) throws {

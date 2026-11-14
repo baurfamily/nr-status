@@ -142,6 +142,17 @@ final class NrqlLanguageService: LanguageService {
             let context = NrqlCompletion.analyse(text: text, location: location, configuration: true, graphql: true).context
             switch context {
             case .formatKey, .formatValue:
+                let line = (text as NSString).lineRange(for: NSRange(location: location, length: 0))
+                let before = (text as NSString).substring(with: NSRange(location: line.location, length: location - line.location))
+                if before.trimmingCharacters(in: .whitespaces).hasPrefix("# var:"), let equals = before.firstIndex(of: "=") {
+                    let start = line.location + before[..<before.index(after: equals)].utf16.count
+                    let scope = await currentScope()
+                    let expression = (text as NSString).substring(from: start)
+                    let found = LuaCompletion.items(text: expression, location: location - start, scope: scope, isExpression: true)
+                    items = found.items
+                    range = NSRange(location: found.range.location + start, length: found.range.length)
+                    break
+                }
                 let settings = try NerdgraphProfiles.shared.load()
                 let found = await NrqlCompletion.items(
                     text: text, location: location, metadata: NrqlMetadata.Source(connection: defaults),
@@ -163,7 +174,16 @@ final class NrqlLanguageService: LanguageService {
                 }
             }
         case .nrql, .config:
-            if language == .nrql, let start = LuaCompletion.interpolationStart(in: text, at: location) {
+            let line = (text as NSString).lineRange(for: NSRange(location: location, length: 0))
+            let before = (text as NSString).substring(with: NSRange(location: line.location, length: location - line.location))
+            let variableStart: Int? = {
+                guard language == .config,
+                      (before.trimmingCharacters(in: .whitespaces).hasPrefix("var ")
+                       || before.trimmingCharacters(in: .whitespaces).hasPrefix("var:")),
+                      let equals = before.firstIndex(of: "=") else { return nil }
+                return line.location + before[..<before.index(after: equals)].utf16.count
+            }()
+            if let start = variableStart ?? LuaCompletion.interpolationStart(in: text, at: location) {
                 let scope = await currentScope()
                 let expression = (text as NSString).substring(from: start)
                 let found = LuaCompletion.items(

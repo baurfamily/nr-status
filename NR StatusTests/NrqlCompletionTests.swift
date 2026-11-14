@@ -108,6 +108,8 @@ struct NrqlCompletionTests {
         #expect(await complete("/***\naccounts: 123, 4").items.map(\.name) == ["456"])
         #expect(await complete("/***\napi-key: Staging\naccounts: ", configuration: true).items.map(\.name) == ["789"])
         #expect(await complete("/***\nacc", configuration: true).items.map(\.name) == ["accounts"])
+        #expect(await complete("/***\naut", configuration: true).items.map(\.name) == ["author"])
+        #expect(await complete("/***\ndesc", configuration: true).items.map(\.name) == ["description"])
         #expect(await complete("accounts: ", configuration: true).items.isEmpty)
         #expect(await complete("// api-key: ", configuration: true).items.isEmpty)
         #expect(await complete("/***\napi-key: Staging\n***/\naccounts: ", configuration: true).items.isEmpty)

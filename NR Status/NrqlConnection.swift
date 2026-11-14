@@ -39,14 +39,21 @@ struct NrqlConnection: Equatable, Sendable {
         return try parse(metadataBody(in: trimmed), strict: true)
     }
 
-    func documentConfigText() throws -> String {
-        var lines: [String] = []
-        if let apiKeyName { lines.append("api-key: \(apiKeyName)") }
-        if let accountIds { lines.append("accounts: \(accountIds.map(String.init).joined(separator: ", "))") }
+    func documentConfigText(preserving text: String = "") throws -> String {
+        _ = try Self.parseDocumentConfig(text)
+        var lines = Self.metadataBody(in: text).components(separatedBy: .newlines).filter { line in
+            guard let colon = line.firstIndex(of: ":") else { return true }
+            let key = line[..<colon].trimmingCharacters(in: .whitespaces).lowercased()
+            return key != "api-key" && key != "accounts"
+        }
+        while lines.first?.trimmingCharacters(in: .whitespaces).isEmpty == true { lines.removeFirst() }
+        while lines.last?.trimmingCharacters(in: .whitespaces).isEmpty == true { lines.removeLast() }
+        if let apiKeyName { lines.append("  api-key: \(apiKeyName)") }
+        if let accountIds { lines.append("  accounts: \(accountIds.map(String.init).joined(separator: ", "))") }
         guard !lines.isEmpty else { return "" }
         let body = lines.joined(separator: "\n")
         _ = try Self.parse(body, strict: true)
-        return "/***\n\(lines.map { "  " + $0 }.joined(separator: "\n"))\n***/"
+        return "/***\n\(body)\n***/"
     }
 
     static func parse(_ body: String, strict: Bool = false) throws -> NrqlConnection {
@@ -63,10 +70,7 @@ struct NrqlConnection: Equatable, Sendable {
             }
             let key = line[..<colon].trimmingCharacters(in: .whitespaces).lowercased()
             let value = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
-            guard ["api-key", "accounts"].contains(key) else {
-                if strict { throw ConfigurationError(message: "Unknown configuration field '\(key)'. Use api-key or accounts.") }
-                continue
-            }
+            guard ["api-key", "accounts"].contains(key) else { continue }
             guard seen.insert(key).inserted else {
                 throw ConfigurationError(message: "Duplicate configuration field '\(key)'.")
             }

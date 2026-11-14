@@ -104,7 +104,8 @@ struct NrqlDocumentCellTests {
         document.addConfiguration()
         #expect(document.cells.map(\.kind) == [.config, .nrql])
         #expect(document.focusedCellId == document.cells[0].id)
-        #expect(document.cells[0].editorText.isEmpty)
+        #expect(document.cells[0].editorText.contains("author:"))
+        #expect(document.cells[0].editorText.contains("description:"))
         #expect(try document.connection.get() == NrqlConnection())
     }
 
@@ -122,6 +123,8 @@ struct NrqlDocumentCellTests {
         let queryText = document.cells[1].text
         try document.setDefaultApiKey("Production US")
         #expect(document.cells.map(\.kind) == [.config, .markdown, .nrql])
+        #expect(document.cells[0].editorText.contains("author:"))
+        #expect(document.cells[0].editorText.contains("description:"))
         #expect(try document.connection.get() == NrqlConnection(apiKeyName: "Production US"))
 
         try document.setDefaultAccountIds([123, 456])
@@ -136,7 +139,10 @@ struct NrqlDocumentCellTests {
         try document.setDefaultApiKey(nil)
         #expect(try document.connection.get() == NrqlConnection(accountIds: [123, 456]))
         try document.setDefaultAccountIds(nil)
-        #expect(document.cells[0].editorText.isEmpty)
+        #expect(document.cells[0].editorText.contains("author:"))
+        #expect(document.cells[0].editorText.contains("description:"))
+        #expect(!document.cells[0].editorText.contains("api-key:"))
+        #expect(!document.cells[0].editorText.contains("accounts:"))
         #expect(try document.connection.get() == NrqlConnection())
         #expect(try NRQL_EditorDocument(text: document.text).connection.get() == NrqlConnection())
     }
@@ -170,6 +176,41 @@ struct NrqlDocumentCellTests {
         let originalText = document.text
         #expect(throws: NrqlConnection.ConfigurationError.self) { try document.setDefaultApiKey("Work") }
         #expect(document.text == originalText)
+    }
+
+    @Test func toolbarChangesPreserveDocumentMetadataIncludingPendingEdits() throws {
+        var document = NRQL_EditorDocument(text: "```config\n/***\n  author: Before\n  accounts: 12\n***/\n```")
+        document.cells[0].query.text = """
+            ```config
+            /***
+              author: Ada
+              description: Error rates: per application
+              owner-team: Observability
+              custom-notes:
+              // Keep this note.
+              accounts: 12
+            ***/
+            ```
+            """
+        try document.setDefaultApiKey("Production")
+        try document.setDefaultAccountIds([34, 56])
+        #expect(try document.connection.get() == NrqlConnection(apiKeyName: "Production", accountIds: [34, 56]))
+        try document.setDefaultApiKey(nil)
+        try document.setDefaultAccountIds(nil)
+
+        #expect(document.cells[0].editorText == """
+            /***
+              author: Ada
+              description: Error rates: per application
+              owner-team: Observability
+              custom-notes:
+              // Keep this note.
+            ***/
+            """)
+        #expect(try document.connection.get() == NrqlConnection())
+        let reopened = NRQL_EditorDocument(text: document.text)
+        #expect(reopened.cells[0].editorText == document.cells[0].editorText)
+        #expect(try reopened.connection.get() == NrqlConnection())
     }
 
     @Test func collapsesAndExpandsConfigAlongsideCode() throws {
@@ -266,13 +307,18 @@ struct NrqlConnectionTests {
         #expect(throws: (any Error).self) { try NrqlConnection.parse(body) }
     }
 
-    @Test func strictDocumentConfigRejectsTyposAndIgnoresLineCommentSettings() throws {
+    @Test func documentConfigAllowsMetadataAndIgnoresLineCommentSettings() throws {
         let config = try NrqlConnection.parseDocumentConfig(
-            "/***\n// api-key: Ignored\napi-key: Work\n// accounts: 999\naccounts: 123\n***/"
+            "/***\nauthor: Ada\ndescription: Report: per day\nowner-team: Observability\ncustom:\n// api-key: Ignored\napi-key: Work\n// accounts: 999\naccounts: 123\n***/"
         )
         #expect(config == NrqlConnection(apiKeyName: "Work", accountIds: [123]))
-        #expect(throws: NrqlConnection.ConfigurationError.self) {
-            try NrqlConnection.parseDocumentConfig("/***\naccount: 123\n***/")
+        #expect(try NrqlConnection.parseDocumentConfig("/***\naccount: 123\n***/") == NrqlConnection())
+    }
+
+    @Test(arguments: ["api-key:", "accounts:", "accounts: invalid", "accounts: 1\naccounts: 2", "missing colon"])
+    func metadataDoesNotDisableConfigurationValidation(_ body: String) {
+        #expect(throws: (any Error).self) {
+            try NrqlConnection.parseDocumentConfig("/***\nauthor: Ada\ndescription:\n\(body)\n***/")
         }
     }
 }
@@ -843,6 +889,10 @@ struct NrqlConnectionStaleTests {
         try cacheResults(in: document, profiles: profiles)
         try document.setDefaultApiKey("production")
         try document.setDefaultAccountIds([20, 10])
+        #expect(document.staleCellIds(profiles: profiles).isEmpty)
+        document.cells[0].editorText = document.cells[0].editorText
+            .replacingOccurrences(of: "author:", with: "author: Ada")
+            .replacingOccurrences(of: "description:", with: "description: Updated report")
         #expect(document.staleCellIds(profiles: profiles).isEmpty)
 
         try document.setDefaultAccountIds([30])

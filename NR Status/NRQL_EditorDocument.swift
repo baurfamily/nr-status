@@ -146,10 +146,12 @@ struct NRQL_EditorDocument: FileDocument {
     }
 
     private mutating func updateConfiguration(_ options: NrqlConnection) throws {
-        let text = try options.documentConfigText()
         if let index = cells.firstIndex(where: { $0.kind == .config }) {
-            cells[index].editorText = text
-        } else if !text.isEmpty {
+            let existing = NrqlCellKind.config.unwrap(cells[index].query.text)
+            cells[index].editorText = try options.documentConfigText(preserving: existing)
+        } else if options != NrqlConnection() {
+            let template = NrqlCellKind.config.unwrap(NrqlCellKind.config.template)
+            let text = try options.documentConfigText(preserving: template)
             cells.insert(NrqlCell(text: NrqlCellKind.config.wrap(text)), at: 0)
         }
     }

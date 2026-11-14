@@ -39,13 +39,16 @@ fixed to keep the native control group joined when selections change. Key names,
 account selections, and checkmarks appear inside the menus, not in the toolbar.
 
 Click the **Document Config** gear button to reveal and expand that cell for manual
-editing. With both dropdowns at **Default**, the cell is blank (and need not exist
-until opened). Its cell has the same collapse toggle as code cells and is included
+editing. New blocks include optional `author` and `description` metadata fields.
+With both dropdowns at **Default**, no connection overrides are stored (and the
+cell need not exist until opened). Its cell has the same collapse toggle as code cells and is included
 in **Collapse All** and **Expand All**. Explicit overrides are stored as:
 
 ````text
 ```config
 /***
+author:
+description:
 api-key: Production
 accounts: 123, 456
 ***/
@@ -65,6 +68,9 @@ Each query independently overrides `api-key`, `accounts`, or both in its existin
 `/*** ... ***/` metadata comment. Non-empty document settings also require that
 block-comment format inside the `config` fence; bare fields and `//` settings are
 not accepted.
+Only `api-key` and `accounts` affect document connection settings. Other
+`key: value` metadata is accepted without affecting execution and is preserved
+when the toolbar changes connection settings.
 A leading `//` line supplies only the query title, and only when the query has no
 metadata block. Missing fields inherit document defaults, then the
 app's default key and that key's preferred accounts. Changing only the key keeps

@@ -84,13 +84,13 @@ struct NerdgraphCompletionTests {
 
     @Test func completesNativeMetadataKeysAndSavedKeyNames() async {
         let profiles = [NerdgraphProfile(name: "Production US"), NerdgraphProfile(name: "Staging")]
-        let text = "# A note\n\n  # na"
+        let text = "# A note\n\n  # va"
         let keys = await NrqlCompletion.items(
             text: text, location: text.utf16.count, metadata: NrqlCompletionTests.StubMetadata(),
             profiles: profiles, configuration: true, graphql: true
         )
-        #expect(keys.items.map(\.name) == ["name"])
-        #expect(keys.items.first?.insertText == "name: ")
+        #expect(keys.items.map(\.name) == ["var"])
+        #expect(keys.items.first?.insertText == "var: ")
         #expect(keys.range == NSRange(location: text.utf16.count - 2, length: 2))
         let value = "# title: Details\n# api-key: Production U"
         let names = await NrqlCompletion.items(
@@ -99,7 +99,7 @@ struct NerdgraphCompletionTests {
         )
         #expect(names.items.map(\.name) == ["Production US"])
         #expect((value as NSString).substring(with: names.range) == "Production U")
-        for query in ["{ actor {\n# name: ", "/***\nname: "] {
+        for query in ["{ actor {\n# var: ", "/***\nvar: "] {
             #expect(NrqlCompletion.analyse(text: query, location: query.utf16.count, configuration: true, graphql: true).context == .none)
         }
     }
@@ -181,6 +181,8 @@ struct NrqlCompletionTests {
 
     @Test func completesFormatBlock() async {
         #expect(await names("/***\n  ti|\n***/") == ["title"])
+        #expect(await names("/***\n  va|\n***/") == ["var"])
+        #expect(await names("/***\n  na|\n***/").isEmpty)
         #expect(await names("/***\nchart: p|\n***/") == ["pie", "plot"])
         #expect(await names("/***\nchart: pie\nattributes: |\n***/") == ["donut", "separated"])
         #expect(await names("/***\nchart: plot\nattributes: x-|\n***/") == ["x-log"])

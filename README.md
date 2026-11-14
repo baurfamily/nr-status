@@ -105,14 +105,15 @@ GraphQL uses the same saved API keys and document defaults as NRQL, but does
 not require or inherit account IDs. Supply account IDs as GraphQL arguments
 or variables when the selected operation needs them. Leading `#` comments
 can override `api-key` (`api_key` is also accepted), set a
-`title`, and assign a result `name`. Overrides reference saved key names, not
+`title`, and bind the result using `var`. Overrides reference saved key names, not
 secret values.
+Use `var` in NRQL and Lua metadata blocks too; `name` no longer binds results.
 
 ````text
 ```graphql
 # title: Account details
 # api-key: Production
-# name: accountDetails
+# var: accountDetails
 
 query AccountDetails($accountId: Int!) {
   actor {
@@ -147,8 +148,9 @@ Only variables interpolate Lua
 expressions: unquoted placeholders insert typed JSON values, including arrays
 and objects; placeholders within quoted strings insert safely escaped text.
 Missing results, invalid expressions, or invalid JSON report errors.
-Named results expose the complete response as `results.<name>`, including
-`data`, and participate in **Run All**, dependency ordering, staleness tracking,
+For example, `var: accountDetails` exposes the complete response as
+`results.accountDetails`, including `data`.
+Cells participate in **Run All**, dependency ordering, staleness tracking,
 and **Clear Results**.
 
 Completion loads the live GraphQL schema using the cell's effective API key

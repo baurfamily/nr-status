@@ -16,7 +16,7 @@ Can this contain variables?
 ```nrql
 /***
   title: Busiest app, last week
-  name: top_app
+  var: top_app
   chart: billboard
 ***/
 FROM Transaction
@@ -38,7 +38,7 @@ FROM Metric SELECT count(*) WHERE appName = '{{ results.top_app.rows[1].facet }}
 ```nrql
 /***
 title: Transactions for the busiest app
-name: transactions
+var: transactions
 chart: none
 ***/
 
@@ -48,7 +48,7 @@ FROM Transaction SELECT count(*) AS count WHERE appName = '{{ results.top_app.ro
 ```nrql
 /***
 title: Errors for the busiest app
-name: errors
+var: errors
 chart: none
 ***/
 
@@ -78,7 +78,7 @@ emit({
 ```graphql
 
 # title: Entity Search
-# name: entity_search
+# var: entity_search
 query FindEntity($query: String) {
   actor {
     entitySearch(query: $query) {
@@ -110,7 +110,7 @@ local entity = assert(entities[1], "No matching entity found")
 
 emit({
   rows = {
-    { tag_count = #entity.tags }
+    { ["Tag Count"] = #entity.tags }
   }
 })
 ```

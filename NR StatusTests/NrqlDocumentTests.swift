@@ -14,7 +14,7 @@ struct NrqlDocumentParserTests {
         # Notes
 
         ```graphql
-        # name: user
+        # var: user
         query { actor { user { name } } }
         ```
         ```variables
@@ -151,7 +151,7 @@ struct NerdgraphCellTests {
     }
 
     @Test func namedJSONResultsFeedScriptsAndOnlyVariablesCreateDependencies() async throws {
-        let source = NrqlCell(text: "```graphql\n# name: user\n{ actor { user { name } } }\n```")
+        let source = NrqlCell(text: "```graphql\n# var: user\n{ actor { user { name } } }\n```")
         let consumer = NrqlCell(text: """
             ```graphql
             query($id: Int!) { actor { account(id: $id) { name } } }
@@ -225,10 +225,10 @@ struct NerdgraphCellTests {
           # A note about this query
           # title: Account details: production
 
-          # name: account_details
+          # var: account_details
           # api-key: Production US
         query {
-          # name: not_metadata
+          # var: not_metadata
           actor { user { name } }
         }
         """
@@ -237,7 +237,7 @@ struct NerdgraphCellTests {
         #expect(source.format?.title == "Account details: production")
         #expect(source.format?.name == "account_details")
         #expect(try NrqlConnection.parse(source.metadata).apiKeyName == "Production US")
-        let old = "/***\nname: old_style\napi-key: Missing\n***/\n{ actor { user { name } } }"
+        let old = "/***\nvar: old_style\napi-key: Missing\n***/\n{ actor { user { name } } }"
         let oldSource = NerdgraphCellSource(editorText: old)
         #expect(oldSource.format == nil)
         #expect(oldSource.metadata.isEmpty)
@@ -494,6 +494,17 @@ struct NrqlConnectionTests {
 }
 
 struct NrqlQueryTests {
+    @Test(arguments: [
+        "```nrql\n/***\nvar: source\n***/\nSELECT 1\n```",
+        "```lua\n--[[\nvar: source\n]]\nreturn { rows = {} }\n```",
+        "```graphql\n# var: source\n{ actor { user { name } } }\n```"
+    ])
+    func bindsResultsWithVarWithoutANameAlias(_ text: String) {
+        #expect(NrqlQuery(from: text).name == "source")
+        let old = text.replacingOccurrences(of: "var: source", with: "name: source")
+        #expect(NrqlQuery(from: old).name == nil)
+    }
+
     @Test func formatTitleOverridesCommentTitle() {
         let query = NrqlQuery(from: "/***\ntitle: Errors: last day\n***/\n// Comment title\nSELECT 1")
 
@@ -511,7 +522,7 @@ struct NrqlQueryTests {
 
     @Test(arguments: [
         "/***\napi-key: Work\naccounts: 123\n***/\n// Legacy title\nSELECT 1",
-        "// Legacy title\n/***\nname: query_result\n***/\nSELECT 1",
+        "// Legacy title\n/***\nvar: query_result\n***/\nSELECT 1",
         "/***\n***/\n// Legacy title\nSELECT 1"
     ])
     func metadataBlockDisablesLineCommentTitleFallback(_ text: String) {
@@ -617,8 +628,8 @@ struct NrqlInterpolationTests {
         }
     }
 
-    @Test func formatNameAndHiddenChart() {
-        let query = NrqlQuery(from: "/***\nname: top_app\nchart: none\n***/\nSELECT 1")
+    @Test func formatVariableAndHiddenChart() {
+        let query = NrqlQuery(from: "/***\nvar: top_app\nchart: none\n***/\nSELECT 1")
 
         #expect(query.name == "top_app")
         #expect(query.format?.hidesChart == true)
@@ -639,7 +650,7 @@ struct NrqlClearResultsTests {
             # Notes
 
             ```nrql
-            /*** name: source ***/
+            /*** var: source ***/
             SELECT count(*) FROM Log
             ```
 
@@ -717,7 +728,7 @@ struct NrqlClearResultsTests {
 }
 
 struct NrqlScriptCellTests {
-    private let script = "```lua\n--[[\nname: x\n]]\n-- Compare\n\nemit({ rows = { { facet = 'A', count = results.a.rows[1].count } } })\n```"
+    private let script = "```lua\n--[[\nvar: x\n]]\n-- Compare\n\nemit({ rows = { { facet = 'A', count = results.a.rows[1].count } } })\n```"
 
     @Test func fencedScriptSurvivesBlankLinesAndRoundTrips() {
         let text = "```nrql\nFROM A SELECT 1\n```\n\n\(script)\n\n```nrql\nFROM B SELECT 2\n```\n"
@@ -761,9 +772,9 @@ struct NrqlScriptCellTests {
 
 struct NrqlDependencyTests {
     private let cells = [
-        NrqlCell(text: "```nrql\n/***\nname: c\n***/\nFROM A WHERE x = '{{ results.b.rows[1].facet }}'\n```"),
-        NrqlCell(text: "```nrql\n/***\nname: b\n***/\nFROM B WHERE x = '{{ results.a.rows[1].facet }}'\n```"),
-        NrqlCell(text: "```nrql\n/***\nname: a\n***/\nFROM C\n```"),
+        NrqlCell(text: "```nrql\n/***\nvar: c\n***/\nFROM A WHERE x = '{{ results.b.rows[1].facet }}'\n```"),
+        NrqlCell(text: "```nrql\n/***\nvar: b\n***/\nFROM B WHERE x = '{{ results.a.rows[1].facet }}'\n```"),
+        NrqlCell(text: "```nrql\n/***\nvar: a\n***/\nFROM C\n```"),
         NrqlCell(text: "```lua\nemit(results['c'].rows)\n```"),
         NrqlCell(text: "```nrql\nFROM D -- results.a is not in a placeholder\n```"),
     ]
@@ -783,8 +794,8 @@ struct NrqlDependencyTests {
 
     @Test func cyclesDoNotLoop() {
         let loop = [
-            NrqlCell(text: "```nrql\n/***\nname: x\n***/\nFROM A WHERE a = '{{ results.y.n }}'\n```"),
-            NrqlCell(text: "```nrql\n/***\nname: y\n***/\nFROM B WHERE a = '{{ results.x.n }}'\n```"),
+            NrqlCell(text: "```nrql\n/***\nvar: x\n***/\nFROM A WHERE a = '{{ results.y.n }}'\n```"),
+            NrqlCell(text: "```nrql\n/***\nvar: y\n***/\nFROM B WHERE a = '{{ results.x.n }}'\n```"),
         ]
 
         #expect(NrqlDependencies.plan(for: [loop[0]], in: loop, includeFinished: false).count == 2)
@@ -793,12 +804,12 @@ struct NrqlDependencyTests {
 
 struct NrqlCellActionTests {
     @Test func scriptCellsHideTheirFence() {
-        let stored = "```lua\n--[[ name: x ]]\nlocal a = 1\n\nreturn a\n```"
+        let stored = "```lua\n--[[ var: x ]]\nlocal a = 1\n\nreturn a\n```"
         var cell = NrqlCell(text: stored)
         #expect(cell.kind == .lua)
-        #expect(cell.editorText == "--[[ name: x ]]\nlocal a = 1\n\nreturn a")
-        cell.editorText = "--[[ name: x ]]\nreturn 2"
-        #expect(cell.text == "```lua\n--[[ name: x ]]\nreturn 2\n```")
+        #expect(cell.editorText == "--[[ var: x ]]\nlocal a = 1\n\nreturn a")
+        cell.editorText = "--[[ var: x ]]\nreturn 2"
+        #expect(cell.text == "```lua\n--[[ var: x ]]\nreturn 2\n```")
         #expect(cell.query.script?.contains("return 2") == true)
         #expect(cell.query.name == "x")
     }
@@ -829,7 +840,7 @@ struct NrqlCellActionTests {
             ```
 
             ```nrql
-            /*** name: later ***/
+            /*** var: later ***/
             SELECT 2 FROM B
             ```
             """)
@@ -888,8 +899,8 @@ struct MarkdownParserTests {
 
 struct NrqlStaleTests {
     @Test func cellIsStaleWhenADependencyRunsAgain() async {
-        let a = NrqlCell(text: "```lua\n--[[\nname: a\n]]\nreturn { { n = 1 } }\n```")
-        let b = NrqlCell(text: "```lua\n--[[\nname: b\n]]\nreturn { { n = results.a.rows[1].n } }\n```")
+        let a = NrqlCell(text: "```lua\n--[[\nvar: a\n]]\nreturn { { n = 1 } }\n```")
+        let b = NrqlCell(text: "```lua\n--[[\nvar: b\n]]\nreturn { { n = results.a.rows[1].n } }\n```")
         let c = NrqlCell(text: "```lua\nreturn { { n = results.b.rows[1].n } }\n```")
         let cells = [a, b, c]
 
@@ -942,7 +953,7 @@ struct NrqlConnectionStaleTests {
             ```
 
             ```nrql
-            /*** name: source ***/
+            /*** var: source ***/
             SELECT 1
             ```
 
@@ -965,7 +976,7 @@ struct NrqlConnectionStaleTests {
             ```
 
             ```lua
-            --[[ name: derived ]]
+            --[[ var: derived ]]
             return results.source
             ```
 
@@ -1005,7 +1016,7 @@ struct NrqlConnectionStaleTests {
             ```
 
             ```nrql
-            /*** name: source ***/
+            /*** var: source ***/
             SELECT 1
             ```
 
@@ -1018,7 +1029,7 @@ struct NrqlConnectionStaleTests {
         if editingDocumentConfig {
             document.cells[0].query.text = "```config\n/*** api-key: Staging ***/\n```"
         } else {
-            document.cells[1].query.text = "```nrql\n/***\nname: source\naccounts: 30\n***/\nSELECT 1\n```"
+            document.cells[1].query.text = "```nrql\n/***\nvar: source\naccounts: 30\n***/\nSELECT 1\n```"
         }
         #expect(document.text == text)
         #expect(document.staleCellIds(profiles: profiles) == [document.cells[1].id, document.cells[2].id])
@@ -1028,7 +1039,7 @@ struct NrqlConnectionStaleTests {
     func inheritedAppDefaultsAndPreferredAccountsAreTracked(changingKey: Bool) throws {
         let document = NRQL_EditorDocument(text: """
             ```nrql
-            /*** name: source ***/
+            /*** var: source ***/
             SELECT 1
             ```
 

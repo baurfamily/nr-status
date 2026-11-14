@@ -21,7 +21,7 @@ import Foundation
 /// With no `attributes` key, the chart keeps its defaults. When it is present,
 /// every attribute that applies to the chart type is on if listed and off if not.
 ///
-/// `name` lets later cells refer to this query's result as `results.<name>`, and
+/// `var` lets later cells refer to this query's result as `results.<name>`, and
 /// `chart: none` hides the chart, for queries that only feed other cells.
 struct ChartFormat: Equatable, Hashable {
     var title: String?
@@ -77,7 +77,7 @@ struct ChartFormat: Equatable, Hashable {
             switch key {
             case "title":
                 format.title = rawValue.isEmpty ? nil : rawValue
-            case "name":
+            case "var":
                 format.name = rawValue.isEmpty ? nil : rawValue
             case "chart":
                 format.hidesChart = value == "none"

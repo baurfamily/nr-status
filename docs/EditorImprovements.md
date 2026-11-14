@@ -79,7 +79,7 @@ Evaluate against these criteria: inline block/view embedding below a text range 
 - Replace `ResultsTabView` usage.
 
 ### Phase 4: Doc-comment formatting (DONE, one-way)
-- `/***` block with `title:` (overrides a `// Title` comment), `chart:` (`chart: none` hides the chart), `name:` and `attributes:` (names separated by spaces and/or commas; listed = on, unlisted = off, only for the active chart type; no `attributes` key = defaults). Lines/points: if neither is listed, lines is forced on.
+- `/***` block with `title:` (overrides a `// Title` comment), `chart:` (`chart: none` hides the chart), `var:` and `attributes:` (names separated by spaces and/or commas; listed = on, unlisted = off, only for the active chart type; no `attributes` key = defaults). Lines/points: if neither is listed, lines is forced on.
 - Attributes: line `stacked, smoothed, lines, points`; pie `donut, separated`; bar `pivot`; plot `color-facets, x-log, y-log`; billboard `gauge`.
 - Facet selection deliberately not supported (better done in the query); could later be auto-added to the query.
 - Not done: writing UI changes back into the comment.

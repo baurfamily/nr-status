@@ -55,7 +55,7 @@ struct NerdgraphClientTests {
         let query = NrqlQuery(from: """
             ```graphql
             # api_key: GraphQL
-            # name: custom
+            # var: custom
             query($id: Int!) { customField(id: $id, text: "{{ literal }}") { id } }
             ```
             ```variables
@@ -68,7 +68,7 @@ struct NerdgraphClientTests {
         #expect(query.jsonResult?.graphQLErrors == ["partial error"])
         #expect(query.jsonResult?["extensions"]?["trace"] == .string("ok"))
         #expect(query.executedNrql?.contains("{{ literal }}") == true)
-        #expect(query.executedNrql?.hasPrefix("# api_key: GraphQL\n# name: custom\n") == true)
+        #expect(query.executedNrql?.hasPrefix("# api_key: GraphQL\n# var: custom\n") == true)
         #expect(query.loadedConnection?.accountIds.isEmpty == true)
         let request = try #require(captured)
         #expect(request.value(forHTTPHeaderField: "api-key") == "test-key")

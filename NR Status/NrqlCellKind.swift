@@ -30,7 +30,7 @@ enum NrqlCellKind: String, CaseIterable, Identifiable {
         case .markdown: ""
         case .nrql: "```nrql\nFROM \n```"
         case .lua: "```lua\n\n```"
-        case .nerdgraph: "```graphql\n# title:\n# name:\n\n{\n  actor {\n    user {\n      name\n    }\n  }\n}\n```\n```variables\n{}\n```"
+        case .nerdgraph: "```graphql\n# title:\n# var:\n\n{\n  actor {\n    user {\n      name\n    }\n  }\n}\n```\n```variables\n{}\n```"
         case .config: "```config\n/***\n  author:\n  description:\n***/\n```"
         }
     }

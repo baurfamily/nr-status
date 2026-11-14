@@ -79,8 +79,9 @@ emit({
 
 # title: Entity Search
 # var: entity_search
-query FindEntity($query: String) {
+query FindEntity($account_id: Int!, $query: String) {
   actor {
+    account(id: $account_id)
     entitySearch(query: $query) {
       results { entities {
         guid 
@@ -95,6 +96,7 @@ query FindEntity($query: String) {
 ```
 ```variables
 {
+  "account_id": {{ config.account_id }},
   "query": "name = '{{ results.top_app.rows[1].facet }}'"
 }
 ```

@@ -34,6 +34,18 @@ struct DocumentView: View {
                 configurationError = error.localizedDescription
             }
         }
+        .onChange(of: document.cells.map(\.id)) { previous, current in
+            if let id = NerdgraphDocumentation.shared.source?.cursor.cellID,
+               previous.contains(id), !current.contains(id) {
+                NerdgraphDocumentation.shared.clear(cellID: id)
+            }
+        }
+        .onDisappear {
+            if let id = NerdgraphDocumentation.shared.source?.cursor.cellID,
+               document.cells.contains(where: { $0.id == id }) {
+                NerdgraphDocumentation.shared.clear(cellID: id)
+            }
+        }
         .alert("Document Configuration", isPresented: Binding(
             get: { configurationError != nil },
             set: { if !$0 { configurationError = nil } }
@@ -223,6 +235,7 @@ struct DocumentView: View {
 
 struct CellView: View {
     @Environment(\.colorScheme) private var colorScheme: ColorScheme
+    @Environment(\.openWindow) private var openWindow
 
     @Binding var cell: NrqlCell
     let isFocused: Bool
@@ -244,7 +257,6 @@ struct CellView: View {
     @State private var graphqlService = NrqlLanguageService(language: .graphql)
     @State private var variablesService = NrqlLanguageService(language: .variables)
     @State private var variablesPosition: CodeEditor.Position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
-    @State private var showsGraphqlSchema = false
     @State private var graphqlCompletionError: String?
     // the chart settings inspector is hidden until asked for
     @State private var showsChartSettings = false
@@ -285,15 +297,6 @@ struct CellView: View {
             if cell.kind == .nerdgraph {
                 HStack(alignment: .top, spacing: 16) {
                     if !cell.isCollapsed {
-                        if showsGraphqlSchema {
-                            NerdgraphSchemaView(
-                                loadID: NerdgraphCellSource(editorText: liveText).metadata
-                                    + ((try? connectionSource().get().apiKeyName) ?? ""),
-                                load: { try await graphqlService.graphqlSchema() },
-                                onInsert: insertGraphqlField
-                            )
-                            .frame(width: 250)
-                        }
                         nerdgraphEditors
                             .frame(maxWidth: .infinity)
                     }
@@ -314,7 +317,15 @@ struct CellView: View {
             }
         }
         .padding(8)
-        .onChange(of: cell.kind) { draft = nil }
+        .onChange(of: cell.kind) {
+            draft = nil
+            if cell.kind != .nerdgraph { NerdgraphDocumentation.shared.clear(cellID: cell.id) }
+        }
+        .onChange(of: isFocused) { if isFocused { followGraphqlDocumentation() } }
+        .onChange(of: liveText) { if isFocused { followGraphqlDocumentation() } }
+        .onChange(of: String(describing: connectionSource())) {
+            if NerdgraphDocumentation.shared.source?.cursor.cellID == cell.id { followGraphqlDocumentation() }
+        }
         .overlay(
             RoundedRectangle(cornerRadius: 8)
                 .stroke(
@@ -383,13 +394,21 @@ struct CellView: View {
             service.setScopeSource(completionScope)
             service.setConnectionSource(connectionSource)
             if !variables { service.setCompletionErrorHandler { graphqlCompletionError = $0 } }
+            if isFocused { followGraphqlDocumentation() }
         }
         .environment(\.codeEditorSetActions, CodeEditor.SetActions { service.setCompletionAction($0.completions) })
         .environment(\.codeEditorLayoutConfiguration, CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true))
         .environment(\.codeEditorTheme, colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight)
         .frame(height: CGFloat(max(text.components(separatedBy: "\n").count, 3)) * 18 + 16)
         .background(EditorFocusAnchor(focusRequested: !variables && cell.focusOnAppear) { cell.focusOnAppear = false })
-        .onChange(of: variables ? variablesPosition : position) { onFocus() }
+        .onChange(of: variables ? variablesPosition : position) {
+            onFocus()
+            followGraphqlDocumentation()
+        }
+        .simultaneousGesture(TapGesture().onEnded {
+            onFocus()
+            followGraphqlDocumentation()
+        })
         .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 
@@ -407,6 +426,17 @@ struct CellView: View {
         position = .init(selections: [NSRange(location: selection.location + name.utf16.count, length: 0)], verticalScrollPosition: position.verticalScrollPosition)
         cell.focusOnAppear = true
         onFocus()
+    }
+
+    private func followGraphqlDocumentation() {
+        guard cell.kind == .nerdgraph else { return }
+        let source = NerdgraphCellSource(editorText: liveText)
+        NerdgraphDocumentation.shared.source = .init(
+            cursor: .init(cellID: cell.id, text: source.query, location: position.selections.first?.location ?? 0),
+            loadID: cell.id.uuidString + source.metadata + String(describing: connectionSource()),
+            load: { try await graphqlService.graphqlSchema() },
+            onInsert: insertGraphqlField
+        )
     }
 
     private var renderedMarkdown: some View {
@@ -544,14 +574,14 @@ struct CellView: View {
                 .buttonStyle(.borderless)
                 .foregroundStyle(showsChartSettings ? Color.accentColor : Color.primary)
             } else {
-                Button("Browse GraphQL Fields", systemImage: "sidebar.left") {
-                    showsGraphqlSchema.toggle()
-                    cell.isCollapsed = false
+                Button("Nerdgraph Documentation", systemImage: "questionmark.circle") {
+                    onFocus()
+                    followGraphqlDocumentation()
+                    openWindow(id: "graphql-documentation")
                 }
                 .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)
-                .foregroundStyle(showsGraphqlSchema ? Color.accentColor : Color.primary)
-                .help("Find schema fields, read documentation, and insert a field")
+                .help("Open Nerdgraph documentation for the current query position")
             }
 
             if !warnings.isEmpty {

@@ -156,11 +156,14 @@ and **Clear Results**.
 Completion loads the live GraphQL schema using the cell's effective API key
 and offers fields, arguments, declared variables, and inline-fragment types,
 with schema descriptions. Variables offer Lua completion inside `{{ }}`.
-The **Browse GraphQL Fields** sidebar button opens a searchable type/field
-browser with documentation, argument types, and field insertion. These
-features use Nerdgraph introspection and the existing editor; no additional
-package is needed. If schema loading fails, the editor/sidebar reports the
-error and queries can still be run.
+The **Nerdgraph Documentation** question-mark button opens a separate documentation
+window that follows the focused query's cursor, jumping to its type, field,
+or argument. Search covers all schema types, fields, arguments, input fields,
+and their descriptions, not just the displayed type. The browser includes
+argument types and field insertion. These features use Nerdgraph introspection
+and the existing editor; no additional package is needed. If schema loading
+fails, the editor/documentation window reports the error and queries can still
+be run.
 
 ### Other experiments
 

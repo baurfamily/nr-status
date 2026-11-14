@@ -20,7 +20,8 @@ struct NerdgraphCompletionTests {
                 {"name": "Actor", "kind": "OBJECT", "fields": [
                   {"name": "user", "args": [], "type": {"kind": "OBJECT", "name": "User"}},
                   {"name": "account", "args": [
-                    {"name": "id", "description": "Account ID", "type": {"kind": "NON_NULL", "ofType": {"kind": "SCALAR", "name": "Int"}}}
+                    {"name": "id", "description": "Account ID", "type": {"kind": "NON_NULL", "ofType": {"kind": "SCALAR", "name": "Int"}}},
+                    {"name": "locale", "type": {"kind": "SCALAR", "name": "String"}}
                   ], "type": {"kind": "OBJECT", "name": "Account"}}
                 ]},
                 {"name": "User", "kind": "OBJECT", "fields": [
@@ -32,7 +33,11 @@ struct NerdgraphCompletionTests {
                 ]},
                 {"name": "Mutation", "kind": "OBJECT", "fields": [
                   {"name": "update", "args": [], "type": {"kind": "OBJECT", "name": "User"}}
-                ]}
+                ]},
+                {"name": "Filter", "kind": "INPUT_OBJECT", "inputFields": [
+                  {"name": "enabled", "description": "Enable entity lookup", "type": {"kind": "SCALAR", "name": "Boolean"}}
+                ]},
+                {"name": "String", "kind": "SCALAR", "description": "Text values"}
               ]
             }
             """.utf8))
@@ -102,6 +107,37 @@ struct NerdgraphCompletionTests {
         for query in ["{ actor {\n# var: ", "/***\nvar: "] {
             #expect(NrqlCompletion.analyse(text: query, location: query.utf16.count, configuration: true, graphql: true).context == .none)
         }
+    }
+
+    @Test func documentationFollowsFieldsArgumentsAndSelectionTypes() throws {
+        let schema = try schema()
+        let cases: [(String, NerdgraphSchema.DocumentationTarget)] = [
+            ("{ actor { us|er { name } } }", .init(typeName: "Actor", fieldName: "user")),
+            ("{ alias: actor { user { na|me } } }", .init(typeName: "User", fieldName: "name")),
+            ("{ actor { account(i|d: 42) { name } } }", .init(typeName: "Actor", fieldName: "account", argumentName: "id")),
+            ("{ actor { account(id: |42) { name } } }", .init(typeName: "Actor", fieldName: "account", argumentName: "id")),
+            ("{ actor { account(id: 42 loc|ale : \"en\") { name } } }", .init(typeName: "Actor", fieldName: "account", argumentName: "locale")),
+            ("{ actor { account(id: 42, loc|ale: \"en\") { name } } }", .init(typeName: "Actor", fieldName: "account", argumentName: "locale")),
+            ("{ actor { user { | } } }", .init(typeName: "User")),
+            ("{ actor { user { ... on Us|er { name } } } }", .init(typeName: "User")),
+            ("mutation { up|date { name } }", .init(typeName: "Mutation", fieldName: "update")),
+            ("# 😀 notes\n{ actor { user { nam|e } } }", .init(typeName: "User", fieldName: "name"))
+        ]
+        for (marked, expected) in cases {
+            let location = (marked as NSString).range(of: "|").location
+            let text = marked.replacingOccurrences(of: "|", with: "")
+            #expect(NerdgraphCompletion.documentationTarget(text: text, location: location, schema: schema) == expected)
+        }
+    }
+
+    @Test func documentationSearchCoversAllTypesFieldsArgumentsAndDescriptions() throws {
+        let schema = try schema()
+        #expect(schema.documentationMatches("Display name") == [.init(typeName: "User", fieldName: "name")])
+        #expect(schema.documentationMatches("Account ID") == [.init(typeName: "Actor", fieldName: "account", argumentName: "id")])
+        #expect(schema.documentationMatches("entity lookup") == [.init(typeName: "Filter", fieldName: "enabled")])
+        #expect(schema.documentationMatches("TEXT VALUES") == [.init(typeName: "String")])
+        #expect(schema.documentationMatches("").contains(.init(typeName: "Filter")))
+        #expect(schema.documentationMatches("missing documentation").isEmpty)
     }
 }
 

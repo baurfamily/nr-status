@@ -75,8 +75,12 @@ struct NRQL_EditorApp: App {
             DocumentView(document: file.$document)
                 .focusedSceneValue(\.document, file.$document)
         }
+        .defaultSize(width: 900, height: 1000)
+        .defaultPosition(.top)
 
         WindowGroup(id: "nrql-editor") { NrqlEditorWindow() }
+            .defaultSize(width: 900, height: 1000)
+            .defaultPosition(.top)
         Window("Nerdgraph Documentation", id: "graphql-documentation") {
             NerdgraphSchemaView(documentation: .shared)
         }

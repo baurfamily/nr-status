@@ -87,6 +87,12 @@ struct NrdbResultContainer : Decodable {
     func adjustedTime(_ date: Date) -> Date {
         return date.addingTimeInterval(dateAdjustment)
     }
+
+    func comparisonDate(for datum: NrdbResults.Datum) -> Date? {
+        guard datum.isTimeseries, datum.isComparable, datum.comparison == .previous,
+              let beginTime = datum.beginTime else { return datum.date }
+        return adjustedTime(beginTime)
+    }
     
     private init() {
         self.nrql = ""

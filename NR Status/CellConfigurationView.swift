@@ -105,6 +105,12 @@ struct CellConfigurationView: View {
                 }
             }
             if !isDocument {
+                Toggle("Hide query on open and export", isOn: Binding(
+                    get: { format.hidesQuery },
+                    set: { set("query", values: [$0 ? "hide" : "show"]) }
+                ))
+                .accessibilityIdentifier("cell-query-visibility")
+                .help("Sets the opening and export visibility without changing the current expand/collapse state.")
                 displaySelector
                 if cell.kind != .nerdgraph && chart != "json" && chart != "none" {
                     chartSettings

@@ -94,6 +94,82 @@ struct LuaRuntimeTests {
         return try JSONDecoder().decode(NrdbResultContainer.self, from: Data(json.utf8))
     }
 
+    private func busiestAppRegressionScript() throws -> String {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("docs/examples/BusiestApp.nrmd")
+        let document = NRQL_EditorDocument(text: try String(contentsOf: url, encoding: .utf8))
+        let cell = try #require(document.cells.first {
+            $0.query.title == "Metrics for the busiest app with regression"
+        })
+        #expect(document.pendingDependencies(for: cell.id, stale: []).map(\.query.title) == [
+            "Busiest app, last week", "Metrics for the busiest app"
+        ])
+        return try #require(cell.query.script)
+    }
+
+    @Test func busiestAppSampleFitsAndChartsOnlyCurrentPeriod() throws {
+        let source = try container(results: """
+        [
+          {"beginTimeSeconds":1700000000,"endTimeSeconds":1700086400,"comparison":"current","count":10},
+          {"beginTimeSeconds":1700086400,"endTimeSeconds":1700172800,"comparison":"current","count":24},
+          {"beginTimeSeconds":1700172800,"endTimeSeconds":1700259200,"comparison":"current","count":26},
+          {"beginTimeSeconds":1697408000,"endTimeSeconds":1697494400,"comparison":"previous","count":100},
+          {"beginTimeSeconds":1697580800,"endTimeSeconds":1697667200,"comparison":"previous","count":60},
+          {"beginTimeSeconds":1697667200,"endTimeSeconds":1697753600,"comparison":"previous","count":40}
+        ]
+        """)
+        let outcome = try LuaRuntime.run(
+            busiestAppRegressionScript(),
+            results: [.init(name: "busiest_metrics", value: LuaResultBridge.luaValue(from: source))]
+        )
+        let result = try LuaResultBridge.container(from: outcome.value)
+
+        let current = source.data.filter { $0.comparison == .current }
+        #expect(result.data.map { $0.numberFields["Regression"] } == [12, 20, 28])
+        #expect(result.data.map(\.beginTime) == current.map(\.beginTime))
+        #expect(result.data.map(\.endTime) == current.map(\.endTime))
+        #expect(!result.isComparable)
+        #expect(result.data.map { $0.numberFields["count"] } == current.map { $0.numberFields["count"] })
+        #expect(source.data.count == 6)
+        #expect(source.data.allSatisfy { $0.numberFields["Regression"] == nil })
+        #expect(ChartType.cases(for: result).contains(.line))
+    }
+
+    @Test func busiestAppSampleFitsConstantCountsWithoutComparison() throws {
+        let source = try container(results: """
+        [
+          {"beginTimeSeconds":1000,"endTimeSeconds":1060,"count":7},
+          {"beginTimeSeconds":1060,"endTimeSeconds":1120,"count":7}
+        ]
+        """)
+        let outcome = try LuaRuntime.run(
+            busiestAppRegressionScript(),
+            results: [.init(name: "busiest_metrics", value: LuaResultBridge.luaValue(from: source))]
+        )
+        let result = try LuaResultBridge.container(from: outcome.value)
+        #expect(result.data.map { $0.numberFields["Regression"] } == [7, 7])
+        #expect(!result.isComparable)
+    }
+
+    @Test(arguments: [
+        "[]",
+        #"[{"beginTimeSeconds":1000,"endTimeSeconds":1060,"count":1}]"#,
+        #"[{"beginTimeSeconds":1000,"endTimeSeconds":1060,"count":1},{"beginTimeSeconds":1000,"endTimeSeconds":1060,"count":2}]"#,
+        #"[{"beginTimeSeconds":1000,"endTimeSeconds":1060,"comparison":"current","count":1},{"beginTimeSeconds":400,"endTimeSeconds":460,"comparison":"previous","count":2}]"#,
+        #"[{"beginTimeSeconds":400,"endTimeSeconds":460,"comparison":"previous","count":1},{"beginTimeSeconds":460,"endTimeSeconds":520,"comparison":"previous","count":2}]"#
+    ])
+    func busiestAppSampleRejectsInsufficientTimeBuckets(_ rows: String) throws {
+        let script = try busiestAppRegressionScript()
+        let source = try container(results: rows)
+        #expect(throws: LuaError.self) {
+            try LuaRuntime.run(
+                script,
+                results: [.init(name: "busiest_metrics", value: LuaResultBridge.luaValue(from: source))]
+            )
+        }
+    }
+
     @Test func bridgesResultsToLuaAndBack() throws {
         let original = try container(
             results: """

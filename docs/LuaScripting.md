@@ -41,6 +41,8 @@ emit(r)
 
 Chart settings go in a `cell_config` fence immediately before the script or query fence. Configuration is hidden by default and editable in the cell sidebar, either as settings or raw text. Script cells render as code plus their emitted result (or `chart: none` to hide it). Text outside any fence is a Markdown cell, edited as plain text and rendered when focus moves to another cell.
 
+Use `query: hide` in `cell_config` to start a query or script collapsed when the file opens and omit its code from HTML/PDF exports. Its heading and results remain visible. `query: show` (or omitting the option) shows and exports the code. This setting does not track or change the live expand/collapse state; manually expanding a hidden query still leaves its code out of exports.
+
 ### Result variables
 
 Use `var: top_apps` in a `cell_config` fence to bind the cell's result, regardless

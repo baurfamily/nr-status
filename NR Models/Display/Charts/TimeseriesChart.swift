@@ -47,15 +47,7 @@ struct TimeseriesChart: View {
         }
     }
     func dateFor(_ datum: NrdbResults.Datum) -> Date {
-        if config.resultContainer.isComparable && datum.comparison == .previous{
-            return config.resultContainer.adjustedTime(datum.beginTime!)
-        } else if config.resultContainer.isEvents {
-            return datum.timestamp!
-        } else if let beginTime = datum.beginTime {
-            return beginTime
-        } else {
-            return Date()
-        }
+        resultContainer.comparisonDate(for: datum) ?? Date()
     }
     
     var body: some View {

@@ -65,8 +65,8 @@ struct NrqlCell: Identifiable {
         self.text = text
         self.kind = kind
         self.focusOnAppear = focusOnAppear
-        self.isCollapsed = kind == .config && !focusOnAppear
         self.query = NrqlQuery(from: text, kind: kind)
+        self.isCollapsed = !focusOnAppear && (kind == .config || self.query.format?.hidesQuery == true)
     }
 
     /// Changes the kind of cell, keeping what's in the editor.

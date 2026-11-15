@@ -185,7 +185,13 @@ enum NrqlExport {
                     return "<section><p class=\"error\">\(escape(error.localizedDescription))</p></section>"
                 }
             }
-            var section = "<section>\n<h2>\(escape(cell.query.title))</h2>\n<pre>\(escape(queryText(for: cell)))</pre>\n"
+            var section = "<section>\n<h2>\(escape(cell.query.title))</h2>\n"
+            for block in codeBlocks(for: cell, document: document) {
+                if let title = block.title {
+                    section += "<h3>\(escape(title))</h3>\n"
+                }
+                section += "<pre>\(escape(block.text))</pre>\n"
+            }
             if let json = cell.query.displayedJSON {
                 do {
                     section += "<pre>\(escape(try json.get().encodedText(pretty: true)))</pre>\n"
@@ -250,22 +256,73 @@ enum NrqlExport {
                 return [PDFBlock(view: AnyView(Text(error.localizedDescription).foregroundStyle(.red)))]
             }
         }
-        return [PDFBlock(view: AnyView(codeBlockView(for: cell)))]
+        return [PDFBlock(view: AnyView(codeBlockView(for: cell, document: document)))]
     }
 
-    /// The query as the PDF shows it; the chart settings are already visible in the chart.
-    private static func queryText(for cell: NrqlCell) -> String {
-        cell.editorText.trimmingCharacters(in: .whitespacesAndNewlines)
+    private struct CodeBlock {
+        var title: String?
+        var text: String
     }
 
-    private static func codeBlockView(for cell: NrqlCell) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+    private static func codeBlocks(for cell: NrqlCell, document: NRQL_EditorDocument) -> [CodeBlock] {
+        guard cell.query.format?.hidesQuery != true else { return [] }
+
+        func expanded(_ text: String, json: Bool = false) -> String {
+            guard NrqlInterpolation.containsPlaceholders(text) else { return text }
+            do {
+                let config = LuaRuntime.referencesConfiguration(in: text)
+                    ? try document.connection.get().effectiveConfiguration(profiles: NerdgraphProfiles.shared.load())
+                    : NrqlConnection()
+                let results = document.cells.filter { $0.id != cell.id }.flatMap(\.query.namedResults)
+                if json {
+                    return try NrqlInterpolation.expandJSON(text, results: results, config: config)
+                        .encodedText(pretty: true)
+                }
+                return try NrqlInterpolation.expand(text, results: results, config: config)
+            } catch {
+                return text
+            }
+        }
+
+        func block(_ text: String, title: String? = nil) -> CodeBlock {
+            CodeBlock(title: title, text: text.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+
+        if cell.kind == .nerdgraph {
+            let source = NerdgraphCellSource(stored: cell.text)
+            var blocks = [block(cell.query.executedNrql ?? source.operation)]
+            if source.hasVariables {
+                blocks.append(block(
+                    cell.query.executedVariables ?? expanded(source.variables, json: true),
+                    title: "Variables:"
+                ))
+            }
+            return blocks
+        }
+        if cell.kind == .nrql {
+            return [block(cell.query.executedNrql ?? expanded(cell.editorText))]
+        }
+        return [block(cell.editorText)]
+    }
+
+    private static func pdfCode(_ text: String) -> some View {
+        Text(text)
+            .font(.system(.body, design: .monospaced))
+            .padding(8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.gray.opacity(0.12))
+    }
+
+    private static func codeBlockView(for cell: NrqlCell, document: NRQL_EditorDocument) -> some View {
+        let blocks = codeBlocks(for: cell, document: document)
+        return VStack(alignment: .leading, spacing: 12) {
             Text(cell.query.title).font(.title2.bold())
-            Text(queryText(for: cell))
-                .font(.system(.body, design: .monospaced))
-                .padding(8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.gray.opacity(0.12))
+            ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
+                if let title = block.title {
+                    Text(title).font(.headline)
+                }
+                pdfCode(block.text)
+            }
             if let json = cell.query.displayedJSON {
                 switch json.flatMap({ value in Result { try value.encodedText(pretty: true) } }) {
                 case .success(let text):
@@ -275,7 +332,10 @@ enum NrqlExport {
                 }
             } else if let table = tableData(for: cell) {
                 // what's left of the page after the title and the query text
-                let queryLines = queryText(for: cell).split(separator: "\n", omittingEmptySubsequences: false).count
+                let queryLines = blocks.reduce(0) {
+                    $0 + $1.text.split(separator: "\n", omittingEmptySubsequences: false).count
+                        + ($1.title == nil ? 0 : 2)
+                }
                 let room = 560 - CGFloat(queryLines) * 16
                 pdfTable(table, maxRows: max(Int(room / pdfRowHeight) - 3, 3))
             } else if cell.query.resultContainer != nil, cell.query.format?.hidesChart != true {

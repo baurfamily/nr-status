@@ -60,6 +60,103 @@ struct NrdbTests {
 
         #expect(container.dateAdjustment == 600)
         #expect(container.adjustedTime(Date(timeIntervalSince1970: 400)) == Date(timeIntervalSince1970: 1000))
+        #expect(container.comparisonDate(for: container.data[0]) == container.data[0].beginTime)
+        #expect(container.comparisonDate(for: container.data[1]) == container.data[0].beginTime)
+        #expect(container.data[1].beginTime == Date(timeIntervalSince1970: 400))
+    }
+
+    @Test func comparisonTablePairsTimeBucketsAndFacetsRatherThanResultOrder() throws {
+        let container = try container(results: """
+        [
+          {"beginTimeSeconds":1000,"endTimeSeconds":1060,"facet":"a","comparison":"current","count":10},
+          {"beginTimeSeconds":1000,"endTimeSeconds":1060,"facet":"b","comparison":"current","count":20},
+          {"beginTimeSeconds":1060,"endTimeSeconds":1120,"facet":"a","comparison":"current","count":30},
+          {"beginTimeSeconds":460,"endTimeSeconds":520,"facet":"a","comparison":"previous","count":3},
+          {"beginTimeSeconds":400,"endTimeSeconds":460,"facet":"b","comparison":"previous","count":2},
+          {"beginTimeSeconds":400,"endTimeSeconds":460,"facet":"a","comparison":"previous","count":1}
+        ]
+        """)
+        let table = TableChart(config: ChartConfiguration(resultContainer: container))
+        let rows = table.rows
+
+        #expect(rows.count == 3)
+        #expect(rows.map { $0.current?.numberFields["count"] } == [10, 20, 30])
+        #expect(rows.map { $0.previous?.numberFields["count"] } == [1, 2, 3])
+        #expect(rows.map { $0.datum.facet } == ["a", "b", "a"])
+    }
+
+    @Test func comparisonTableKeepsUnmatchedBucketsAndMissingFieldsBlank() throws {
+        let container = try container(results: """
+        [
+          {"beginTimeSeconds":1000,"endTimeSeconds":1060,"comparison":"current","count":10},
+          {"beginTimeSeconds":1060,"endTimeSeconds":1120,"comparison":"current","count":20},
+          {"beginTimeSeconds":400,"endTimeSeconds":460,"comparison":"previous","other":1},
+          {"beginTimeSeconds":520,"endTimeSeconds":580,"comparison":"previous","count":3},
+          {"beginTimeSeconds":460,"endTimeSeconds":580,"comparison":"previous","count":4}
+        ]
+        """)
+        let table = TableChart(config: ChartConfiguration(resultContainer: container))
+        let rows = table.rows
+
+        #expect(rows.count == 4)
+        #expect(rows[0].previous?.numberFields["other"] == 1)
+        #expect(table.value(for: "count", in: rows[0].previous) == "")
+        #expect(rows[1].previous == nil)
+        #expect(table.value(for: "count", in: rows[1].previous) == "")
+        #expect(rows[2].current == nil)
+        #expect(rows[2].previous?.numberFields["count"] == 3)
+        // A different bucket width is not a match, even at the same aligned start.
+        #expect(rows[3].current == nil)
+        #expect(rows[3].previous?.numberFields["count"] == 4)
+    }
+
+    @Test func comparisonTableMatchesFullFacetTupleAndPreservesDuplicates() throws {
+        let container = try container(results: """
+        [
+          {"facet":["app","200"],"comparison":"current","count":10},
+          {"facet":["app","500"],"comparison":"current","count":20},
+          {"facet":["app","200"],"comparison":"current","count":30},
+          {"facet":["app","500"],"comparison":"previous","count":2},
+          {"facet":["app","200"],"comparison":"previous","count":1},
+          {"facet":["other","200"],"comparison":"previous","count":4}
+        ]
+        """)
+        let rows = TableChart(config: ChartConfiguration(resultContainer: container)).rows
+
+        #expect(rows.count == 4)
+        #expect(rows.map { $0.current?.numberFields["count"] } == [10, 30, 20, nil])
+        #expect(rows.map { $0.previous?.numberFields["count"] } == [1, nil, 2, 4])
+        #expect(Set(rows.map(\.id)).count == rows.count)
+    }
+
+    @Test func comparisonTableHandlesAggregateAndSinglePeriodResults() throws {
+        let aggregate = try container(results: """
+        [{"comparison":"previous","count":1},{"comparison":"current","count":2}]
+        """)
+        let rows = TableChart(config: ChartConfiguration(resultContainer: aggregate)).rows
+        #expect(rows.count == 1)
+        #expect(rows[0].current?.numberFields["count"] == 2)
+        #expect(rows[0].previous?.numberFields["count"] == 1)
+
+        let previousOnly = try container(results: """
+        [{"beginTimeSeconds":400,"endTimeSeconds":460,"comparison":"previous","count":1}]
+        """)
+        let previousRows = TableChart(config: ChartConfiguration(resultContainer: previousOnly)).rows
+        #expect(previousRows.count == 1)
+        #expect(previousRows[0].current == nil)
+        #expect(previousOnly.comparisonDate(for: previousOnly.data[0]) == previousOnly.data[0].beginTime)
+    }
+
+    @Test func ordinaryTablesKeepSourceOrderAndDuplicateEventTimestamps() throws {
+        let container = try container(results: """
+        [{"timestamp":1000,"count":2},{"timestamp":1000,"count":1}]
+        """)
+        let rows = TableChart(config: ChartConfiguration(resultContainer: container)).rows
+
+        #expect(rows.map { $0.current?.numberFields["count"] } == [2, 1])
+        #expect(rows.allSatisfy { $0.previous == nil })
+        #expect(Set(rows.map(\.id)).count == 2)
+        #expect(container.comparisonDate(for: container.data[0]) == container.data[0].timestamp)
     }
 
     @Test func chartTypeFallsBackWhenResultsNoLongerSupportIt() throws {

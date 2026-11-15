@@ -6,9 +6,50 @@
 import Testing
 import Foundation
 import CoreGraphics
+import PDFKit
 @testable import NR_Status
 
 struct CellConfigurationTests {
+    @Test(arguments: [
+        (NrqlCellKind.nrql, "SELECT 1"),
+        (.lua, "return { rows = {} }"),
+        (.nerdgraph, "{ actor { user { name } } }")
+    ])
+    func queryVisibilityIsAnOpeningDefaultNotLiveCollapseState(kind: NrqlCellKind, code: String) {
+        let text = "```cell_config\nquery: hide\n```\n" + kind.wrap(code)
+        var document = NRQL_EditorDocument(text: text)
+        #expect(document.cells[0].isCollapsed)
+        #expect(document.cells[0].isRunnable)
+
+        document.cells[0].isCollapsed = false
+        #expect(document.text == text + "\n")
+        #expect(document.cells[0].query.format?.hidesQuery == true)
+        #expect(NRQL_EditorDocument(text: document.text).cells[0].isCollapsed)
+
+        document.cells[0].configurationText = "query: show"
+        #expect(!document.cells[0].isCollapsed)
+        document.cells[0].isCollapsed = true
+        #expect(!NRQL_EditorDocument(text: document.text).cells[0].isCollapsed)
+        document.cells[0].configurationText = "query: hide"
+        #expect(document.cells[0].isCollapsed)
+        document.cells[0].isCollapsed = false
+        document.cells[0].configurationText = "query: hide\ntitle: Changed"
+        #expect(!document.cells[0].isCollapsed)
+        #expect(document.cells[0].editorText == code)
+    }
+
+    @Test(arguments: [
+        ("", false),
+        ("query: show", false),
+        ("  Query: HIDE  ", true),
+        ("query: unknown", false)
+    ])
+    func queryVisibilityDefaultsToShown(configuration: String, hidden: Bool) {
+        let cell = NrqlCell(text: "```cell_config\n\(configuration)\n```\n```lua\nreturn {}\n```")
+        #expect(cell.isCollapsed == hidden)
+        #expect(cell.query.format?.hidesQuery == hidden)
+    }
+
     @Test func configTravelsWithCodeAndVariablesAndEditsRoundTrip() throws {
         var document = NRQL_EditorDocument(text: """
             ```config
@@ -720,6 +761,148 @@ struct NrqlQueryTests {
 
 @MainActor
 struct NrqlExportTests {
+    private func pdfText(for document: NRQL_EditorDocument) throws -> String {
+        let data = try #require(NrqlExport.data(for: .pdf, document: document))
+        return try #require(PDFDocument(data: data)?.string)
+    }
+
+    @Test func exportsNerdgraphVariablesAsSeparateLabeledCodeBlock() throws {
+        var document = NRQL_EditorDocument(text: """
+            ```graphql
+            query($id: Int!) { actor { account(id: $id) { name } } }
+            ```
+            ```variables
+            {"id": 42}
+            ```
+            """)
+        let html = NrqlExport.html(for: document)
+        #expect(html.contains("</pre>\n<h3>Variables:</h3>\n<pre>{\"id\": 42}</pre>"))
+        #expect(!html.contains("```"))
+        let pdf = try pdfText(for: document)
+        #expect(pdf.contains("Variables:"))
+        #expect(pdf.contains("\"id\": 42"))
+        #expect(!pdf.contains("```"))
+
+        document.cells[0].configurationText = "query: hide"
+        #expect(!NrqlExport.html(for: document).contains("Variables:"))
+        #expect(try !pdfText(for: document).contains("Variables:"))
+        let withoutVariables = NRQL_EditorDocument(text: "```graphql\n{ actor { user { name } } }\n```")
+        #expect(!NrqlExport.html(for: withoutVariables).contains("Variables:"))
+    }
+
+    @Test func exportsResolvedQueriesAndVariablesFromAvailableDependencies() throws {
+        let document = NRQL_EditorDocument(text: """
+            ```config
+            accounts: 42
+            ```
+
+            ```cell_config
+            var: app
+            query: hide
+            chart: none
+            ```
+            ```lua
+            return {}
+            ```
+
+            ```nrql
+            FROM Transaction SELECT count(*) WHERE appName = '{{ results.app.rows[1].facet }}'
+            ```
+
+            ```graphql
+            query($id: Int!, $name: String!) { actor { account(id: $id) { name } } }
+            ```
+            ```variables
+            {"id": {{ config.accounts[1] }}, "name": "{{ results.app.rows[1].facet }}"}
+            ```
+            """)
+        let result = try JSONDecoder().decode(NrdbResultContainer.self, from: Data(
+            #"{"nrql":"","results":[{"facet":"Shop & More","count":1}],"metadata":{}}"#.utf8
+        ))
+        document.cells[1].query.setState(.loaded(result))
+        let original = document.text
+        let html = NrqlExport.html(for: document)
+        #expect(html.contains("appName = 'Shop &amp; More'"))
+        #expect(html.contains("\"id\" : 42"))
+        #expect(html.contains("\"name\" : \"Shop &amp; More\""))
+        #expect(!html.contains("{{"))
+        let pdf = try pdfText(for: document)
+        #expect(pdf.contains("appName = 'Shop & More'"))
+        #expect(pdf.contains("\"id\" : 42"))
+        #expect(pdf.contains("\"name\" : \"Shop & More\""))
+        #expect(!pdf.contains("{{"))
+        #expect(document.text == original)
+        #expect(document.cells[2].query.executedNrql == nil)
+    }
+
+    @Test func exportsOriginalCodeWhenSubstitutionDependenciesAreMissing() throws {
+        let document = NRQL_EditorDocument(text: """
+            ```nrql
+            SELECT {{ 1 + 1 }} FROM {{ results.missing.rows[1].name }}
+            ```
+
+            ```graphql
+            query($id: Int!) { actor { account(id: $id) { name } } }
+            ```
+            ```variables
+            {"id": {{ results.missing.rows[1].id }}}
+            ```
+            """)
+        let html = NrqlExport.html(for: document)
+        let pdf = try pdfText(for: document)
+        for text in [html, pdf] {
+            #expect(text.contains("SELECT {{ 1 + 1 }}"))
+            #expect(text.contains("{{ results.missing.rows[1].id }}"))
+            #expect(text.contains("Variables:"))
+            #expect(!text.contains("```"))
+        }
+    }
+
+    @Test(arguments: [
+        (NrqlCellKind.nrql, "SELECT 'HIDDEN_CODE_MARKER'"),
+        (.lua, "return { rows = { { value = 'HIDDEN_CODE_MARKER' } } }"),
+        (.nerdgraph, "{ actor { user { name } } }\n# HIDDEN_CODE_MARKER")
+    ])
+    func queryVisibilityControlsHtmlAndPdfRegardlessOfLiveCollapse(kind: NrqlCellKind, code: String) throws {
+        var document = NRQL_EditorDocument(text: """
+            ```cell_config
+            title: Hidden calculation
+            query: hide
+            chart: json
+            ```
+            \(kind.wrap(code))
+
+            ```cell_config
+            title: Visible query
+            query: show
+            ```
+            ```nrql
+            SELECT 'VISIBLE_CODE_MARKER'
+            ```
+            """)
+        document.cells[0].isCollapsed = false
+        document.cells[1].isCollapsed = true
+        document.cells[0].query.setState(.jsonLoaded(.object(["value": .string("RESULT_MARKER")])))
+
+        let html = NrqlExport.html(for: document)
+        #expect(!html.contains("HIDDEN_CODE_MARKER"))
+        #expect(html.contains("VISIBLE_CODE_MARKER"))
+        #expect(html.contains("<h2>Hidden calculation</h2>"))
+        #expect(html.contains("RESULT_MARKER"))
+
+        let data = try #require(NrqlExport.data(for: .pdf, document: document))
+        let text = try #require(PDFDocument(data: data)?.string)
+        #expect(!text.contains("HIDDEN_CODE_MARKER"))
+        #expect(text.contains("VISIBLE_CODE_MARKER"))
+        #expect(text.contains("Hidden calculation"))
+        #expect(text.contains("RESULT_MARKER"))
+
+        document.cells[0].configurationText = "title: Hidden calculation\nquery: show\nchart: json"
+        #expect(NrqlExport.html(for: document).contains("HIDDEN_CODE_MARKER"))
+        let shownData = try #require(NrqlExport.data(for: .pdf, document: document))
+        #expect(try #require(PDFDocument(data: shownData)?.string).contains("HIDDEN_CODE_MARKER"))
+    }
+
     @Test func exportsHtmlAndPdf() throws {
         let document = NRQL_EditorDocument(text: "# Intro & more\n\n```nrql\n// A & B\nSELECT 1 FROM Log WHERE x < 2\n```")
 

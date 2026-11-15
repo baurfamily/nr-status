@@ -50,27 +50,28 @@ struct BarChart: View {
         
         return (groupName, fieldName)
     }
+
+    @ChartContentBuilder
+    func timeseriesBar(for field: String, in datum: NrdbResults.Datum) -> some ChartContent {
+        let series = seriesNames(for: field, in: datum)
+        let bar = BarMark(
+            x: .value("Timestamp", resultContainer.comparisonDate(for: datum) ?? datum.beginTime!),
+            y: .value(field, datum.numberFields[field] ?? 0)
+        )
+        .foregroundStyle(by: .value(series.0, series.1))
+
+        if resultContainer.isComparable {
+            bar.position(by: .value("Comparison", datum.comparison.rawValue))
+        } else {
+            bar
+        }
+    }
     
     var body: some View {
         Chart(filteredData) { datum in
             if datum.isTimeseries {
                 ForEach(selectedFields, id: \.self) { fieldName in
-                    let seriesNames = seriesNames(for: fieldName, in: datum)
-                    if let facet = datum.facet {
-                        BarMark(
-                            x: .value( "Timestamp", datum.beginTime!),
-                            y: .value( "\(facet) (\(fieldName))", datum.numberFields[fieldName] ?? 0)
-                        ).foregroundStyle(
-                            by: .value( seriesNames.0, seriesNames.1 )
-                        )
-                    } else {
-                        BarMark(
-                            x: .value( "Timestamp", datum.beginTime!),
-                            y: .value( "Foo: \(fieldName)", datum.numberFields[fieldName] ?? 0)
-                        ).foregroundStyle(
-                            by: .value( seriesNames.0, seriesNames.1 )
-                        )
-                    }
+                    timeseriesBar(for: fieldName, in: datum)
                 }
             } else if switchFieldsAndFacets {
                 ForEach(selectedFields, id:\.self) { fieldName in

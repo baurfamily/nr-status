@@ -16,11 +16,14 @@ import Foundation
 /// `var` lets later cells refer to this query's result as `results.<name>`, and
 /// `chart: none` hides the chart, for queries that only feed other cells.
 /// `chart: json` displays the result data as JSON instead of a chart.
+/// `query: hide` starts the code collapsed and omits it from exports, independently
+/// of the live expand/collapse state.
 struct ChartFormat: Equatable, Hashable {
     var title: String?
     var name: String?
     var type: ChartType?
     var hidesChart = false
+    var hidesQuery = false
     var showsJSON = false
     var attributes: Set<String>?
 
@@ -65,6 +68,8 @@ struct ChartFormat: Equatable, Hashable {
                 format.hidesChart = value == "none"
                 format.showsJSON = value == "json"
                 format.type = ChartType(rawValue: value)
+            case "query":
+                format.hidesQuery = value == "hide"
             case "attributes":
                 format.attributes = parseAttributes(rawValue)
             default:

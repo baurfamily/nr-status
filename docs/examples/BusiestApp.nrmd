@@ -19,6 +19,7 @@ LIMIT 4
 
 ```cell_config
 title: Metrics for the busiest app
+var: busiest_metrics
 chart: line
 attributes: donut, lines, smoothed
 ```
@@ -30,6 +31,63 @@ SINCE 1 months ago
 TIMESERIES 1 DAY
 COMPARE WITH 1 month ago
 
+```
+
+## Overlaying a regression line
+
+This Lua cell reads `busiest_metrics` and adds a least-squares linear regression of `count` against time for the current period only. Previous-period rows are excluded from both the calculation and this chart. The source result is left unchanged.
+
+The current period needs at least two distinct time buckets. The chart uses unsmoothed lines so the fitted trend remains straight.
+
+```cell_config
+title: Metrics for the busiest app with regression
+query: hide
+chart: line
+attributes: lines, smoothed
+```
+```lua
+local source = assert(results.busiest_metrics, "Run the metrics query first")
+assert(#source.rows > 0, "The metrics query returned no data")
+
+local samples = {}
+for _, row in ipairs(source.rows) do
+  if row.comparison ~= "previous" then
+    assert(type(row.beginTimeSeconds) == "number", "Regression needs time buckets")
+    assert(type(row.count) == "number", "Regression needs numeric counts")
+    samples[#samples + 1] = row
+  end
+end
+assert(#samples >= 2, "Regression needs at least two current time buckets")
+
+-- Use relative days and centered values to avoid squaring epoch timestamps.
+local origin = samples[1].beginTimeSeconds
+local meanTime, meanCount = 0, 0
+for _, row in ipairs(samples) do
+  meanTime = meanTime + (row.beginTimeSeconds - origin) / 86400
+  meanCount = meanCount + row.count
+end
+meanTime, meanCount = meanTime / #samples, meanCount / #samples
+
+local covariance, variance = 0, 0
+for _, row in ipairs(samples) do
+  local x = (row.beginTimeSeconds - origin) / 86400 - meanTime
+  covariance = covariance + x * (row.count - meanCount)
+  variance = variance + x * x
+end
+assert(variance > 0, "Regression needs distinct current time buckets")
+local slope = covariance / variance
+
+local rows = {}
+for _, row in ipairs(samples) do
+  local copy = {}
+  for key, value in pairs(row) do copy[key] = value end
+  copy.comparison = nil
+  local x = (row.beginTimeSeconds - origin) / 86400
+  copy.Regression = meanCount + slope * (x - meanTime)
+  rows[#rows + 1] = copy
+end
+
+emit({ nrql = source.nrql, rows = rows, facets = source.facets })
 ```
 
 ## Hidden results

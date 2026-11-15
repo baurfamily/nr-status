@@ -148,7 +148,7 @@ struct NerdgraphClientTests {
         configuration.protocolClasses = [StubURLProtocol.self]
         let session = URLSession(configuration: configuration)
         defer { session.invalidateAndCancel() }
-        let query = NrqlQuery(from: """
+        let document = NRQL_EditorDocument(text: """
             ```cell_config
             api_key: GraphQL
             var: custom
@@ -160,6 +160,7 @@ struct NerdgraphClientTests {
             {"id": {{ 6 * 7 }}}
             ```
             """)
+        let query = document.cells[0].query
         await query.getData(defaults: NrqlConnection(apiKeyName: "Unavailable"), profiles: profiles, session: session)
         #expect(query.errorMessage == nil)
         #expect(query.jsonResult?["data"]?["customField"]?["id"] == .number(42))
@@ -194,6 +195,10 @@ struct NerdgraphClientTests {
         #expect(!sentVariables.contains("{{"))
         query.text = query.text.replacingOccurrences(of: "6 * 7", with: "results.missing.id")
         #expect(query.executedVariables == sentVariables)
+        let exported = NrqlExport.html(for: document)
+        #expect(exported.contains("<h3>Variables:</h3>\n<pre>\(NrqlExport.escape(sentVariables))</pre>"))
+        #expect(exported.contains("{{ literal }}"))
+        #expect(!exported.contains("{{ 6 * 7 }}"))
         await query.getData(profiles: profiles, session: session)
         #expect(query.errorMessage != nil)
         #expect(query.executedVariables == nil)

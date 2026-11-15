@@ -57,6 +57,12 @@ struct NrqlCell: Identifiable {
         text = NrqlCellSource(stored: text).code
     }
 
+    mutating func setChartHeight(_ lines: Int?) {
+        configurationText = NrqlCellSource.updating(
+            "height", values: lines.map { [String(max(1, $0))] } ?? [], in: configurationText
+        )
+    }
+
     // a reference type, so running it doesn't mutate the document
     let query: NrqlQuery
 

@@ -356,7 +356,7 @@ struct CellView: View {
             }
 
             if cell.kind == .nrql || cell.kind == .lua {
-                CellResultView(query: cell.query)
+                CellResultView(query: cell.query, onHeightChange: { cell.setChartHeight($0) })
             }
         }
         .padding(8)
@@ -727,6 +727,15 @@ struct CellView: View {
 
 struct CellResultView: View {
     let query: NrqlQuery
+    var onHeightChange: ((Int?) -> Void)?
+    @State private var chartHeight: CGFloat = 300
+    @State private var previewHeightInLines: Int?
+
+    private var displayedFormat: ChartFormat {
+        var format = query.format ?? ChartFormat()
+        if let previewHeightInLines { format.heightInLines = previewHeightInLines }
+        return format
+    }
 
     var body: some View {
         content
@@ -758,10 +767,17 @@ struct CellResultView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
-                ConfigurableChartView(resultsContainer: container, format: query.format)
-                    .withoutConfiguration()
-                    .id(query.format)
-                    .frame(maxWidth: .infinity, minHeight: 300)
+                VStack(spacing: 0) {
+                    ConfigurableChartView(resultsContainer: container, format: displayedFormat)
+                        .withoutConfiguration()
+                        .documentSized()
+                        .id(displayedFormat)
+                        .frame(maxWidth: .infinity)
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { chartHeight = $0 }
+                    if onHeightChange != nil {
+                        resizeHandle
+                    }
+                }
             }
         case .jsonLoaded(let value):
             ForEach(Array(value.graphQLErrors.enumerated()), id: \.offset) { _, message in
@@ -782,6 +798,115 @@ struct CellResultView: View {
                 }
             }
             .foregroundStyle(.secondary)
+        }
+    }
+
+    private var resizeHandle: some View {
+        ChartResizeHandle(
+            height: chartHeight,
+            onPreview: { previewHeightInLines = $0 },
+            onCommit: {
+                onHeightChange?($0)
+                previewHeightInLines = nil
+            }
+        )
+            .frame(height: 12)
+    }
+}
+
+private struct ChartResizeHandle: NSViewRepresentable {
+    let height: CGFloat
+    let onPreview: (Int?) -> Void
+    let onCommit: (Int?) -> Void
+
+    func makeNSView(context: Context) -> HandleView {
+        let view = HandleView()
+        view.setAccessibilityElement(true)
+        view.setAccessibilityRole(.splitter)
+        view.setAccessibilityLabel("Chart height")
+        view.setAccessibilityIdentifier("chart-height-resize-handle")
+        view.setAccessibilityCustomActions([
+            NSAccessibilityCustomAction(name: "Reset to Auto", handler: { [weak view] in
+                view?.onCommit?(nil)
+                return true
+            })
+        ])
+        view.toolTip = "Drag to resize the chart in lines. Double-click to reset to Auto."
+        return view
+    }
+
+    func updateNSView(_ view: HandleView, context: Context) {
+        view.height = height
+        view.onPreview = onPreview
+        view.onCommit = onCommit
+        view.setAccessibilityValue("\(ChartConfiguration.lines(forHeight: height)) lines")
+    }
+
+    final class HandleView: NSView {
+        var height: CGFloat = 300
+        var onPreview: ((Int?) -> Void)?
+        var onCommit: ((Int?) -> Void)?
+        private var startHeight: CGFloat?
+        private var startY: CGFloat = 0
+        private var didDrag = false
+
+        override var acceptsFirstResponder: Bool { true }
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+        override func resetCursorRects() {
+            addCursorRect(bounds, cursor: .resizeUpDown)
+        }
+
+        override func draw(_ dirtyRect: NSRect) {
+            (didDrag ? NSColor.controlAccentColor : NSColor.secondaryLabelColor).setFill()
+            NSBezierPath(
+                roundedRect: NSRect(x: bounds.midX - 16, y: bounds.midY - 1.5, width: 32, height: 3),
+                xRadius: 1.5, yRadius: 1.5
+            ).fill()
+        }
+
+        override func mouseDown(with event: NSEvent) {
+            window?.makeFirstResponder(self)
+            if event.clickCount == 2 {
+                onCommit?(nil)
+                return
+            }
+            startHeight = height
+            startY = event.locationInWindow.y
+            didDrag = false
+        }
+
+        override func mouseDragged(with event: NSEvent) {
+            guard let startHeight else { return }
+            didDrag = true
+            onPreview?(ChartConfiguration.lines(forHeight: startHeight + startY - event.locationInWindow.y))
+            needsDisplay = true
+        }
+
+        override func mouseUp(with event: NSEvent) {
+            if let startHeight, didDrag {
+                onCommit?(ChartConfiguration.lines(forHeight: startHeight + startY - event.locationInWindow.y))
+            }
+            startHeight = nil
+            didDrag = false
+            needsDisplay = true
+        }
+
+        override func cancelOperation(_ sender: Any?) {
+            startHeight = nil
+            didDrag = false
+            onPreview?(nil)
+            needsDisplay = true
+        }
+
+        override func accessibilityPerformIncrement() -> Bool {
+            onCommit?(ChartConfiguration.lines(forHeight: height) + 1)
+            return true
+        }
+
+        override func accessibilityPerformDecrement() -> Bool {
+            onCommit?(max(1, ChartConfiguration.lines(forHeight: height) - 1))
+            return true
         }
     }
 }

@@ -8,6 +8,17 @@ import Foundation
 @testable import NR_Status
 
 struct NerdgraphCompletionTests {
+    @Test func completesChartHeightInLines() async {
+        let keys = await NrqlCompletion.items(
+            text: "hei", location: 3, metadata: NrqlCompletionTests.StubMetadata(), configuration: true
+        )
+        #expect(keys.items.map(\.insertText) == ["height: "])
+        let values = await NrqlCompletion.items(
+            text: "height: ", location: 8, metadata: NrqlCompletionTests.StubMetadata(), configuration: true
+        )
+        #expect(Set(values.items.map(\.name)) == ["auto", "20"])
+    }
+
     private func schema() throws -> NerdgraphSchema {
         try JSONDecoder().decode(NerdgraphSchema.self, from: Data("""
             {

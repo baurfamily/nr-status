@@ -43,53 +43,61 @@ struct BillboardChart: View {
     ]
 
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 50) {
-            ForEach(data, id: \.id) { item in
-                if config.billboard.showGauge {
-                    // I couldn't get generics working here...
-                    if config.billboard.gaugeStyle == .linear {
-                        GaugeTile(
-                            datum: item,
-                            max: config.billboard.gaugeMax,
-                            gaugeStyle: .linearCapacity
-                        )
-                    } else if config.billboard.gaugeStyle == .compactLinear {
-                        GaugeTile(
-                            datum: item,
-                            max: config.billboard.gaugeMax,
-                            gaugeStyle: .accessoryLinear
-                        )
-                    } else if config.billboard.gaugeStyle == .linearCapacity {
-                        GaugeTile(
-                            datum: item,
-                            max: config.billboard.gaugeMax,
-                            gaugeStyle: .accessoryLinearCapacity
-                        )
-                    } else if config.billboard.gaugeStyle == .circular {
-                        GaugeTile(
-                            datum: item,
-                            max: config.billboard.gaugeMax,
-                            gaugeStyle: .accessoryCircular
-                        )
-                    } else if config.billboard.gaugeStyle == .circularCapacity {
-                        GaugeTile(
-                            datum: item,
-                            max: config.billboard.gaugeMax,
-                            gaugeStyle: .accessoryCircularCapacity
-                        )
-                    } else {
-                        GaugeTile(
-                            datum: item,
-                            max: config.billboard.gaugeMax,
-                            gaugeStyle: .linearCapacity
-                        );
+        if config.heightInLines != nil {
+            GeometryReader { geometry in
+                let width = max(geometry.size.width - 32, 1)
+                let columnCount = max(1, min(data.count, Int((width + 16) / 216)))
+                let rowCount = max(1, (data.count + columnCount - 1) / columnCount)
+                let spacing = min(16, max(geometry.size.height, 0) / CGFloat(rowCount * 4))
+                let tileWidth = max(1, (width - CGFloat(columnCount - 1) * 16) / CGFloat(columnCount))
+                let tileHeight = max(1, (geometry.size.height - CGFloat(rowCount - 1) * spacing) / CGFloat(rowCount))
+                let scale = min(tileWidth / 200, tileHeight / 135)
+
+                LazyVGrid(
+                    columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: columnCount),
+                    spacing: spacing
+                ) {
+                    ForEach(data, id: \.id) { item in
+                        tile(for: item)
+                            .frame(width: tileWidth / scale, height: tileHeight / scale)
+                            .scaleEffect(scale)
+                            .frame(width: tileWidth, height: tileHeight)
                     }
-                } else {
-                    BillboardTile(datum: item)
                 }
+                .padding(.horizontal, 16)
+            }
+        } else {
+            compactGrid
+        }
+    }
+
+    private var compactGrid: some View {
+        LazyVGrid(columns: columns, spacing: 16) {
+            ForEach(data, id: \.id) { item in
+                tile(for: item)
             }
         }
         .padding(.horizontal)
+    }
+
+    @ViewBuilder private func tile(for item: NrdbResults.MiniDatum) -> some View {
+        if config.billboard.showGauge {
+            // Gauge styles have distinct concrete types.
+            switch config.billboard.gaugeStyle {
+            case .linear:
+                GaugeTile(datum: item, max: config.billboard.gaugeMax, gaugeStyle: .linearCapacity)
+            case .compactLinear:
+                GaugeTile(datum: item, max: config.billboard.gaugeMax, gaugeStyle: .accessoryLinear)
+            case .linearCapacity:
+                GaugeTile(datum: item, max: config.billboard.gaugeMax, gaugeStyle: .accessoryLinearCapacity)
+            case .circular:
+                GaugeTile(datum: item, max: config.billboard.gaugeMax, gaugeStyle: .accessoryCircular)
+            case .circularCapacity:
+                GaugeTile(datum: item, max: config.billboard.gaugeMax, gaugeStyle: .accessoryCircularCapacity)
+            }
+        } else {
+            BillboardTile(datum: item)
+        }
     }
 }
 

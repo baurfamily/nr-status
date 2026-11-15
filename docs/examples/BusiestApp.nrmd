@@ -8,6 +8,24 @@ var: main_app = "TaT (production)"
 title: Busiest app, last week
 var: top_app
 chart: billboard
+attributes: gauge, style(circular)
+```
+```nrql
+FROM Transaction
+SELECT count(*)
+FACET appName
+SINCE 1 week ago
+LIMIT 4
+```
+
+### Or, you can display results as a table
+
+```cell_config
+title: Busiest app, last week (table)
+var: top_app_copy
+chart: table
+height: 7
+query: hide
 ```
 ```nrql
 FROM Transaction

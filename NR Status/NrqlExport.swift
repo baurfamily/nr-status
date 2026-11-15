@@ -150,9 +150,10 @@ enum NrqlExport {
                     resultsContainer: container, format: cell.query.format, configurationShowing: .constant(false)
                 )
                 .withoutConfiguration()
+                .documentSized()
             }
         }
-        .frame(width: width, height: 300)
+        .frame(width: width)
         .background(Color.white)
         .environment(\.colorScheme, .light)
     }
@@ -379,12 +380,14 @@ enum NrqlExport {
         let blocks = document.cells.flatMap { pdfBlocks(for: $0, document: document) }
         let heights = blocks.map(pdfHeight(of:))
         let contentHeight = pageSize.height - pageMargin * 2
+        let scales = heights.map { $0 > contentHeight ? contentHeight / $0 : 1 }
+        let renderedHeights = zip(heights, scales).map { $0 * $1 }
 
         var y: CGFloat = 0
         var pageOpen = false
         for (index, block) in blocks.enumerated() {
-            var needed = heights[index]
-            if block.keepWithNext, index + 1 < blocks.count { needed += blockSpacing + heights[index + 1] }
+            var needed = renderedHeights[index]
+            if block.keepWithNext, index + 1 < blocks.count { needed += blockSpacing + renderedHeights[index + 1] }
             if !pageOpen || (y > 0 && y + needed > contentHeight) {
                 if pageOpen { context.endPDFPage() }
                 context.beginPDFPage(nil)
@@ -394,10 +397,11 @@ enum NrqlExport {
                 y = 0
             }
             context.saveGState()
-            context.translateBy(x: pageMargin, y: pageSize.height - pageMargin - y - heights[index])
+            context.translateBy(x: pageMargin, y: pageSize.height - pageMargin - y - renderedHeights[index])
+            context.scaleBy(x: scales[index], y: scales[index])
             pdfRenderer(block).render { _, draw in draw(context) }
             context.restoreGState()
-            y += heights[index] + blockSpacing
+            y += renderedHeights[index] + blockSpacing
         }
         if pageOpen { context.endPDFPage() }
         context.closePDF()

@@ -27,11 +27,15 @@ struct LuaRuntime {
         let name: String
         let expression: String?
 
+        static func isIdentifier(_ name: String) -> Bool {
+            name.range(of: #"^[A-Za-z_][A-Za-z0-9_]*\z"#, options: .regularExpression) != nil
+                && !keywords.contains(name)
+        }
+
         static func parse(_ text: String, requiresExpression: Bool = false) throws -> Variable {
             let parts = text.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
             let name = parts.first?.trimmingCharacters(in: .whitespaces) ?? ""
-            let isIdentifier = name.range(of: #"^[A-Za-z_][A-Za-z0-9_]*$"#, options: .regularExpression) != nil
-                && !keywords.contains(name)
+            let isIdentifier = Self.isIdentifier(name)
             guard !name.isEmpty, !requiresExpression || isIdentifier else {
                 throw NrqlConnection.ConfigurationError(message: "Invalid variable name '\(name)'.")
             }

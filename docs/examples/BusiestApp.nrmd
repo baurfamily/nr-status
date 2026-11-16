@@ -167,7 +167,10 @@ We can run arbitrary Nerdgraph queries with a light GraphQL editor. Binding of r
 title: Entity Search
 var: entity_search
 var: entities = data.actor.entitySearch.results.entities
-chart: none
+var: account_name = data.actor.account.name
+var: key = data.actor.entitySearch.results.entities[1].tags[1].key
+var: tags = data.actor.entitySearch.results.entities[1].tags[6]
+chart: bindings
 ```
 ```graphql
 query FindEntity($account_id: Int!, $query: String) {

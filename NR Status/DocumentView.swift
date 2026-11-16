@@ -21,6 +21,7 @@ struct DocumentView: View {
     @State private var publishing: PublicationSheet?
     @State private var publishedIDs: Set<UUID> = []
     @State private var isUnpublishingAll = false
+    @State private var showsBindingsInspector = false
 
     private enum PublicationSheet: Identifiable {
         case cell(UUID), all
@@ -42,6 +43,10 @@ struct DocumentView: View {
                 }
         }
         .toolbar { documentToolbar }
+        .inspector(isPresented: $showsBindingsInspector) {
+            WorkbookBindingsView(document: document, profiles: profileSettings)
+                .inspectorColumnWidth(min: 320, ideal: 440, max: 650)
+        }
         .sheet(item: $publishing) { selection in
             switch selection {
             case .cell(let id):
@@ -218,6 +223,9 @@ struct DocumentView: View {
             ToolbarSpacer(.flexible)
         }
         ToolbarItemGroup {
+            Button("Bindings", systemImage: "curlybraces.square") { showsBindingsInspector.toggle() }
+                .help("Inspect variable bindings throughout this workbook")
+                .accessibilityIdentifier("show-workbook-bindings")
             Button("Clear Results", systemImage: "eraser") { document.clearResults() }
                 .help("Clear all cached results and charts in this document")
             Button("Run All", systemImage: "play.fill") { document.runAllQueries() }
@@ -358,6 +366,7 @@ struct CellView: View {
     @State private var variablesService = NrqlLanguageService(language: .variables)
     @State private var variablesPosition: CodeEditor.Position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
     @State private var graphqlCompletionError: String?
+    @State private var bindingNode: JSONNode?
     // One configuration panel spans the header, editors, and results.
     @State private var showsChartSettings = false
     @State private var showsSentQuery = false
@@ -404,12 +413,18 @@ struct CellView: View {
                             self.draft = nil
                         }
                         onUpdatePublished()
-                    }
+                    },
+                    completionScope: completionScope
                 )
                     .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
         .clipped()
+        .sheet(item: $bindingNode) { node in
+            AddResultBindingSheet(
+                cell: $cell, node: node, existingNames: completionScope().names + cell.query.resultNames
+            )
+        }
         .onChange(of: cell.focusOnAppear, initial: true) {
             if cell.kind == .config && cell.focusOnAppear {
                 showsChartSettings = true
@@ -448,8 +463,12 @@ struct CellView: View {
                     }
                     if cell.query.showsResultPane {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("JSON Results").font(.caption).foregroundStyle(.secondary)
-                            CellResultView(query: cell.query)
+                            Text(cell.query.format?.showsBindings == true ? "Bindings" : "JSON Results")
+                                .font(.caption).foregroundStyle(.secondary)
+                            CellResultView(query: cell.query, onAddBinding: {
+                                bindingNode = $0
+                                showsChartSettings = true
+                            })
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -870,6 +889,7 @@ struct CellView: View {
 struct CellResultView: View {
     let query: NrqlQuery
     var onHeightChange: ((Int?) -> Void)?
+    var onAddBinding: ((JSONNode) -> Void)?
     @State private var chartHeight: CGFloat = 300
     @State private var previewHeightInLines: Int?
 
@@ -880,14 +900,31 @@ struct CellResultView: View {
     }
 
     var body: some View {
-        content
+        VStack(alignment: .leading, spacing: 8) {
+            if let message = query.errorMessage {
+                Label(message, systemImage: "xmark.octagon.fill")
+                    .foregroundStyle(.red).textSelection(.enabled)
+                if query.failedBindingResponse != nil {
+                    Text("The response was received, but no bindings from this run are available to other cells. Fix the bindings and run again.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            if query.format?.showsBindings == true, let value = query.jsonResult {
+                BindingResultsView(bindings: query.inspectedBindings)
+                ForEach(Array(value.graphQLErrors.enumerated()), id: \.offset) { _, message in
+                    Label(message, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red)
+                }
+            } else {
+                content
+            }
+        }
     }
 
     @ViewBuilder private var content: some View {
         if let json = query.displayedJSON {
             switch json {
             case .success(let value):
-                JSONResultView(value: value)
+                JSONResultView(value: value, onAddBinding: onAddBinding)
             case .failure(let error):
                 Text(error.localizedDescription).foregroundStyle(.red).textSelection(.enabled)
             }
@@ -927,19 +964,8 @@ struct CellResultView: View {
                     .foregroundStyle(.red)
                     .textSelection(.enabled)
             }
-        case .failed(let message):
-            HStack(alignment: .top, spacing: 8) {
-                Image(systemName: "xmark.octagon.fill")
-                    .font(.title2)
-                    .foregroundStyle(.red)
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading) {
-                    Text("The query failed")
-                        .font(.headline)
-                    Text(message)
-                }
-            }
-            .foregroundStyle(.secondary)
+        case .failed:
+            EmptyView()
         }
     }
 

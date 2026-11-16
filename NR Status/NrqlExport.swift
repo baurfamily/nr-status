@@ -67,6 +67,12 @@ enum NrqlExport {
     }
 
     static func tableData(for cell: NrqlCell) -> TableData? {
+        if cell.kind == .nerdgraph, cell.query.format?.showsBindings == true, cell.query.jsonResult != nil {
+            return TableData(
+                headers: ["Variable", "Expression", "Value"],
+                rows: cell.query.inspectedBindings.map { [$0.name, $0.expression ?? "(whole response)", $0.summary] }
+            )
+        }
         guard cell.query.format?.hidesChart != true, cell.query.format?.showsJSON != true,
               let container = cell.query.resultContainer else { return nil }
         let config = ChartConfiguration(resultContainer: container)
@@ -193,6 +199,9 @@ enum NrqlExport {
                 }
                 section += "<pre>\(escape(block.text))</pre>\n"
             }
+            if let message = cell.query.errorMessage {
+                section += "<p class=\"error\">\(escape(message))</p>\n"
+            }
             if let json = cell.query.displayedJSON {
                 do {
                     section += "<pre>\(escape(try json.get().encodedText(pretty: true)))</pre>\n"
@@ -203,10 +212,16 @@ enum NrqlExport {
                 section += htmlTable(table)
             } else if let png = chartPNG(for: cell) {
                 section += "<img alt=\"Chart\" src=\"data:image/png;base64,\(png.base64EncodedString())\">\n"
-            } else if let message = cell.query.errorMessage {
-                section += "<p class=\"error\">\(escape(message))</p>\n"
             } else if let errors = cell.query.jsonResult?.graphQLErrors {
                 section += errors.map { "<p class=\"error\">\(escape($0))</p>\n" }.joined()
+            }
+            if cell.query.format?.showsBindings == true {
+                for message in cell.query.jsonResult?.graphQLErrors ?? [] {
+                    section += "<p class=\"error\">\(escape(message))</p>\n"
+                }
+                if let response = cell.query.failedBindingResponse, let json = try? response.encodedText(pretty: true) {
+                    section += "<details><summary>JSON Response</summary><pre>\(escape(json))</pre></details>\n"
+                }
             }
             return section + "</section>"
         }
@@ -324,6 +339,14 @@ enum NrqlExport {
                 }
                 pdfCode(block.text)
             }
+            if let message = cell.query.errorMessage {
+                Text(message).foregroundStyle(.red)
+            }
+            if cell.query.format?.showsBindings == true {
+                ForEach(Array((cell.query.jsonResult?.graphQLErrors ?? []).enumerated()), id: \.offset) { _, message in
+                    Text(message).foregroundStyle(.red)
+                }
+            }
             if let json = cell.query.displayedJSON {
                 switch json.flatMap({ value in Result { try value.encodedText(pretty: true) } }) {
                 case .success(let text):
@@ -341,8 +364,6 @@ enum NrqlExport {
                 pdfTable(table, maxRows: max(Int(room / pdfRowHeight) - 3, 3))
             } else if cell.query.resultContainer != nil, cell.query.format?.hidesChart != true {
                 chartView(for: cell, width: 532)
-            } else if let message = cell.query.errorMessage {
-                Text(message).foregroundStyle(.red)
             } else if let errors = cell.query.jsonResult?.graphQLErrors {
                 ForEach(Array(errors.enumerated()), id: \.offset) { _, message in
                     Text(message).foregroundStyle(.red)

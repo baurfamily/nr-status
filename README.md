@@ -241,6 +241,30 @@ GraphQL errors remain visible alongside partial data, including the full
 The **Variables Sent** button shows the last request's interpolated variables
 as formatted JSON, rather than repeating the literal GraphQL query.
 
+Choose **Display > Bindings** in a Nerdgraph cell's configuration to see a compact list
+of each result binding's expression and value. Click a value to inspect its JSON;
+switch **Display** to **JSON** to see the complete response. Binding lists grow
+with their contents rather than scrolling independently. This mode is saved as
+`chart: bindings` and exports as a table in HTML and PDF.
+
+Binding extraction errors no longer discard the response. The error remains
+visible alongside the JSON, even for hidden results. In Bindings mode, each
+binding shows its value or its own extraction error. If any binding fails, all
+values from that run are diagnostic only: none are made available to other
+cells until you fix the bindings and rerun.
+
+The toolbar's **Bindings** button opens a workbook-wide inspector with document
+variables and cell result bindings. NRQL and Lua bindings show row counts instead
+of copying their result data. The inspector marks pending, failed, duplicate,
+and out-of-date bindings.
+
+Right-click a field or value in a Nerdgraph JSON response and choose **Add Binding
+to This Value…** to create a named extraction. Array paths use Lua's 1-based
+indexes, even though the JSON tree labels elements from zero. The query and its
+input variables are left unchanged; run the cell again to populate the new
+binding. In configuration and binding expressions, press **Esc** for completion
+of `config`, other cells' `results`, and fields in the current GraphQL response.
+
 Nerdgraph defaults to JSON. Set `chart: none` in its `cell_config` to hide its result pane
 while keeping variable bindings available to other cells. Execution errors and
 GraphQL errors remain visible even when the result data is hidden.
@@ -274,8 +298,8 @@ that cell's response. Each expression is evaluated independently; document
 variables and earlier cell results are also available. Numeric `results[i]`
 access follows exported bindings in cell/declaration order. Duplicate names or
 missing paths fail the cell with a named error rather than exporting stale or
-partial bindings. Successful runs still show the complete response in the JSON
-viewer.
+partial bindings. The response remains available for troubleshooting in JSON
+display mode, even when binding extraction fails.
 
 ````text
 ```cell_config

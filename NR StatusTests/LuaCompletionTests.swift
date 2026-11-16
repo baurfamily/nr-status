@@ -39,6 +39,27 @@ struct LuaCompletionTests {
         #expect(!names("local tot|").contains("tot"))
     }
 
+    @Test func completesBindingExpressionsAgainstTheCurrentResponse() {
+        let scope = LuaCompletion.Scope(
+            names: ["previous"],
+            response: .object(["data": .object(["actor": .object([
+                "entities": .array([.object(["name": .string("Checkout")])])
+            ])])])
+        )
+        for prefix in ["name = ", "var: name = "] {
+            let text = prefix + "data.actor.entities[1].na"
+            let found = LuaCompletion.bindingItems(text: text, location: text.utf16.count, scope: scope)
+            #expect(found.items.map(\.name) == ["name"])
+            #expect((text as NSString).substring(with: found.range) == "na")
+        }
+        let text = "response\nentity = da"
+        #expect(LuaCompletion.bindingItems(text: text, location: text.utf16.count, scope: scope).items.map(\.name) == ["data"])
+        #expect(LuaCompletion.bindingItems(text: "name", location: 4, scope: scope).items.isEmpty)
+        let prior = "entity = results.pre"
+        #expect(LuaCompletion.bindingItems(text: prior, location: prior.utf16.count, scope: scope).items.map(\.name) == ["previous"])
+        #expect(!names("da|").contains("data"))
+    }
+
     @Test func offersResultNamesAfterResults() {
         #expect(names("results.|") == ["top_app", "pending"])
         #expect(names("results.to|") == ["top_app"])

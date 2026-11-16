@@ -16,6 +16,7 @@ enum LuaCompletion {
         /// Results of the named cells that have run.
         var results: [LuaRuntime.PriorResult] = []
         var variables: [String] = []
+        var response: JSONValue?
         var revision = ""
 
         static let empty = Scope()
@@ -58,6 +59,20 @@ enum LuaCompletion {
     }
 
     // MARK: - Items
+
+    static func bindingItems(text: String, location: Int, scope: Scope) -> (items: [NrqlCompletion.Item], range: NSRange) {
+        let source = text as NSString
+        let cursor = min(max(location, 0), source.length)
+        let line = source.lineRange(for: NSRange(location: cursor, length: 0))
+        let before = source.substring(with: NSRange(location: line.location, length: cursor - line.location)) as NSString
+        let equals = before.range(of: "=")
+        guard equals.location != NSNotFound else { return ([], NSRange(location: cursor, length: 0)) }
+        let start = line.location + NSMaxRange(equals)
+        let found = items(
+            text: source.substring(from: start), location: cursor - start, scope: scope, isExpression: true
+        )
+        return (found.items, NSRange(location: start + found.range.location, length: found.range.length))
+    }
 
     private enum Step: Equatable {
         case name(String)
@@ -145,6 +160,9 @@ enum LuaCompletion {
             items += locals(in: text).filter { $0 != prefix }.map { item($0, .variable, detail: "local") }
         }
         items += globalTables.map { item($0, .variable) }
+        if scope.response != nil {
+            items += ["data", "errors", "extensions"].map { item($0, .variable, detail: "current GraphQL response") }
+        }
         items += globalFunctions.map { item($0, .function, insert: "\($0)(") }
         items += valueKeywords.map { item($0, .keyword) }
         if !isExpression { items += statementKeywords.map { item($0, .keyword) } }
@@ -165,6 +183,10 @@ enum LuaCompletion {
 
     private static func members(of chain: [Step], scope: Scope) -> [NrqlCompletion.Item] {
         guard case .name(let root) = chain[0] else { return [] }
+
+        if ["data", "errors", "extensions"].contains(root), let response = scope.response?[root] {
+            return fields(of: walk(response.luaValue, chain.dropFirst()))
+        }
 
         if root == "config", chain.count == 1 {
             return [

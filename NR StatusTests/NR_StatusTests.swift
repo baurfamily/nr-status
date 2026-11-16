@@ -11,7 +11,80 @@ import AppKit
 import SwiftUI
 @testable import NR_Status
 
+@MainActor
+struct BindingResultsLayoutTests {
+    private func scrollViewCount(in view: NSView) -> Int {
+        (view is NSScrollView ? 1 : 0) + view.subviews.reduce(0) { $0 + scrollViewCount(in: $1) }
+    }
+
+    @Test(arguments: [280.0, 440.0])
+    func bindingRowsFitTheirContentWithoutNestedScrolling(_ width: Double) {
+        let bindings = (0..<12).map { index in
+            BindingResult(
+                name: "binding_\(index)", expression: "data.actor.entitySearch.results.entities[1].tags[1].key",
+                value: .string("A bound value that wraps when the available width is narrow")
+            )
+        }
+        func height(for bindings: [BindingResult]) -> CGFloat {
+            let host = NSHostingView(rootView: BindingResultsView(bindings: bindings)
+                .frame(width: width).fixedSize(horizontal: false, vertical: true))
+            host.frame = NSRect(x: 0, y: 0, width: width, height: 1)
+            host.layoutSubtreeIfNeeded()
+            #expect(scrollViewCount(in: host) == 0)
+            #expect(host.fittingSize.width <= width)
+            return host.fittingSize.height
+        }
+        let singleRowHeight = height(for: [bindings[0]])
+        #expect(singleRowHeight > 0)
+        #expect(height(for: bindings) > singleRowHeight)
+    }
+
+    @Test func workbookInspectorHasNoPerSectionScrollViews() {
+        let document = NRQL_EditorDocument(text: """
+            ```config
+            var service = "Checkout"
+            ```
+
+            ```cell_config
+            var: traffic
+            ```
+            ```nrql
+            SELECT count(*) FROM Transaction
+            ```
+            """)
+        let host = NSHostingView(rootView: WorkbookBindingsView(document: document, profiles: .init()))
+        host.frame = NSRect(x: 0, y: 0, width: 320, height: 500)
+        host.layoutSubtreeIfNeeded()
+        #expect(scrollViewCount(in: host) <= 1)
+    }
+}
+
 struct ConfigurationTextEditorTests {
+    @MainActor @Test func nativeCompletionReplacesOnlyTheBindingExpressionPrefix() throws {
+        let text = "var: user = data.act"
+        let host = NSHostingView(rootView: ConfigurationTextEditor(
+            text: .constant(text), identifier: "completion-test",
+            completionScope: {
+                LuaCompletion.Scope(response: .object(["data": .object(["actor": .object([:])])]))
+            }
+        ))
+        host.frame = NSRect(x: 0, y: 0, width: 320, height: 180)
+        host.layoutSubtreeIfNeeded()
+        func findTextView(in view: NSView) -> NSTextView? {
+            if let textView = view as? NSTextView { return textView }
+            return view.subviews.lazy.compactMap { findTextView(in: $0) }.first
+        }
+        let textView = try #require(findTextView(in: host))
+        textView.setSelectedRange(NSRange(location: text.utf16.count, length: 0))
+        let range = textView.rangeForUserCompletion
+        #expect(range.location != NSNotFound)
+        let completions = try #require(textView.delegate?.textView?(
+            textView, completions: [], forPartialWordRange: range, indexOfSelectedItem: nil
+        ))
+        let completion = try #require(completions.first)
+        #expect((text as NSString).replacingCharacters(in: range, with: completion) == "var: user = data.actor")
+    }
+
     @MainActor @Test func preservesLiteralConfigurationInput() throws {
         var text = ""
         let host = NSHostingView(rootView: ConfigurationTextEditor(
@@ -99,6 +172,8 @@ struct NerdgraphClientTests {
         await query.getData(profiles: profiles, session: session)
         #expect(query.errorMessage == nil)
         #expect(document.priorResults.map(\.name) == ["response", "entity", "tagCount"])
+        #expect(query.inspectedBindings.map(\.name) == ["response", "entity", "tagCount"])
+        #expect(query.inspectedBindings.last?.value == .number(2))
         #expect(try LuaRuntime.run(
             "return response == nil and entity == nil and tagCount == nil", results: document.priorResults
         ).value.boolValue == true)
@@ -119,8 +194,35 @@ struct NerdgraphClientTests {
         await query.getData(profiles: profiles, session: session)
         #expect(query.errorMessage?.contains("Nerdgraph variable 'entity'") == true)
         #expect(query.namedResults.isEmpty)
+        #expect(!query.hasResult)
+        #expect(query.jsonResult == (try JSONDecoder().decode(JSONValue.self, from: Data(response.utf8))))
+        #expect(query.inspectedBindings[1].error?.contains("entity") == true)
+        #expect(query.inspectedBindings[2].value == .number(2))
+        #expect(query.inspectedBindings[0].value != nil)
+        #expect(query.displayedJSON != nil)
+        #expect(NrqlDependencies.plan(
+            for: [document.cells[1]], in: document.cells, includeFinished: false
+        ).first?.id == document.cells[0].id)
+        query.text = query.text.replacingOccurrences(of: "var: response", with: "chart: none\nvar: response")
+        #expect(query.showsResultPane)
+        #expect(query.displayedJSON != nil)
+        query.text = query.text.replacingOccurrences(of: "tagCount = #data.actor.entitySearch.results.entities[1].tags",
+                                                     with: "tagCount =")
+        StubURLProtocol.handler = { _ in (200, Data(#"{"data":{"marker":"new response"}}"#.utf8)) }
+        await query.getData(profiles: profiles, session: session)
+        #expect(query.errorMessage?.contains("tagCount") == true)
+        #expect(query.jsonResult != nil)
+        #expect(query.jsonResult?["data"]?["marker"] == .string("new response"))
+        #expect(!query.hasResult && query.namedResults.isEmpty)
+        query.text = original
+        StubURLProtocol.handler = { _ in (200, Data(response.utf8)) }
+        await query.getData(profiles: profiles, session: session)
+        #expect(query.errorMessage == nil && query.hasResult)
+        #expect(query.failedBindingResponse == nil)
+        #expect(query.namedResults.map(\.name) == ["response", "entity", "tagCount"])
         query.clearResults()
         #expect(query.loadedBindings == nil)
+        #expect(query.bindingResults.isEmpty && query.jsonResult == nil)
     }
 
     @MainActor @Test func graphqlConfigUsesDocumentAccountsRatherThanCellOverrides() async throws {

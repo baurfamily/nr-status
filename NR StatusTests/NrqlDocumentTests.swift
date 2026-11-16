@@ -301,6 +301,135 @@ struct NrqlDocumentParserTests {
 
 @MainActor
 struct NerdgraphCellTests {
+    @Test func bindingsDisplayAndExportsUseTheExecutedValues() throws {
+        let cell = NrqlCell(text: """
+            ```cell_config
+            chart: bindings
+            var: name = data.name
+            ```
+            ```graphql
+            { actor { user { name } } }
+            ```
+            """)
+        let value = JSONValue.object([
+            "data": .object(["name": .string("Checkout")]),
+            "errors": .array([.object(["message": .string("Partial GraphQL error")])])
+        ])
+        let row = BindingResult(name: "name", expression: "data.name", value: .string("Checkout"))
+        cell.query.setState(
+            .jsonLoaded(value), bindings: [.init(name: "name", value: .string("Checkout"))], bindingResults: [row]
+        )
+        #expect(cell.query.format?.showsBindings == true)
+        #expect(cell.query.displayedJSON == nil)
+        #expect(cell.query.inspectedBindings == [row])
+        #expect(NrqlExport.tableData(for: cell)?.rows == [["name", "data.name", "\"Checkout\""]])
+        var document = NRQL_EditorDocument(text: "")
+        document.cells = [cell]
+        let html = NrqlExport.html(for: document)
+        #expect(html.contains("<td>data.name</td>") && html.contains("Checkout"))
+        #expect(html.contains("Partial GraphQL error"))
+        let pdfData = try #require(NrqlExport.pdf(for: document))
+        let pdf = try #require(PDFDocument(data: pdfData))
+        #expect(pdf.string?.contains("Checkout") == true && pdf.string?.contains("Partial GraphQL error") == true)
+        cell.query.text = cell.query.text.replacingOccurrences(of: "chart: bindings", with: "chart: json")
+        #expect(try #require(cell.query.displayedJSON).get() == value)
+        #expect(cell.query.namedResults.first?.value.stringValue == "Checkout")
+        cell.query.text = cell.query.text.replacingOccurrences(of: "chart: json", with: "chart: bindings")
+        cell.query.setState(
+            .failed("Missing value"), bindingResults: [.init(name: "name", error: "Missing value")], response: value
+        )
+        let failedHTML = NrqlExport.html(for: document)
+        #expect(failedHTML.contains("Missing value") && failedHTML.contains("JSON Response"))
+        #expect(failedHTML.contains("Checkout"))
+    }
+
+    @Test(arguments: ["name", "end", "quote\"slash\\newline\n", "name\n", "a-b", "line\u{0}break", "日本語", "name = wrong"])
+    func JSONBindingPathsUseLuaIndexesAndEscapeKeys(_ field: String) throws {
+        let value = JSONValue.object(["data": .object([
+            "items": .array([.object([field: .string("Selected")])])
+        ])])
+        let root = JSONNode(key: "$", value: value)
+        let data = try #require(root.children?.first)
+        let items = try #require(data.children?.first)
+        let element = try #require(items.children?.first)
+        let leaf = try #require(element.children?.first)
+        let expression = try #require(leaf.bindingExpression)
+        #expect(expression.contains("[1]"))
+        #expect(element.key == "[0]")
+        #expect(try LuaRuntime.run("return \(expression)", response: value).value.stringValue == "Selected")
+        #expect(root.bindingExpression == nil && root.canBind)
+        #expect(LuaRuntime.Variable.isIdentifier(leaf.suggestedBindingName))
+        let binding = BindingResult(name: field, value: .string("Selected"))
+        #expect(try LuaRuntime.run(
+            "return \(binding.reference)", results: [.init(name: field, value: .string("Selected"))]
+        ).value.stringValue == "Selected")
+    }
+
+    @Test func addingAJSONBindingPreservesCodeAndExistingConfiguration() throws {
+        var cell = NrqlCell(text: """
+            ```cell_config
+            title: User
+            var: response
+            chart: json
+            ```
+            ```graphql
+            query($id: Int!) { actor { account(id: $id) { name } } }
+            ```
+            ```variables
+            {"id": 42}
+            ```
+            """)
+        let code = cell.editorText
+        try cell.addResultBinding(name: "account", expression: "data.actor.account")
+        #expect(cell.editorText == code)
+        #expect(cell.configurationText.contains("title: User") && cell.configurationText.contains("chart: json"))
+        #expect(try NerdgraphCellSource(stored: cell.text).resultBindings().map(\.name) == ["response", "account"])
+        let saved = cell.text
+        #expect(throws: NrqlConnection.ConfigurationError.self) {
+            try cell.addResultBinding(name: "account", expression: "data")
+        }
+        #expect(throws: NrqlConnection.ConfigurationError.self) {
+            try cell.addResultBinding(name: "bad\nvar: injected", expression: nil)
+        }
+        #expect(throws: NrqlConnection.ConfigurationError.self) {
+            try cell.addResultBinding(name: "valid = wrong", expression: "data")
+        }
+        #expect(cell.text == saved)
+    }
+
+    @Test func inspectorSummarizesRowsAndIncludesDocumentAndPendingBindings() throws {
+        let document = NRQL_EditorDocument(text: """
+            ```config
+            var service = "Checkout"
+            ```
+
+            ```cell_config
+            var: traffic
+            ```
+            ```nrql
+            SELECT count(*) FROM Transaction
+            ```
+
+            ```cell_config
+            var: user = data.actor.user
+            ```
+            ```graphql
+            { actor { user { name } } }
+            ```
+            """)
+        let container = try JSONDecoder().decode(NrdbResultContainer.self, from: Data("""
+            {"nrql":"SELECT 1","results":[{"count":7}],"metadata":{}}
+            """.utf8))
+        document.cells[1].query.setState(.loaded(container))
+        let groups = WorkbookBindingGroup.groups(in: document, profiles: .init())
+        #expect(groups[0].bindings.first(where: { $0.name == "service" })?.value == .string("Checkout"))
+        #expect(groups[0].bindings.allSatisfy { $0.namespace == "config" })
+        #expect(groups[1].bindings.first?.summary == "1 row")
+        #expect(groups[1].bindings.first?.value == nil)
+        #expect(groups[2].bindings.first?.name == "user")
+        #expect(groups[2].warning?.contains("Run this cell") == true)
+    }
+
     @Test func jsonAndNoneDisplayModesPreserveLoadedNRQLBindings() throws {
         let container = try JSONDecoder().decode(NrdbResultContainer.self, from: Data("""
             {"nrql":"SELECT 7", "results":[{"count":7,"name":"Foo","values":[1,2]}],

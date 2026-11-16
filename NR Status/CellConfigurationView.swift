@@ -54,9 +54,7 @@ struct CellConfigurationView: View {
             if showsText {
                 Text(isDocument ? "```config" : "```cell_config")
                     .font(.caption.monospaced()).foregroundStyle(.secondary)
-                TextEditor(text: $cell.configurationText)
-                    .accessibilityIdentifier("cell-configuration-text")
-                    .font(.system(.body, design: .monospaced))
+                ConfigurationTextEditor(text: $cell.configurationText, identifier: "cell-configuration-text")
                     .frame(minHeight: 180)
                 Text("```").font(.caption.monospaced()).foregroundStyle(.secondary)
             } else {
@@ -97,7 +95,7 @@ struct CellConfigurationView: View {
             if isDocument || cell.kind == .nerdgraph {
                 Text(isDocument ? "Variables (name = Lua expression)" : "Bindings (name or name = Lua expression)")
                     .font(.caption).foregroundStyle(.secondary)
-                TextEditor(text: Binding(
+                ConfigurationTextEditor(text: Binding(
                     get: { NrqlCellSource.values("var", in: cell.configurationText).joined(separator: "\n") },
                     set: {
                         cell.configurationText = NrqlCellSource.updating(
@@ -105,9 +103,7 @@ struct CellConfigurationView: View {
                             in: cell.configurationText, includeEmptyValues: true
                         )
                     }
-                ))
-                .accessibilityIdentifier("cell-configuration-bindings")
-                .font(.system(.body, design: .monospaced))
+                ), identifier: "cell-configuration-bindings")
                 .frame(height: 80)
             } else {
                 labeledField("Variable binding", text: value("var"), placeholder: "Result variable")

@@ -7,7 +7,40 @@
 
 import Testing
 import Foundation
+import AppKit
+import SwiftUI
 @testable import NR_Status
+
+struct ConfigurationTextEditorTests {
+    @MainActor @Test func preservesLiteralConfigurationInput() throws {
+        var text = ""
+        let host = NSHostingView(rootView: ConfigurationTextEditor(
+            text: Binding(get: { text }, set: { text = $0 }),
+            identifier: "test-configuration"
+        ))
+        host.frame = NSRect(x: 0, y: 0, width: 320, height: 180)
+        host.layoutSubtreeIfNeeded()
+
+        func findTextView(in view: NSView) -> NSTextView? {
+            if let textView = view as? NSTextView { return textView }
+            return view.subviews.lazy.compactMap { findTextView(in: $0) }.first
+        }
+
+        let textView = try #require(findTextView(in: host))
+        #expect(!textView.isAutomaticQuoteSubstitutionEnabled)
+        #expect(!textView.isAutomaticDashSubstitutionEnabled)
+        #expect(!textView.isAutomaticTextReplacementEnabled)
+        #expect(!textView.isAutomaticSpellingCorrectionEnabled)
+        #expect(!textView.isRichText)
+        let configuration = "var: appName = \"checkout--service\"\nvar: owner = 'team'"
+        textView.insertText(configuration, replacementRange: NSRange(location: 0, length: 0))
+        #expect(text == configuration)
+        #expect(textView.string == configuration)
+        let connection = try NrqlConnection.parseDocumentConfig(text)
+        #expect(try LuaRuntime.run("return config.appName .. ':' .. config.owner", config: connection)
+            .value.stringValue == "checkout--service:team")
+    }
+}
 
 // Serves canned responses so the client can be exercised without a network.
 final class StubURLProtocol: URLProtocol {

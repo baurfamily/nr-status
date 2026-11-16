@@ -21,6 +21,8 @@ struct PublishedWidgetEntity: AppEntity {
 }
 
 struct PublishedWidgetQuery: EntityStringQuery {
+    typealias Result = IntentItemCollection<PublishedWidgetEntity>
+
     func entities(for identifiers: [String]) async throws -> [PublishedWidgetEntity] {
         let registry = try WidgetRegistry.shared()
         return try identifiers.compactMap { value in
@@ -29,14 +31,20 @@ struct PublishedWidgetQuery: EntityStringQuery {
         }
     }
 
-    func suggestedEntities() async throws -> [PublishedWidgetEntity] {
-        try WidgetRegistry.shared().widgets().map(PublishedWidgetEntity.init)
+    func suggestedEntities() async throws -> Result {
+        collection(try WidgetRegistry.shared().widgets())
     }
 
-    func entities(matching string: String) async throws -> [PublishedWidgetEntity] {
-        try WidgetRegistry.shared().widgets()
-            .filter { $0.name.localizedCaseInsensitiveContains(string) || $0.sourceName.localizedCaseInsensitiveContains(string) }
-            .map(PublishedWidgetEntity.init)
+    func entities(matching string: String) async throws -> Result {
+        collection(try WidgetRegistry.shared().widgets().filter {
+            $0.name.localizedCaseInsensitiveContains(string) || $0.sourceName.localizedCaseInsensitiveContains(string)
+        })
+    }
+
+    private func collection(_ widgets: [PublishedWidget]) -> Result {
+        Result(sections: PublishedWidgetGroup.grouping(widgets).map { group in
+            IntentItemSection("\(group.sourceName)", items: group.widgets.map(PublishedWidgetEntity.init))
+        })
     }
 }
 

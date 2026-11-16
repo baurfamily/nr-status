@@ -2,7 +2,7 @@ import Foundation
 
 enum WorkbookWidgetRunner {
     static func plan(target: NrqlCell, in cells: [NrqlCell]) throws -> [NrqlCell] {
-        guard target.kind == .markdown || target.kind == .nrql || target.kind == .lua else {
+        guard target.canPublishWidget else {
             throw NrqlConnection.ConfigurationError(message: "Publish a chart or Markdown cell.")
         }
         var visiting = Set<UUID>()

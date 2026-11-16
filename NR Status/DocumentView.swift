@@ -8,6 +8,7 @@
 import SwiftUI
 import CodeEditorView
 import LanguageSupport
+import WidgetKit
 
 /// A notebook-style document: each query is a cell with its results below it.
 struct DocumentView: View {
@@ -17,7 +18,18 @@ struct DocumentView: View {
     @State private var profileSettings = NerdgraphProfiles.Settings()
     @State private var configurationError: String?
     @State private var configRevealRequest = UUID()
-    @State private var publishingCell: NrqlCell?
+    @State private var publishing: PublicationSheet?
+    @State private var publishedIDs: Set<UUID> = []
+
+    private enum PublicationSheet: Identifiable {
+        case cell(UUID), all
+        var id: String {
+            switch self {
+            case .cell(let id): id.uuidString
+            case .all: "all"
+            }
+        }
+    }
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -29,8 +41,17 @@ struct DocumentView: View {
                 }
         }
         .toolbar { documentToolbar }
-        .sheet(item: $publishingCell) { cell in
-            PublishWidgetSheet(document: $document, cellID: cell.id, sourceName: sourceName)
+        .sheet(item: $publishing) { selection in
+            switch selection {
+            case .cell(let id):
+                PublishWidgetSheet(document: $document, cellID: id, sourceName: sourceName)
+            case .all:
+                PublishWidgetSheet(document: $document, cellID: nil, sourceName: sourceName)
+            }
+        }
+        .onAppear { loadPublishedIDs() }
+        .onReceive(NotificationCenter.default.publisher(for: WidgetRegistry.didChangeNotification)) { _ in
+            loadPublishedIDs()
         }
         .task(id: profileSettingsData) {
             do {
@@ -64,6 +85,7 @@ struct DocumentView: View {
     private var notebook: some View {
         let stale = document.staleCellIds(profiles: profileSettings)
         let readingBelow = document.readingBelowCellIds
+        let canPublishAll = document.cells.contains(where: \.canPublishWidget)
         return ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
                 if case .failure(let error) = document.connection {
@@ -86,9 +108,14 @@ struct DocumentView: View {
                         pendingTitles: document.pendingDependencies(for: cell.id, stale: stale).map(\.query.title),
                         canPerform: { document.canPerform($0, on: cell.id) },
                         onAction: { document.perform($0, on: cell.id) },
-                        onPublish: { publishingCell = cell }
+                        isPublished: cell.widgetID.map { publishedIDs.contains($0) } ?? false,
+                        canPublishAll: canPublishAll,
+                        onPublish: { publishing = .cell(cell.id) },
+                        onUnpublish: { unpublish(cell.id) },
+                        onPublishAll: { publishing = .all }
                     )
                 }
+
                 HStack {
                     Button("Add Markdown", systemImage: "text.alignleft") {
                         document.addCell(after: document.cells.last?.id, kind: .markdown)
@@ -109,6 +136,21 @@ struct DocumentView: View {
         }
         // a click on empty space leaves the focused cell, which renders a Markdown cell
         .background(Color.clear.contentShape(Rectangle()).onTapGesture { document.focusedCellId = nil })
+    }
+
+    private func loadPublishedIDs() {
+        do {
+            publishedIDs = Set(try WidgetRegistry.shared().widgets().map(\.id))
+        } catch { configurationError = error.localizedDescription }
+    }
+
+    private func unpublish(_ cellID: UUID) {
+        do {
+            try WorkbookWidgetPublishing.unpublish(
+                cellID: cellID, document: document, registry: WidgetRegistry.shared()
+            )
+            WidgetCenter.shared.reloadTimelines(ofKind: WidgetRegistry.widgetKind)
+        } catch { configurationError = error.localizedDescription }
     }
 
     @ToolbarContentBuilder private var documentToolbar: some ToolbarContent {
@@ -258,7 +300,11 @@ struct CellView: View {
     let pendingTitles: [String]
     let canPerform: (NRQL_EditorDocument.CellAction) -> Bool
     let onAction: (NRQL_EditorDocument.CellAction) -> Void
+    let isPublished: Bool
+    let canPublishAll: Bool
     let onPublish: () -> Void
+    let onUnpublish: () -> Void
+    let onPublishAll: () -> Void
 
     @State private var position: CodeEditor.Position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
     @State private var messages: Set<TextLocated<Message>> = Set()
@@ -585,6 +631,10 @@ struct CellView: View {
             if cell.kind == .config {
                 Text("Document Config").font(.headline)
                 Spacer()
+                Button("Publish All Widgets...", action: onPublishAll)
+                    .buttonStyle(.borderless)
+                    .help("Publish new cells and update existing widgets from this workbook")
+                    .disabled(!canPublishAll)
                 configurationButton
                 actionsMenu
             } else if cell.kind == .markdown {
@@ -697,14 +747,19 @@ struct CellView: View {
 
     private var actionsMenu: some View {
         Menu("Cell Actions", systemImage: "ellipsis") {
-            if cell.kind == .markdown || cell.kind == .nrql || cell.kind == .lua {
-                Button(cell.widgetID == nil ? "Publish as Widget..." : "Update Published Widget...", systemImage: "square.grid.2x2") {
+            if cell.canPublishWidget {
+                Button(isPublished ? "Update Published Widget..." : "Publish as Widget...", systemImage: "square.grid.2x2") {
                     if let draft {
                         cell.editorText = draft
                         self.draft = nil
                     }
                     onPublish()
                 }
+            }
+            if isPublished {
+                Button("Unpublish Widget", role: .destructive, action: onUnpublish)
+            }
+            if cell.canPublishWidget || isPublished {
                 Divider()
             }
             Menu("Add Above") {

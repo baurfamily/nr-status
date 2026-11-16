@@ -16,6 +16,18 @@ a name, and save the workbook. Add a Workbook widget to the desktop, then
 choose that name in **Edit Widget**. Manage publications under
 **Features > Published Widgets**.
 
+Use **Unpublish Widget** in the cell menu to remove its publication. Republishing
+the cell reconnects widgets using the same saved identity. The widget picker and
+Published Widgets window organize cells under their source filenames. In the
+**Document Config** header, **Publish All Widgets** publishes all chart and
+Markdown cells or updates their existing publications, preserving custom names.
+The confirmation sheet lists the cells before publishing.
+
+For repeatable chart and widget comparisons, open
+[`docs/examples/ChartSamples.nrmd`](docs/examples/ChartSamples.nrmd). It contains
+fixed Lua data for billboard, line, bar, pie, scatter plot, and table charts and
+requires no API key or network access.
+
 Publishing stores a snapshot of the entire workbook in the shared App Group.
 The extension refreshes the chosen cell and its transitive dependencies without
 requiring the app to be open. Source edits are not automatically synchronized:

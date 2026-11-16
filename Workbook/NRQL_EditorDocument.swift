@@ -53,6 +53,10 @@ struct NrqlCell: Identifiable {
         UUID(uuidString: NrqlCellSource.value("widget-id", in: configurationText))
     }
 
+    var canPublishWidget: Bool {
+        kind == .markdown || kind == .nrql || kind == .lua
+    }
+
     func storedText(forEditorText value: String) -> String {
         NrqlCellSource(configuration: NrqlCellSource(stored: text).configuration, code: kind.wrap(value)).storedText
     }

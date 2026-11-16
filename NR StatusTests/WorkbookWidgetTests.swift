@@ -3,13 +3,15 @@ import Testing
 @testable import NR_Status
 
 struct WorkbookWidgetTests {
-    @MainActor private func run(_ widget: PublishedWidget) async throws -> WorkbookWidgetOutput {
+    @MainActor private func run(_ widget: PublishedWidget, withProfile: Bool = true) async throws -> WorkbookWidgetOutput {
         let suite = "NR Status widget test \(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let profile = NerdgraphProfile(name: "Test", preferredAccountIds: [42])
         defaults.set(
-            try JSONEncoder().encode(NerdgraphProfiles.Settings(profiles: [profile], defaultProfileID: profile.id)),
+            try JSONEncoder().encode(withProfile
+                ? NerdgraphProfiles.Settings(profiles: [profile], defaultProfileID: profile.id)
+                : NerdgraphProfiles.Settings()),
             forKey: "nerdgraphProfiles"
         )
         return try await WorkbookWidgetRunner.run(widget, profiles: NerdgraphProfiles(defaults: defaults))
@@ -18,6 +20,147 @@ struct WorkbookWidgetTests {
     private func publication(_ text: String, target: UUID, revision: UUID = UUID()) -> PublishedWidget {
         PublishedWidget(id: target, revision: revision, name: "Test Widget", sourceName: "Test.nrmd",
                         cellTitle: "Test", workbook: text, publishedAt: Date())
+    }
+
+    @Test func bulkPublishingUpdatesSnapshotsAndPreservesNamesAndIdentities() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let registry = WidgetRegistry(directory: directory)
+        var document = NRQL_EditorDocument(text: """
+            ```config
+            description: Bulk publishing
+            ```
+
+            ```cell_config
+            title: Count
+            ```
+            ```lua
+            return { rows = { { count = 42 } } }
+            ```
+
+            # Notes
+
+            Ready.
+            """)
+        let cellIDs = document.cells.filter(\.canPublishWidget).map(\.id)
+        try WorkbookWidgetPublishing.publish(
+            cellIDs: cellIDs, document: &document, sourceName: "Original.nrmd",
+            names: [cellIDs[0]: "Custom widget name"], registry: registry
+        )
+        let ids = document.cells.compactMap(\.widgetID)
+        #expect(ids.count == 2)
+        let original = try #require(try registry.widget(id: ids[0]))
+        #expect(original.name == "Custom widget name")
+        #expect(original.workbook == document.text)
+        #expect(try registry.widgets().allSatisfy {
+            NRQL_EditorDocument(text: $0.workbook).cells.compactMap(\.widgetID) == ids
+        })
+        try registry.cache(WorkbookWidgetOutput(title: "Cached", updatedAt: Date()), for: original)
+        document.cells[1].editorText = "return { rows = { { count = 84 } } }"
+        try WorkbookWidgetPublishing.publish(
+            cellIDs: cellIDs, document: &document, sourceName: "Renamed.nrmd", registry: registry
+        )
+        let updated = try #require(try registry.widget(id: ids[0]))
+        #expect(document.cells.compactMap(\.widgetID) == ids)
+        #expect(updated.name == original.name)
+        #expect(updated.sourceName == "Renamed.nrmd")
+        #expect(updated.revision != original.revision)
+        #expect(updated.workbook == document.text)
+        #expect(updated.workbook.contains("count = 84"))
+        #expect(try registry.widgets().count == 2)
+        #expect(try registry.cachedOutput(for: original) == nil)
+    }
+
+    @Test func unpublishingRemovesTheSnapshotAndCacheButAllowsReconnecting() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let registry = WidgetRegistry(directory: directory)
+        var document = NRQL_EditorDocument(text: "# Ready")
+        let cellID = document.cells[0].id
+        try WorkbookWidgetPublishing.publish(
+            cellIDs: [cellID], document: &document, sourceName: "Test.nrmd", registry: registry
+        )
+        let id = try #require(document.cells[0].widgetID)
+        let original = try #require(try registry.widget(id: id))
+        try registry.cache(WorkbookWidgetOutput(title: "Ready", updatedAt: Date(), markdown: "# Ready"), for: original)
+        try WorkbookWidgetPublishing.unpublish(cellID: cellID, document: document, registry: registry)
+        #expect(try registry.widget(id: id) == nil)
+        #expect(try registry.cachedOutput(for: original) == nil)
+        #expect(document.cells[0].widgetID == id)
+        try WorkbookWidgetPublishing.unpublish(cellID: cellID, document: document, registry: registry)
+        try WorkbookWidgetPublishing.publish(
+            cellIDs: [cellID], document: &document, sourceName: "Test.nrmd", registry: registry
+        )
+        #expect(try registry.widget(id: id) != nil)
+        #expect(try registry.widgets().count == 1)
+    }
+
+    @Test(arguments: [false, true])
+    func bulkValidationDoesNotPublishOrMutateAnyCells(duplicateIdentity: Bool) throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let registry = WidgetRegistry(directory: directory)
+        let metadata = duplicateIdentity ? "```cell_config\nwidget-id: \(UUID())\n```\n" : ""
+        var document = NRQL_EditorDocument(text: """
+            \(metadata)```lua
+            return { rows = { { count = 42 } } }
+            ```
+
+            \(metadata)```lua
+            \(duplicateIdentity ? "return { rows = { { count = 84 } } }" : "return results.missing")
+            ```
+            """)
+        let original = document.text
+        let cellIDs = document.cells.map(\.id)
+        #expect(throws: NrqlConnection.ConfigurationError.self) {
+            try WorkbookWidgetPublishing.publish(
+                cellIDs: cellIDs, document: &document, sourceName: "Test.nrmd", registry: registry
+            )
+        }
+        #expect(try registry.widgets().isEmpty)
+        #expect(document.text == original)
+        #expect(document.cells.allSatisfy { $0.query.text == $0.text })
+    }
+
+    @Test func publicationsAreGroupedAndNaturallySortedByFileThenCell() {
+        func widget(_ name: String, file: String) -> PublishedWidget {
+            PublishedWidget(id: UUID(), revision: UUID(), name: name, sourceName: file,
+                            cellTitle: name, workbook: "", publishedAt: Date())
+        }
+        let groups = PublishedWidgetGroup.grouping([
+            widget("Chart 1", file: "Workbook 10.nrmd"),
+            widget("Chart 10", file: "Workbook 2.nrmd"),
+            widget("Chart 2", file: "Workbook 2.nrmd")
+        ])
+        #expect(groups.map(\.sourceName) == ["Workbook 2.nrmd", "Workbook 10.nrmd"])
+        #expect(groups[0].widgets.map(\.name) == ["Chart 2", "Chart 10"])
+        #expect(groups[1].widgets.map(\.name) == ["Chart 1"])
+    }
+
+    @MainActor @Test func chartSampleWorkbookRunsEveryChartDeterministicallyWithoutCredentials() async throws {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("docs/examples/ChartSamples.nrmd")
+        var document = NRQL_EditorDocument(text: try String(contentsOf: url, encoding: .utf8))
+        let charts = document.cells.filter(\.canPublishWidget)
+        #expect(charts.count == ChartType.allCases.count)
+        #expect(Set(charts.compactMap { $0.query.format?.type }) == Set(ChartType.allCases))
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let registry = WidgetRegistry(directory: directory)
+        try WorkbookWidgetPublishing.publish(
+            cellIDs: charts.map(\.id), document: &document, sourceName: "ChartSamples.nrmd", registry: registry
+        )
+        for widget in try registry.widgets() {
+            let first = try await run(widget, withProfile: false)
+            let second = try await run(widget, withProfile: false)
+            #expect(first.chart == second.chart)
+            let results = try #require(first.resultContainer)
+            #expect(!results.data.isEmpty)
+            let configuration = ChartConfiguration(resultContainer: results)
+            let format = ChartFormat.parseMetadata(try #require(first.configuration))
+            format.apply(to: configuration)
+            #expect(configuration.chartType == format.type)
+        }
     }
 
     @MainActor @Test func sharedRegistryPersistsPublishedWorkbooks() async throws {

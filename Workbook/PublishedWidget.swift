@@ -10,6 +10,20 @@ struct PublishedWidget: Codable, Identifiable, Sendable {
     let publishedAt: Date
 }
 
+struct PublishedWidgetGroup: Identifiable {
+    let sourceName: String
+    let widgets: [PublishedWidget]
+    var id: String { sourceName }
+
+    static func grouping(_ widgets: [PublishedWidget]) -> [Self] {
+        Dictionary(grouping: widgets, by: \.sourceName).map { sourceName, widgets in
+            Self(sourceName: sourceName, widgets: widgets.sorted {
+                $0.name.localizedStandardCompare($1.name) == .orderedAscending
+            })
+        }.sorted { $0.sourceName.localizedStandardCompare($1.sourceName) == .orderedAscending }
+    }
+}
+
 struct WorkbookWidgetOutput: Codable, Sendable {
     let title: String
     let updatedAt: Date
@@ -25,6 +39,7 @@ struct WorkbookWidgetOutput: Codable, Sendable {
 
 struct WidgetRegistry {
     static let widgetKind = "net.baurhome.nrstatus.workbook"
+    static let didChangeNotification = Notification.Name("PublishedWidgetsDidChange")
     private let directory: URL
 
     init(directory: URL) {
@@ -64,11 +79,13 @@ struct WidgetRegistry {
         if let previous, previous.revision != widget.revision {
             try? removeCache(for: previous)
         }
+        NotificationCenter.default.post(name: Self.didChangeNotification, object: nil)
     }
 
     func remove(_ widget: PublishedWidget) throws {
         try FileManager.default.removeItem(at: publicationURL(widget.id))
         try? removeCache(for: widget)
+        NotificationCenter.default.post(name: Self.didChangeNotification, object: nil)
     }
 
     func cachedOutput(for widget: PublishedWidget) throws -> WorkbookWidgetOutput? {

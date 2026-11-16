@@ -97,7 +97,12 @@ enum LuaResultBridge {
         metadata["facets"] = facets ?? NSNull()
         let json: [String: Any] = ["nrql": nrql, "results": jsonRows, "metadata": metadata]
         let data = try JSONSerialization.data(withJSONObject: json)
-        return try JSONDecoder().decode(NrdbResultContainer.self, from: data)
+        var container = try JSONDecoder().decode(NrdbResultContainer.self, from: data)
+        // Lua tables have no field order; use stable columns across refreshes.
+        for index in container.results.data.indices {
+            container.results.data[index].fieldNames.sort()
+        }
+        return container
     }
 
     private static func asList(_ value: LuaValue?) -> [LuaValue]? {

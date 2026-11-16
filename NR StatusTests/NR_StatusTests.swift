@@ -255,6 +255,7 @@ struct NerdgraphClientTests {
         let request = try #require(captured)
         #expect(request.url?.host == "eu.example.com")
         #expect(request.value(forHTTPHeaderField: "api-key") == "selected-key")
+        #expect(request.timeoutInterval == 90)
         // URLSession may move the payload into a stream before URLProtocol sees it.
         let data: Data
         if let body = request.httpBody {
@@ -273,6 +274,7 @@ struct NerdgraphClientTests {
             data = body
         }
         let json = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        #expect((json["query"] as? String)?.contains("nrql(accounts: $accountIds, query: $nrql, timeout: 60)") == true)
         let variables = try #require(json["variables"] as? [String: Any])
         #expect(variables["accountIds"] as? [Int] == [12, 34])
         #expect(variables["nrql"] as? String == "SELECT count(*) FROM Log")

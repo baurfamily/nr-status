@@ -12,7 +12,7 @@ enum GraphQLDocuments {
     query NRStatus_Nrql($accountIds: [Int!]!, $nrql: Nrql!) {
         actor {
             user { email name }
-            nrql(accounts: $accountIds, query: $nrql) {
+            nrql(accounts: $accountIds, query: $nrql, timeout: 60) {
                 nrql
                 results
                 metadata {

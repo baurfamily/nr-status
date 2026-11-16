@@ -14,7 +14,7 @@ height: 8
 ```nrql
 FROM Transaction
 SELECT count(*)
-FACET name
+FACET appName
 SINCE 1 week ago
 LIMIT 4
 ```

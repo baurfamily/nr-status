@@ -39,14 +39,14 @@ struct WorkbookWidgetProvider: AppIntentTimelineProvider {
             }
             entry.output = try? registry.cachedOutput(for: widget)
             let settings = URLSessionConfiguration.ephemeral
-            settings.timeoutIntervalForRequest = 15
-            settings.timeoutIntervalForResource = 25
+            settings.timeoutIntervalForRequest = NerdgraphClient.requestTimeoutInterval
+            settings.timeoutIntervalForResource = NerdgraphClient.requestTimeoutInterval
             let session = URLSession(configuration: settings)
             defer { session.invalidateAndCancel() }
             let output = try await withThrowingTaskGroup(of: WorkbookWidgetOutput.self) { group in
                 group.addTask { try await WorkbookWidgetRunner.run(widget, session: session) }
                 group.addTask {
-                    try await Task.sleep(for: .seconds(25))
+                    try await Task.sleep(for: .seconds(NerdgraphClient.requestTimeoutInterval))
                     throw NrqlConnection.ConfigurationError(message: "Widget refresh timed out.")
                 }
                 defer { group.cancelAll() }

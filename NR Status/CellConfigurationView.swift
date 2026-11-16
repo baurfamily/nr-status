@@ -3,6 +3,8 @@ import SwiftUI
 struct CellConfigurationView: View {
     @Binding var cell: NrqlCell
     @Binding var isPresented: Bool
+    let isPublished: Bool
+    let onUpdatePublished: () -> Void
     @State private var showsText = false
 
     private var isDocument: Bool { cell.kind == .config }
@@ -31,6 +33,18 @@ struct CellConfigurationView: View {
                 Button("Close", systemImage: "xmark") { withAnimation { isPresented = false } }
                     .labelStyle(.iconOnly)
                     .buttonStyle(.borderless)
+            }
+            if isPublished {
+                HStack {
+                    Label("Published", systemImage: "checkmark.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Update Widget", systemImage: "arrow.clockwise", action: onUpdatePublished)
+                        .disabled(!cell.canPublishWidget)
+                        .help("Update the published workbook snapshot without changing the widget's name")
+                        .accessibilityIdentifier("update-published-widget")
+                }
             }
             Picker("Editor", selection: $showsText) {
                 Text("Settings").tag(false)

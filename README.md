@@ -19,14 +19,24 @@ choose that name in **Edit Widget**. Manage publications under
 Use **Unpublish Widget** in the cell menu to remove its publication. Republishing
 the cell reconnects widgets using the same saved identity. The widget picker and
 Published Widgets window organize cells under their source filenames. In the
-**Document Config** header, **Publish All Widgets** publishes all chart and
+**Document Config** cell's kebab menu, **Publish All Widgets** publishes all chart and
 Markdown cells or updates their existing publications, preserving custom names.
 The confirmation sheet lists the cells before publishing.
+When the workbook has published cells, the config menu also offers **Update All
+Widgets** (published cells only) and **Unpublish All Widgets**, with confirmation
+before unpublishing. Neither action affects publications from other workbooks.
+Published cells show a **Published** badge. Their configuration sidebar includes
+**Update Widget** to refresh the published snapshot without another naming dialog.
 
 For repeatable chart and widget comparisons, open
 [`docs/examples/ChartSamples.nrmd`](docs/examples/ChartSamples.nrmd). It contains
 fixed Lua data for billboard, line, bar, pie, scatter plot, and table charts and
 requires no API key or network access.
+
+Widget charts hide axes at small and medium sizes, and hide legends at small
+sizes. Large widgets retain both; workbook charts are unchanged. Billboard
+widgets fit their tiles to the available space, and table widgets show a static
+grid with a remaining-row count when the data does not fit.
 
 Publishing stores a snapshot of the entire workbook in the shared App Group.
 The extension refreshes the chosen cell and its transitive dependencies without

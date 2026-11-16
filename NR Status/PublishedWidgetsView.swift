@@ -2,6 +2,35 @@ import SwiftUI
 import WidgetKit
 
 enum WorkbookWidgetPublishing {
+    static func updateAll(
+        document: inout NRQL_EditorDocument, sourceName: String, registry: WidgetRegistry
+    ) throws {
+        let published = try document.cells.filter { cell in
+            guard let id = cell.widgetID else { return false }
+            return try registry.widget(id: id) != nil
+        }
+        guard !published.isEmpty else { return }
+        try publish(cellIDs: published.map(\.id), document: &document, sourceName: sourceName, registry: registry)
+    }
+
+    static func unpublishAll(document: NRQL_EditorDocument, registry: WidgetRegistry) throws {
+        for id in Set(document.cells.compactMap(\.widgetID)) {
+            if let widget = try registry.widget(id: id) {
+                try registry.remove(widget)
+            }
+        }
+    }
+
+    static func update(
+        cellID: UUID, document: inout NRQL_EditorDocument, sourceName: String, registry: WidgetRegistry
+    ) throws {
+        guard let id = document.cells.first(where: { $0.id == cellID })?.widgetID,
+              try registry.widget(id: id) != nil else {
+            throw NrqlConnection.ConfigurationError(message: "This cell is not published. Use Publish as Widget first.")
+        }
+        try publish(cellIDs: [cellID], document: &document, sourceName: sourceName, registry: registry)
+    }
+
     static func publish(
         cellIDs: [UUID], document: inout NRQL_EditorDocument, sourceName: String,
         names: [UUID: String] = [:], registry: WidgetRegistry

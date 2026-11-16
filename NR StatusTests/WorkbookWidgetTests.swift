@@ -95,6 +95,41 @@ struct WorkbookWidgetTests {
         #expect(try registry.widgets().count == 1)
     }
 
+    @Test func oneClickUpdatePreservesTheNameAndOnlyUpdatesTheSelectedPublication() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let registry = WidgetRegistry(directory: directory)
+        var document = NRQL_EditorDocument(text: "# First\n\n```lua\nreturn { rows = { { count = 42 } } }\n```")
+        let cellIDs = document.cells.map(\.id)
+        try WorkbookWidgetPublishing.publish(
+            cellIDs: cellIDs, document: &document, sourceName: "Test.nrmd",
+            names: [cellIDs[0]: "Custom name"], registry: registry
+        )
+        let id = try #require(document.cells[0].widgetID)
+        let otherID = try #require(document.cells[1].widgetID)
+        let original = try #require(try registry.widget(id: id))
+        let other = try #require(try registry.widget(id: otherID))
+        document.cells[0].editorText = "# Updated"
+        try WorkbookWidgetPublishing.update(
+            cellID: cellIDs[0], document: &document, sourceName: "Renamed.nrmd", registry: registry
+        )
+        let updated = try #require(try registry.widget(id: id))
+        #expect(updated.name == "Custom name")
+        #expect(updated.cellTitle == "Updated")
+        #expect(updated.sourceName == "Renamed.nrmd")
+        #expect(updated.workbook == document.text)
+        #expect(updated.revision != original.revision)
+        #expect(try registry.widget(id: otherID)?.revision == other.revision)
+        #expect(try registry.widgets().count == 2)
+        try registry.remove(updated)
+        #expect(throws: NrqlConnection.ConfigurationError.self) {
+            try WorkbookWidgetPublishing.update(
+                cellID: cellIDs[0], document: &document, sourceName: "Test.nrmd", registry: registry
+            )
+        }
+        #expect(try registry.widget(id: id) == nil)
+    }
+
     @Test(arguments: [false, true])
     func bulkValidationDoesNotPublishOrMutateAnyCells(duplicateIdentity: Bool) throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
@@ -120,6 +155,54 @@ struct WorkbookWidgetTests {
         #expect(try registry.widgets().isEmpty)
         #expect(document.text == original)
         #expect(document.cells.allSatisfy { $0.query.text == $0.text })
+    }
+
+    @Test func updateAndUnpublishAllOnlyAffectPublishedCellsInThisWorkbook() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let registry = WidgetRegistry(directory: directory)
+        var document = NRQL_EditorDocument(text: """
+            # First
+
+            ```lua
+            return { rows = { { count = 42 } } }
+            ```
+
+            # Not published
+            """)
+        let selected = document.cells.prefix(2).map(\.id)
+        try WorkbookWidgetPublishing.publish(
+            cellIDs: selected, document: &document, sourceName: "Test.nrmd",
+            names: [selected[0]: "Custom name"], registry: registry
+        )
+        let identities = document.cells.compactMap(\.widgetID)
+        let originals = try identities.map { try #require(try registry.widget(id: $0)) }
+        let unrelated = publication("# Other workbook", target: UUID())
+        try registry.save(unrelated)
+        document.cells[0].editorText = "# Changed"
+        try WorkbookWidgetPublishing.updateAll(document: &document, sourceName: "Test.nrmd", registry: registry)
+        for original in originals {
+            let updated = try #require(try registry.widget(id: original.id))
+            #expect(updated.name == original.name)
+            #expect(updated.revision != original.revision)
+            #expect(updated.workbook == document.text)
+            try registry.cache(WorkbookWidgetOutput(title: updated.name, updatedAt: Date()), for: updated)
+        }
+        #expect(document.cells[2].widgetID == nil)
+        #expect(try registry.widgets().count == 3)
+        #expect(try registry.widget(id: unrelated.id)?.revision == unrelated.revision)
+        let beforeUnpublishing = document.text
+        let updated = try identities.map { try #require(try registry.widget(id: $0)) }
+        try WorkbookWidgetPublishing.unpublishAll(document: document, registry: registry)
+        #expect(document.text == beforeUnpublishing)
+        #expect(document.cells.compactMap(\.widgetID) == identities)
+        #expect(try registry.widgets().map(\.id) == [unrelated.id])
+        for widget in updated {
+            #expect(try registry.cachedOutput(for: widget) == nil)
+        }
+        try WorkbookWidgetPublishing.unpublishAll(document: document, registry: registry)
+        try WorkbookWidgetPublishing.updateAll(document: &document, sourceName: "Test.nrmd", registry: registry)
+        #expect(try registry.widgets().map(\.id) == [unrelated.id])
     }
 
     @Test func publicationsAreGroupedAndNaturallySortedByFileThenCell() {

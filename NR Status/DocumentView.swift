@@ -20,6 +20,7 @@ struct DocumentView: View {
     @State private var configRevealRequest = UUID()
     @State private var publishing: PublicationSheet?
     @State private var publishedIDs: Set<UUID> = []
+    @State private var isUnpublishingAll = false
 
     private enum PublicationSheet: Identifiable {
         case cell(UUID), all
@@ -80,12 +81,21 @@ struct DocumentView: View {
         } message: {
             Text(configurationError ?? "")
         }
+        .confirmationDialog("Unpublish All Widgets?", isPresented: $isUnpublishingAll) {
+            Button("Unpublish All Widgets", role: .destructive) { unpublishAll() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Unpublish every published cell in this workbook. Desktop widgets will stop displaying these cells until you republish them.")
+        }
     }
 
     private var notebook: some View {
         let stale = document.staleCellIds(profiles: profileSettings)
         let readingBelow = document.readingBelowCellIds
         let canPublishAll = document.cells.contains(where: \.canPublishWidget)
+        let hasPublishedWidgets = document.cells.contains { cell in
+            cell.widgetID.map { publishedIDs.contains($0) } ?? false
+        }
         return ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
                 if case .failure(let error) = document.connection {
@@ -110,9 +120,13 @@ struct DocumentView: View {
                         onAction: { document.perform($0, on: cell.id) },
                         isPublished: cell.widgetID.map { publishedIDs.contains($0) } ?? false,
                         canPublishAll: canPublishAll,
+                        hasPublishedWidgets: hasPublishedWidgets,
                         onPublish: { publishing = .cell(cell.id) },
                         onUnpublish: { unpublish(cell.id) },
-                        onPublishAll: { publishing = .all }
+                        onUpdatePublished: { updatePublished(cell.id) },
+                        onPublishAll: { publishing = .all },
+                        onUpdateAll: { updateAllPublished() },
+                        onUnpublishAll: { isUnpublishingAll = true }
                     )
                 }
 
@@ -144,12 +158,37 @@ struct DocumentView: View {
         } catch { configurationError = error.localizedDescription }
     }
 
+    private func updatePublished(_ cellID: UUID) {
+        do {
+            try WorkbookWidgetPublishing.update(
+                cellID: cellID, document: &document, sourceName: sourceName, registry: WidgetRegistry.shared()
+            )
+            WidgetCenter.shared.reloadTimelines(ofKind: WidgetRegistry.widgetKind)
+        } catch { configurationError = error.localizedDescription }
+    }
+
     private func unpublish(_ cellID: UUID) {
         do {
             try WorkbookWidgetPublishing.unpublish(
                 cellID: cellID, document: document, registry: WidgetRegistry.shared()
             )
             WidgetCenter.shared.reloadTimelines(ofKind: WidgetRegistry.widgetKind)
+        } catch { configurationError = error.localizedDescription }
+    }
+
+    private func updateAllPublished() {
+        defer { WidgetCenter.shared.reloadTimelines(ofKind: WidgetRegistry.widgetKind) }
+        do {
+            try WorkbookWidgetPublishing.updateAll(
+                document: &document, sourceName: sourceName, registry: WidgetRegistry.shared()
+            )
+        } catch { configurationError = error.localizedDescription }
+    }
+
+    private func unpublishAll() {
+        defer { WidgetCenter.shared.reloadTimelines(ofKind: WidgetRegistry.widgetKind) }
+        do {
+            try WorkbookWidgetPublishing.unpublishAll(document: document, registry: WidgetRegistry.shared())
         } catch { configurationError = error.localizedDescription }
     }
 
@@ -302,9 +341,13 @@ struct CellView: View {
     let onAction: (NRQL_EditorDocument.CellAction) -> Void
     let isPublished: Bool
     let canPublishAll: Bool
+    let hasPublishedWidgets: Bool
     let onPublish: () -> Void
     let onUnpublish: () -> Void
+    let onUpdatePublished: () -> Void
     let onPublishAll: () -> Void
+    let onUpdateAll: () -> Void
+    let onUnpublishAll: () -> Void
 
     @State private var position: CodeEditor.Position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
     @State private var messages: Set<TextLocated<Message>> = Set()
@@ -353,7 +396,16 @@ struct CellView: View {
         HStack(alignment: .top, spacing: 0) {
             cellContent.frame(maxWidth: .infinity)
             if showsChartSettings {
-                CellConfigurationView(cell: $cell, isPresented: $showsChartSettings)
+                CellConfigurationView(
+                    cell: $cell, isPresented: $showsChartSettings, isPublished: isPublished,
+                    onUpdatePublished: {
+                        if let draft {
+                            cell.editorText = draft
+                            self.draft = nil
+                        }
+                        onUpdatePublished()
+                    }
+                )
                     .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
@@ -631,21 +683,29 @@ struct CellView: View {
             if cell.kind == .config {
                 Text("Document Config").font(.headline)
                 Spacer()
-                Button("Publish All Widgets...", action: onPublishAll)
-                    .buttonStyle(.borderless)
-                    .help("Publish new cells and update existing widgets from this workbook")
-                    .disabled(!canPublishAll)
                 configurationButton
                 actionsMenu
             } else if cell.kind == .markdown {
                 if !isRenderedMarkdown {
                     Text("Markdown").font(.headline)
                 }
+                publicationBadge
                 Spacer()
                 actionsMenu
             } else {
                 codeHeader
             }
+        }
+    }
+
+    @ViewBuilder private var publicationBadge: some View {
+        if isPublished {
+            Label("Published", systemImage: "checkmark.circle")
+                .labelStyle(.titleAndIcon)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: true, vertical: false)
+                .help("Published as a widget")
         }
     }
 
@@ -666,6 +726,7 @@ struct CellView: View {
 
             Text(cell.query.title)
                 .font(.headline)
+            publicationBadge
             Spacer()
 
             if let sent = cell.kind == .nerdgraph ? cell.query.executedVariables : cell.query.executedNrql {
@@ -747,6 +808,15 @@ struct CellView: View {
 
     private var actionsMenu: some View {
         Menu("Cell Actions", systemImage: "ellipsis") {
+            if cell.kind == .config {
+                Button("Publish All Widgets...", action: onPublishAll)
+                    .disabled(!canPublishAll)
+                if hasPublishedWidgets {
+                    Button("Update All Widgets", action: onUpdateAll)
+                    Button("Unpublish All Widgets...", role: .destructive, action: onUnpublishAll)
+                }
+                Divider()
+            }
             if cell.canPublishWidget {
                 Button(isPublished ? "Update Published Widget..." : "Publish as Widget...", systemImage: "square.grid.2x2") {
                     if let draft {

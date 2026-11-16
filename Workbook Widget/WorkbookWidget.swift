@@ -67,6 +67,7 @@ struct WorkbookWidgetProvider: AppIntentTimelineProvider {
 }
 
 struct WorkbookWidgetView: View {
+    @Environment(\.widgetFamily) private var family
     let entry: WorkbookWidgetEntry
 
     var body: some View {
@@ -75,7 +76,7 @@ struct WorkbookWidgetView: View {
                 Text("Workbook Widget").font(.headline)
                 if let sample = ChartSamples.randomSample(for: .billboard) {
                     ConfigurableChartView(resultsContainer: sample, format: .parseMetadata("chart: billboard"))
-                        .withoutConfiguration()
+                        .widgetSized(for: family)
                 }
             } else if let output = entry.output {
                 if let markdown = output.markdown {
@@ -83,7 +84,7 @@ struct WorkbookWidgetView: View {
                 } else if let results = output.resultContainer {
                     Text(output.title).font(.headline).lineLimit(1)
                     ConfigurableChartView(resultsContainer: results, format: output.configuration.map(ChartFormat.parseMetadata))
-                        .withoutConfiguration()
+                        .widgetSized(for: family)
                 }
                 Spacer(minLength: 0)
                 HStack(spacing: 4) {

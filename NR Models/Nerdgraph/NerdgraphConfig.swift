@@ -13,6 +13,9 @@ struct NerdgraphConfig: Equatable, Hashable, Sendable {
 
     static let appGroup = "EHM929N34N.net.baurhome.NR-Status"
 
+    // A registered App Group supports keychain sharing even when signing prefixes differ.
+    static let keychainAccessGroup = Bundle.main.object(forInfoDictionaryKey: "NRStatusKeychainAccessGroup") as? String
+
     /// Shared with the widget extension.
     static let sharedDefaults = UserDefaults(suiteName: appGroup) ?? .standard
 

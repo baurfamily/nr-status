@@ -33,7 +33,8 @@ struct KeychainStore: CredentialStore {
 
     static let shared = KeychainStore(
         label: "NR Status API credential",
-        accessGroup: NerdgraphConfig.appGroup
+        accessGroup: NerdgraphConfig.keychainAccessGroup,
+        legacyAccessGroup: NerdgraphConfig.appGroup
     )
 
     private static let logger = Logger(subsystem: "com.baurfamily.nrstatus", category: "Keychain")
@@ -42,14 +43,16 @@ struct KeychainStore: CredentialStore {
     let account: String
     let identifier: String?
     let legacyLabel: String?
+    let legacyAccessGroup: String?
 
     init(label: String, accessGroup: String?, account: String = "api-key",
-         identifier: String? = nil, legacyLabel: String? = nil) {
+         identifier: String? = nil, legacyLabel: String? = nil, legacyAccessGroup: String? = nil) {
         self.label = label
         self.accessGroup = accessGroup
         self.account = account
         self.identifier = identifier
         self.legacyLabel = legacyLabel
+        self.legacyAccessGroup = legacyAccessGroup
     }
 
     /// An internet password's security domain holds the stable profile ID.
@@ -77,6 +80,15 @@ struct KeychainStore: CredentialStore {
         return [baseQuery, legacy]
     }
 
+    private var migrationQueries: [[String: Any]] {
+        guard let legacyAccessGroup, legacyAccessGroup != accessGroup else { return [] }
+        return lookupQueries.map { original in
+            var query = original
+            query[kSecAttrAccessGroup as String] = legacyAccessGroup
+            return query
+        }
+    }
+
     func load() -> Credential? {
         do {
             return try loadChecked()
@@ -87,7 +99,9 @@ struct KeychainStore: CredentialStore {
     }
 
     func loadChecked() throws -> Credential? {
-        for var query in lookupQueries {
+        for var query in lookupQueries + migrationQueries {
+            let migrating = query[kSecAttrAccessGroup as String] as? String == legacyAccessGroup
+                && legacyAccessGroup != accessGroup
             query[kSecReturnAttributes as String] = true
             query[kSecReturnData as String] = true
             query[kSecMatchLimit as String] = kSecMatchLimitOne
@@ -95,6 +109,7 @@ struct KeychainStore: CredentialStore {
             var result: CFTypeRef?
             let status = SecItemCopyMatching(query as CFDictionary, &result)
             if status == errSecItemNotFound { continue }
+            if migrating, status == errSecMissingEntitlement { continue }
             guard status == errSecSuccess else { throw StoreError(status: status) }
             guard let item = result as? [String: Any],
                   let host = item[kSecAttrServer as String] as? String,
@@ -103,7 +118,9 @@ struct KeychainStore: CredentialStore {
             else {
                 throw StoreError(status: errSecDecode)
             }
-            return Credential(host: host, apiKey: apiKey)
+            let credential = Credential(host: host, apiKey: apiKey)
+            if migrating { try saveChecked(credential) }
+            return credential
         }
         return nil
     }
@@ -150,8 +167,10 @@ struct KeychainStore: CredentialStore {
     }
 
     func removeChecked() throws {
-        for query in lookupQueries {
+        for query in lookupQueries + migrationQueries {
             let status = SecItemDelete(query as CFDictionary)
+            if query[kSecAttrAccessGroup as String] as? String == legacyAccessGroup,
+               legacyAccessGroup != accessGroup, status == errSecMissingEntitlement { continue }
             if status != errSecSuccess && status != errSecItemNotFound {
                 throw StoreError(status: status)
             }

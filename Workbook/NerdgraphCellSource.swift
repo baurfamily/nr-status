@@ -1,6 +1,6 @@
 import Foundation
 
-/// The two editors belong to one cell; only the variables fence follows the query fence.
+/// The query and variables belong to one cell; only the variables fence follows the query fence.
 struct NerdgraphCellSource {
     var query: String
     var variables: String

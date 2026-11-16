@@ -12,10 +12,12 @@ import LanguageSupport
 /// A notebook-style document: each query is a cell with its results below it.
 struct DocumentView: View {
     @Binding var document: NRQL_EditorDocument
+    var sourceName: String = "Untitled.nrmd"
     @AppStorage("nerdgraphProfiles", store: NerdgraphConfig.sharedDefaults) private var profileSettingsData = Data()
     @State private var profileSettings = NerdgraphProfiles.Settings()
     @State private var configurationError: String?
     @State private var configRevealRequest = UUID()
+    @State private var publishingCell: NrqlCell?
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -27,6 +29,9 @@ struct DocumentView: View {
                 }
         }
         .toolbar { documentToolbar }
+        .sheet(item: $publishingCell) { cell in
+            PublishWidgetSheet(document: $document, cellID: cell.id, sourceName: sourceName)
+        }
         .task(id: profileSettingsData) {
             do {
                 profileSettings = try NerdgraphProfiles.shared.load()
@@ -80,7 +85,8 @@ struct DocumentView: View {
                         onRun: { document.runCell(cell.id) },
                         pendingTitles: document.pendingDependencies(for: cell.id, stale: stale).map(\.query.title),
                         canPerform: { document.canPerform($0, on: cell.id) },
-                        onAction: { document.perform($0, on: cell.id) }
+                        onAction: { document.perform($0, on: cell.id) },
+                        onPublish: { publishingCell = cell }
                     )
                 }
                 HStack {
@@ -252,6 +258,7 @@ struct CellView: View {
     let pendingTitles: [String]
     let canPerform: (NRQL_EditorDocument.CellAction) -> Bool
     let onAction: (NRQL_EditorDocument.CellAction) -> Void
+    let onPublish: () -> Void
 
     @State private var position: CodeEditor.Position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
     @State private var messages: Set<TextLocated<Message>> = Set()
@@ -690,6 +697,16 @@ struct CellView: View {
 
     private var actionsMenu: some View {
         Menu("Cell Actions", systemImage: "ellipsis") {
+            if cell.kind == .markdown || cell.kind == .nrql || cell.kind == .lua {
+                Button(cell.widgetID == nil ? "Publish as Widget..." : "Update Published Widget...", systemImage: "square.grid.2x2") {
+                    if let draft {
+                        cell.editorText = draft
+                        self.draft = nil
+                    }
+                    onPublish()
+                }
+                Divider()
+            }
             Menu("Add Above") {
                 ForEach(NrqlCellKind.allCases.filter { $0 != .config }) { kind in
                     Button(kind.title) { onAction(.add(kind, above: true)) }

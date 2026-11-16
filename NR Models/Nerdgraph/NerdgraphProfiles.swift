@@ -37,7 +37,7 @@ struct NerdgraphProfiles {
     private let settingsKey = "nerdgraphProfiles"
 
     init(defaults: UserDefaults = NerdgraphConfig.sharedDefaults, legacyStore: KeychainStore = .shared,
-         labelPrefix: String = "NR Status named API key", accessGroup: String? = NerdgraphConfig.appGroup) {
+         labelPrefix: String = "NR Status named API key", accessGroup: String? = NerdgraphConfig.keychainAccessGroup) {
         self.defaults = defaults
         self.legacyStore = legacyStore
         self.labelPrefix = labelPrefix
@@ -47,7 +47,9 @@ struct NerdgraphProfiles {
     func keychain(for profile: NerdgraphProfile) -> KeychainStore {
         KeychainStore(
             label: "\(labelPrefix) (\(profile.name))", accessGroup: accessGroup, account: profile.name,
-            identifier: profile.id.uuidString, legacyLabel: "\(labelPrefix) \(profile.id.uuidString)"
+            identifier: profile.id.uuidString, legacyLabel: "\(labelPrefix) \(profile.id.uuidString)",
+            legacyAccessGroup: accessGroup != nil && accessGroup == NerdgraphConfig.keychainAccessGroup
+                ? NerdgraphConfig.appGroup : nil
         )
     }
 

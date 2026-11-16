@@ -16,9 +16,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "3F19A9C52CE01285008FEA5A"
-               BuildableName = "Test WidgetExtension.appex"
-               BlueprintName = "Test WidgetExtension"
+               BlueprintIdentifier = "BA0000010000000000000003"
+               BuildableName = "Workbook WidgetExtension.appex"
+               BlueprintName = "Workbook WidgetExtension"
                ReferencedContainer = "container:NR Status.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -57,8 +57,19 @@
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES"
       launchAutomaticallySubstyle = "2">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
+      <RemoteRunnable
+         runnableDebuggingMode = "1"
+         BundleIdentifier = "com.apple.widgetkit.simulator"
+         RemotePath = "/System/Library/CoreServices/WidgetKit Simulator.app/Contents/MacOS/WidgetKit Simulator">
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "BA0000010000000000000003"
+            BuildableName = "Workbook WidgetExtension.appex"
+            BlueprintName = "Workbook WidgetExtension"
+            ReferencedContainer = "container:NR Status.xcodeproj">
+         </BuildableReference>
+      </RemoteRunnable>
+      <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "3F01FD242CBDFADF00D9E068"
@@ -66,11 +77,11 @@
             BlueprintName = "NR Status"
             ReferencedContainer = "container:NR Status.xcodeproj">
          </BuildableReference>
-      </BuildableProductRunnable>
+      </MacroExpansion>
       <EnvironmentVariables>
          <EnvironmentVariable
             key = "_XCWidgetKind"
-            value = ""
+            value = "net.baurhome.nrstatus.workbook"
             isEnabled = "YES">
          </EnvironmentVariable>
          <EnvironmentVariable

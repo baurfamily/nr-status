@@ -38,30 +38,20 @@ struct BillboardChart: View {
         selectedFields.first ?? ""
     }
 
-    let columns = [
-        GridItem(.adaptive(minimum: 200))
-    ]
-
     var body: some View {
         if config.heightInLines != nil {
             GeometryReader { geometry in
-                let width = max(geometry.size.width - 32, 1)
-                let columnCount = max(1, min(data.count, Int((width + 16) / 216)))
-                let rowCount = max(1, (data.count + columnCount - 1) / columnCount)
-                let spacing = min(16, max(geometry.size.height, 0) / CGFloat(rowCount * 4))
-                let tileWidth = max(1, (width - CGFloat(columnCount - 1) * 16) / CGFloat(columnCount))
-                let tileHeight = max(1, (geometry.size.height - CGFloat(rowCount - 1) * spacing) / CGFloat(rowCount))
-                let scale = min(tileWidth / 200, tileHeight / 135)
+                let grid = ScaledBillboardGrid(itemCount: data.count, size: geometry.size)
 
                 LazyVGrid(
-                    columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: columnCount),
-                    spacing: spacing
+                    columns: Array(repeating: GridItem(.flexible(minimum: 0), spacing: 16), count: grid.columns),
+                    spacing: grid.spacing
                 ) {
                     ForEach(data, id: \.id) { item in
                         tile(for: item)
-                            .frame(width: tileWidth / scale, height: tileHeight / scale)
-                            .scaleEffect(scale)
-                            .frame(width: tileWidth, height: tileHeight)
+                            .frame(width: grid.tileSize.width / grid.scale, height: grid.tileSize.height / grid.scale)
+                            .scaleEffect(grid.scale)
+                            .frame(width: grid.tileSize.width, height: grid.tileSize.height)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -72,12 +62,12 @@ struct BillboardChart: View {
     }
 
     private var compactGrid: some View {
-        LazyVGrid(columns: columns, spacing: 16) {
+        BillboardGridLayout {
             ForEach(data, id: \.id) { item in
                 tile(for: item)
             }
         }
-        .padding(.horizontal)
+        .padding(.horizontal, 16)
     }
 
     @ViewBuilder private func tile(for item: NrdbResults.MiniDatum) -> some View {
@@ -98,6 +88,80 @@ struct BillboardChart: View {
         } else {
             BillboardTile(datum: item)
         }
+    }
+}
+
+private struct ScaledBillboardGrid {
+    var columns = 1
+    var spacing: CGFloat = 0
+    var tileSize = CGSize.zero
+    var scale: CGFloat = 0
+
+    init(itemCount: Int, size: CGSize) {
+        let count = max(1, itemCount)
+        let width = max(1, size.width - 32)
+        let height = max(1, size.height)
+        for columns in 1...count {
+            let tileWidth = (width - CGFloat(columns - 1) * 16) / CGFloat(columns)
+            guard tileWidth > 0 else { break }
+            let rows = (count + columns - 1) / columns
+            let spacing = min(16, height / CGFloat(rows * 4))
+            let tileHeight = (height - CGFloat(rows - 1) * spacing) / CGFloat(rows)
+            let scale = min(tileWidth / 200, tileHeight / 135)
+            // Ties keep fewer columns, avoiding unnecessary empty cells in the last row.
+            if scale > self.scale {
+                self.columns = columns
+                self.spacing = spacing
+                self.tileSize = CGSize(width: tileWidth, height: tileHeight)
+                self.scale = scale
+            }
+        }
+    }
+}
+
+private struct BillboardGridLayout: Layout {
+    private let spacing: CGFloat = 16
+    private let minimumColumnWidth: CGFloat = 200
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width.flatMap { $0.isFinite ? $0 : nil }
+            ?? CGFloat(subviews.count) * (minimumColumnWidth + spacing) - spacing
+        let grid = metrics(width: max(0, width), subviews: subviews)
+        return CGSize(
+            width: max(0, width),
+            height: grid.rowHeights.reduce(0, +) + CGFloat(max(0, grid.rowHeights.count - 1)) * spacing
+        )
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let grid = metrics(width: bounds.width, subviews: subviews)
+        var y = bounds.minY
+        for (row, height) in grid.rowHeights.enumerated() {
+            for column in 0..<grid.columns {
+                let index = row * grid.columns + column
+                guard index < subviews.count else { break }
+                subviews[index].place(
+                    at: CGPoint(
+                        x: bounds.minX + CGFloat(column) * (grid.columnWidth + spacing) + grid.columnWidth / 2,
+                        y: y + height / 2
+                    ),
+                    anchor: .center,
+                    proposal: ProposedViewSize(width: grid.columnWidth, height: height)
+                )
+            }
+            y += height + spacing
+        }
+    }
+
+    private func metrics(width: CGFloat, subviews: Subviews) -> (columns: Int, columnWidth: CGFloat, rowHeights: [CGFloat]) {
+        let columns = max(1, min(subviews.count, Int((width + spacing) / (minimumColumnWidth + spacing))))
+        let columnWidth = max(0, (width - CGFloat(columns - 1) * spacing) / CGFloat(columns))
+        var rowHeights = Array(repeating: CGFloat.zero, count: (subviews.count + columns - 1) / columns)
+        for (index, subview) in subviews.enumerated() {
+            let height = subview.sizeThatFits(ProposedViewSize(width: columnWidth, height: nil)).height
+            rowHeights[index / columns] = max(rowHeights[index / columns], height)
+        }
+        return (columns, columnWidth, rowHeights)
     }
 }
 

@@ -268,6 +268,57 @@ struct NrdbTests {
         #expect(paintedPixels(large) > paintedPixels(small) * 2)
     }
 
+    @MainActor @Test(
+        arguments: ["billboard"] + BillboardConfiguration.GaugeStyle.allCases.map(\.rawValue), [1, 2]
+    )
+    func automaticBillboardsCenterTilesAcrossAvailableWidth(style: String, count: Int) throws {
+        let rows = (0..<count).map { #"{"facet":"App\#($0)","count":50}"# }.joined(separator: ",")
+        let config = ChartConfiguration(resultContainer: try container(results: "[\(rows)]"))
+        if let gaugeStyle = BillboardConfiguration.GaugeStyle(rawValue: style) {
+            config.billboard.showGauge = true
+            config.billboard.gaugeStyle = gaugeStyle
+        }
+        let renderer = ImageRenderer(content: ConfigurableChartView(config: config)
+            .withoutConfiguration().documentSized().frame(width: 900).foregroundStyle(.white))
+        let image = NSBitmapImageRep(cgImage: try #require(renderer.cgImage))
+        #expect(image.pixelsHigh < 300)
+        let columnWidth = (900 - 32 - Double(count - 1) * 16) / Double(count)
+        for index in 0..<count {
+            let center = Int(16 + columnWidth / 2 + Double(index) * (columnWidth + 16))
+            let hasCenteredContent = (center - 60..<center + 60).contains { x in
+                (0..<image.pixelsHigh).contains { y in
+                    (image.colorAt(x: x, y: y)?.alphaComponent ?? 0) > 0.1
+                }
+            }
+
+            #expect(hasCenteredContent, "Tile \(index) should be centered in column \(index), not leave an empty column.")
+        }
+    }
+
+    @MainActor @Test(arguments: ["billboard"] + BillboardConfiguration.GaugeStyle.allCases.map(\.rawValue))
+    func shortBillboardsReflowFourTilesIntoOneRow(style: String) throws {
+        let rows = (0..<4).map { #"{"facet":"App\#($0)","count":50}"# }.joined(separator: ",")
+        let config = ChartConfiguration(resultContainer: try container(results: "[\(rows)]"))
+        config.heightInLines = 8
+        if let gaugeStyle = BillboardConfiguration.GaugeStyle(rawValue: style) {
+            config.billboard.showGauge = true
+            config.billboard.gaugeStyle = gaugeStyle
+        }
+        let renderer = ImageRenderer(content: ConfigurableChartView(config: config)
+            .withoutConfiguration().documentSized().frame(width: 800).foregroundStyle(.white))
+        let image = NSBitmapImageRep(cgImage: try #require(renderer.cgImage))
+        #expect(image.pixelsHigh == 120)
+        for column in 0..<4 {
+            let center = 106 + column * 196
+            let hasTile = (center - 20..<center + 20).contains { x in
+                (0..<image.pixelsHigh).contains { y in
+                    (image.colorAt(x: x, y: y)?.alphaComponent ?? 0) > 0.1
+                }
+            }
+            #expect(hasTile, "Short charts should use all four columns instead of wrapping after three tiles.")
+        }
+    }
+
     @Test func formatAppliesToTimeseriesConfig() throws {
         let timeseries = try container(results: #"[{"beginTimeSeconds":100,"endTimeSeconds":160,"count":1}]"#)
 

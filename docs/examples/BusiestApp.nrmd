@@ -8,12 +8,13 @@ var: main_app = "TaT (production)"
 title: Busiest app, last week
 var: top_app
 chart: billboard
-attributes: gauge, style(circular)
+attributes: style(circular)
+height: 8
 ```
 ```nrql
 FROM Transaction
 SELECT count(*)
-FACET appName
+FACET name
 SINCE 1 week ago
 LIMIT 4
 ```

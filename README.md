@@ -50,8 +50,10 @@ Facet/field filtering and display counts are not stored in workbook configuratio
 Set `height: 20` in a `cell_config` fence, or use **Chart height (lines)** in the
 sidebar, to size a chart in display lines (15 points per line). Omit `height`, or
 set it to `auto`, for the default: 20 lines for plots and tables, and content-fit
-for billboards. Explicitly sized billboards scale their values and gauges to fit
-the available width and height. HTML and PDF exports use the same chart height;
+for billboards. Explicitly sized billboards automatically reflow into rows and
+columns that give their values and gauges the largest size that fits the available
+width and height, keeping result order. Shorter charts can fit more items per row.
+HTML and PDF exports use the same chart height;
 table exports remain data tables rather than fixed-height images.
 Oversized chart/query blocks are reduced to fit a PDF page without clipping.
 Drag the grip along a chart's bottom edge to resize it, snapping to whole lines.

@@ -8,6 +8,7 @@ import Foundation
 /// Chart settings written as plain key/value lines in a cell_config fence:
 ///
 ///     chart: line
+///     height: 20
 ///     attributes: smoothed, lines, points
 ///
 /// With no `attributes` key, the chart keeps its defaults. When it is present,
@@ -22,6 +23,7 @@ struct ChartFormat: Equatable, Hashable {
     var title: String?
     var name: String?
     var type: ChartType?
+    var heightInLines: Int?
     var hidesChart = false
     var hidesQuery = false
     var showsJSON = false
@@ -70,6 +72,8 @@ struct ChartFormat: Equatable, Hashable {
                 format.type = ChartType(rawValue: value)
             case "query":
                 format.hidesQuery = value == "hide"
+            case "height":
+                format.heightInLines = Int(value).flatMap { $0 > 0 ? $0 : nil }
             case "attributes":
                 format.attributes = parseAttributes(rawValue)
             default:
@@ -81,6 +85,7 @@ struct ChartFormat: Equatable, Hashable {
     }
 
     func apply(to config: ChartConfiguration) {
+        config.heightInLines = heightInLines
         if let type, config.chartTypes.contains(type) {
             config.chartType = type
         }

@@ -17,6 +17,7 @@ struct ConfigurableChartView: View {
     }
 
     var hideConfiguration: Bool = false
+    private var usesDocumentSizing = false
     
     // shown at the top of the inspector, above the chart configuration
     private var inspectorHeader = AnyView(EmptyView())
@@ -67,12 +68,21 @@ struct ConfigurableChartView: View {
         return copy
     }
 
+    func documentSized() -> ConfigurableChartView {
+        var copy = self
+        copy.usesDocumentSizing = true
+        return copy
+    }
+
     @ViewBuilder
     var body: some View {
         if hideConfiguration {
             chart
+                .frame(height: usesDocumentSizing ? config.documentHeight : nil)
         } else {
-            chart.inspector(isPresented: configShowing) { inspector }
+            chart
+                .frame(height: usesDocumentSizing ? config.documentHeight : nil)
+                .inspector(isPresented: configShowing) { inspector }
         }
     }
 

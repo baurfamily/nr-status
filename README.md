@@ -47,6 +47,18 @@ Gauges also accept `max(number)` and `style(styleName)`; scatter plots accept
 `x(field)`, `y(field)`, `color(field)`, and `size(field)`. An absent attributes
 line uses chart defaults; an explicit empty line switches applicable toggles off.
 Facet/field filtering and display counts are not stored in workbook configuration.
+Set `height: 20` in a `cell_config` fence, or use **Chart height (lines)** in the
+sidebar, to size a chart in display lines (15 points per line). Omit `height`, or
+set it to `auto`, for the default: 20 lines for plots and tables, and content-fit
+for billboards. Explicitly sized billboards automatically reflow into rows and
+columns that give their values and gauges the largest size that fits the available
+width and height, keeping result order. Shorter charts can fit more items per row.
+HTML and PDF exports use the same chart height;
+table exports remain data tables rather than fixed-height images.
+Oversized chart/query blocks are reduced to fit a PDF page without clipping.
+Drag the grip along a chart's bottom edge to resize it, snapping to whole lines.
+The chart updates while dragging; releasing saves the height to `cell_config`.
+Double-click the grip to reset to Auto.
 In the query builder, facet selections filter the chart, and **Filter Query to
 Selected Facets** can add a `WHERE` clause for a single facet.
 

@@ -19,8 +19,21 @@ struct SelectableField: Identifiable, Hashable {
 
 @Observable
 class ChartConfiguration {
+    static let pointsPerLine: CGFloat = 15
+
+    static func lines(forHeight height: CGFloat) -> Int {
+        max(1, Int((height / pointsPerLine).rounded()))
+    }
+
     var resultContainer: NrdbResultContainer
     var chartType: ChartType?
+    var heightInLines: Int?
+
+    // Twenty display lines preserve the notebook's original 300-point chart height.
+    var documentHeight: CGFloat? {
+        if let heightInLines { return CGFloat(heightInLines) * Self.pointsPerLine }
+        return chartType == .billboard ? nil : 300
+    }
     
     var facets: FacetsConfiguration
     

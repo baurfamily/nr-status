@@ -5,6 +5,8 @@
 
 import Testing
 import Foundation
+import SwiftUI
+import AppKit
 @testable import NR_Status
 
 struct NrdbTests {
@@ -208,6 +210,113 @@ struct NrdbTests {
         #expect(format.attributes == ["smoothed", "points"])
         #expect(ChartFormat.parseMetadata("attributes: smoothed points,lines").attributes == ["smoothed", "points", "lines"])
         #expect(ChartFormat.parseMetadata("attributes:").attributes == [])
+    }
+
+    @Test(arguments: ["", "auto", "AUTO", "0", "-1", "2.5", "nan", "infinity", "many", "999999999999999999999"])
+    func automaticOrInvalidHeightDoesNotOverrideDefaults(value: String) throws {
+        let config = ChartConfiguration(resultContainer: try container(results: #"[{"count":5}]"#))
+        config.heightInLines = 40
+        ChartFormat.parseMetadata("height: \(value)").apply(to: config)
+        #expect(config.heightInLines == nil)
+        #expect(config.documentHeight == nil)
+        config.chartType = .bar
+        #expect(config.documentHeight == 300)
+    }
+
+    @Test(arguments: [(300.0, 20), (307.0, 20), (308.0, 21), (293.0, 20), (292.0, 19), (0.0, 1), (-100.0, 1)])
+    func resizingSnapsToWholeLinesAndKeepsAPositiveHeight(height: Double, lines: Int) {
+        #expect(ChartConfiguration.lines(forHeight: height) == lines)
+    }
+
+    @MainActor @Test(arguments: [ChartType.billboard, .line, .bar, .pie, .plot, .table])
+    func explicitChartHeightControlsRenderedLayout(type: ChartType) throws {
+        let config = ChartConfiguration(resultContainer: try container(results: #"[{"count":5,"average":2}]"#))
+        ChartFormat.parseMetadata(" Height: 32 ").apply(to: config)
+        config.chartType = type
+        let renderer = ImageRenderer(content: ConfigurableChartView(config: config)
+            .withoutConfiguration().documentSized().frame(width: 700))
+        var renderedSize = CGSize.zero
+        renderer.render { size, _ in renderedSize = size }
+        #expect(renderedSize == CGSize(width: 700, height: 480))
+    }
+
+    @MainActor @Test(arguments: [false, true])
+    func billboardContentGrowsWithExplicitHeight(showGauge: Bool) throws {
+        func image(lines: Int?) throws -> NSBitmapImageRep {
+            let config = ChartConfiguration(resultContainer: try container(results: #"[{"facet":"App","count":50}]"#))
+            config.heightInLines = lines
+            config.billboard.showGauge = showGauge
+            let renderer = ImageRenderer(content: ConfigurableChartView(config: config)
+                .withoutConfiguration().documentSized().frame(width: 700).foregroundStyle(.white))
+            return NSBitmapImageRep(cgImage: try #require(renderer.cgImage))
+        }
+        func paintedPixels(_ image: NSBitmapImageRep) -> Int {
+            var count = 0
+            for y in 0..<image.pixelsHigh {
+                for x in 0..<image.pixelsWide {
+                    if (image.colorAt(x: x, y: y)?.alphaComponent ?? 0) > 0.1 { count += 1 }
+                }
+            }
+            return count
+        }
+        let automatic = try image(lines: nil)
+        let small = try image(lines: 10)
+        let large = try image(lines: 30)
+        #expect(automatic.pixelsHigh < 300)
+        #expect(small.pixelsHigh == 150)
+        #expect(large.pixelsHigh == 450)
+        #expect(paintedPixels(large) > paintedPixels(small) * 2)
+    }
+
+    @MainActor @Test(
+        arguments: ["billboard"] + BillboardConfiguration.GaugeStyle.allCases.map(\.rawValue), [1, 2]
+    )
+    func automaticBillboardsCenterTilesAcrossAvailableWidth(style: String, count: Int) throws {
+        let rows = (0..<count).map { #"{"facet":"App\#($0)","count":50}"# }.joined(separator: ",")
+        let config = ChartConfiguration(resultContainer: try container(results: "[\(rows)]"))
+        if let gaugeStyle = BillboardConfiguration.GaugeStyle(rawValue: style) {
+            config.billboard.showGauge = true
+            config.billboard.gaugeStyle = gaugeStyle
+        }
+        let renderer = ImageRenderer(content: ConfigurableChartView(config: config)
+            .withoutConfiguration().documentSized().frame(width: 900).foregroundStyle(.white))
+        let image = NSBitmapImageRep(cgImage: try #require(renderer.cgImage))
+        #expect(image.pixelsHigh < 300)
+        let columnWidth = (900 - 32 - Double(count - 1) * 16) / Double(count)
+        for index in 0..<count {
+            let center = Int(16 + columnWidth / 2 + Double(index) * (columnWidth + 16))
+            let hasCenteredContent = (center - 60..<center + 60).contains { x in
+                (0..<image.pixelsHigh).contains { y in
+                    (image.colorAt(x: x, y: y)?.alphaComponent ?? 0) > 0.1
+                }
+            }
+
+            #expect(hasCenteredContent, "Tile \(index) should be centered in column \(index), not leave an empty column.")
+        }
+    }
+
+    @MainActor @Test(arguments: ["billboard"] + BillboardConfiguration.GaugeStyle.allCases.map(\.rawValue))
+    func shortBillboardsReflowFourTilesIntoOneRow(style: String) throws {
+        let rows = (0..<4).map { #"{"facet":"App\#($0)","count":50}"# }.joined(separator: ",")
+        let config = ChartConfiguration(resultContainer: try container(results: "[\(rows)]"))
+        config.heightInLines = 8
+        if let gaugeStyle = BillboardConfiguration.GaugeStyle(rawValue: style) {
+            config.billboard.showGauge = true
+            config.billboard.gaugeStyle = gaugeStyle
+        }
+        let renderer = ImageRenderer(content: ConfigurableChartView(config: config)
+            .withoutConfiguration().documentSized().frame(width: 800).foregroundStyle(.white))
+        let image = NSBitmapImageRep(cgImage: try #require(renderer.cgImage))
+        #expect(image.pixelsHigh == 120)
+        for column in 0..<4 {
+            let center = 106 + column * 196
+            let hasTile = (center - 20..<center + 20).contains { x in
+                (0..<image.pixelsHigh).contains { y in
+                    (image.colorAt(x: x, y: y)?.alphaComponent ?? 0) > 0.1
+                }
+            }
+            #expect(hasTile, "Short charts should use all four columns instead of wrapping after three tiles.")
+        }
     }
 
     @Test func formatAppliesToTimeseriesConfig() throws {

@@ -155,6 +155,12 @@ struct CellConfigurationView: View {
     }
 
     @ViewBuilder private var chartSettings: some View {
+        labeledField(
+            "Chart height (lines)", text: value("height"),
+            placeholder: chartType == .billboard ? "Auto (fit content)" : "Auto (20 lines)",
+            identifier: "cell-chart-height"
+        )
+        .help("Enter a positive whole number of display lines, or leave empty for Auto.")
         switch chartType {
         case .line:
             attributeToggle("Stacked", "stacked")
@@ -256,6 +262,10 @@ struct CellConfigurationView: View {
             } else {
                 _ = try NrqlConnection.parse(cell.configurationText)
                 if cell.kind == .nerdgraph { _ = try NerdgraphCellSource(stored: cell.text).resultBindings() }
+                let height = NrqlCellSource.value("height", in: cell.configurationText)
+                if !height.isEmpty && height.lowercased() != "auto" && format.heightInLines == nil {
+                    return "Chart height must be a positive whole number of lines, or Auto."
+                }
                 if let maximum = format.parameter("max"),
                    Double(maximum).map({ $0.isFinite && $0 > 0 }) != true {
                     return "Gauge maximum must be a positive number."

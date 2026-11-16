@@ -69,6 +69,55 @@ final class NR_StatusUITests: XCTestCase {
     }
 
     @MainActor
+    func testChartHeightCanBeDraggedAndReset() throws {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("chart-resize-\(UUID().uuidString).nrmd")
+        try """
+            ```cell_config
+            title: Resize chart
+            height: 20
+            ```
+            ```lua
+            return { rows = { { count = 50 } } }
+            ```
+            """.write(to: file, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: file) }
+
+        let app = XCUIApplication()
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES"]
+        app.launch()
+        app.typeKey("o", modifierFlags: .command)
+        app.typeKey("g", modifierFlags: [.command, .shift])
+        app.typeText(file.path)
+        app.typeKey(.return, modifierFlags: [])
+        app.typeKey(.return, modifierFlags: [])
+        let window = app.windows[file.lastPathComponent]
+        XCTAssertTrue(window.waitForExistence(timeout: 5))
+        let run = window.buttons["Run"].firstMatch
+        XCTAssertTrue(run.waitForExistence(timeout: 5))
+        run.click()
+        let handle = window.descendants(matching: .any)["chart-height-resize-handle"].firstMatch
+        XCTAssertTrue(handle.waitForExistence(timeout: 10))
+        window.buttons["Configure Cell"].firstMatch.click()
+        let height = window.textFields["cell-chart-height"]
+        XCTAssertTrue(height.waitForExistence(timeout: 5))
+        XCTAssertEqual(height.value as? String, "20")
+        XCTAssertEqual(handle.frame.height, 12, accuracy: 1)
+        let start = handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        start.click(forDuration: 0.1, thenDragTo: start.withOffset(CGVector(dx: 0, dy: 75)))
+        XCTAssertEqual(height.value as? String, "25")
+
+        XCTAssertEqual(height.value as? String, "25")
+        window.radioButtons["Text"].firstMatch.click()
+        let text = window.textViews["cell-configuration-text"]
+        XCTAssertTrue((text.value as? String)?.contains("height: 25") == true)
+        handle.doubleClick()
+        let automatic = NSPredicate(format: "NOT (value CONTAINS %@)", "height:")
+        expectation(for: automatic, evaluatedWith: text)
+        waitForExpectations(timeout: 5)
+        XCTAssertTrue(handle.exists)
+    }
+
+    @MainActor
     func testLaunchPerformance() throws {
         if #available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 7.0, *) {
             // This measures how long it takes to launch your application.

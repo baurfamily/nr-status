@@ -7,9 +7,59 @@ import Testing
 import Foundation
 import CoreGraphics
 import PDFKit
+import AppKit
 @testable import NR_Status
 
 struct CellConfigurationTests {
+    @MainActor @Test func resizingPersistsWithoutDiscardingResultsOrOtherSettings() throws {
+        var cell = NrqlCell(text: """
+            ```cell_config
+            title: Busiest app
+            var: apps
+            attributes: gauge, max(100)
+            future: preserved
+            ```
+            ```lua
+            return { rows = { { count = 50 } } }
+            ```
+            """)
+        let results = try JSONDecoder().decode(NrdbResultContainer.self, from: Data(
+            #"{"nrql":"","results":[{"count":50}],"metadata":{}}"#.utf8
+        ))
+        cell.query.setState(.loaded(results))
+        let code = cell.editorText
+        cell.setChartHeight(30)
+        #expect(cell.query.format?.heightInLines == 30)
+        #expect(cell.query.resultContainer?.data.first?.numberFields["count"] == 50)
+        #expect(cell.editorText == code)
+        #expect(cell.configurationText.contains("future: preserved"))
+        #expect(cell.query.format?.attributes == ["gauge", "max(100)"])
+        #expect(NRQL_EditorDocument(text: cell.text).cells[0].query.format?.heightInLines == 30)
+        cell.setChartHeight(nil)
+        #expect(cell.query.format?.heightInLines == nil)
+        #expect(!cell.configurationText.contains("height:"))
+        #expect(cell.query.title == "Busiest app")
+        #expect(cell.query.resultNames == ["apps"])
+        #expect(cell.query.resultContainer != nil)
+    }
+
+    @Test(arguments: [
+        (NrqlCellKind.nrql, "SELECT count(*) FROM Transaction"),
+        (.lua, "return { rows = { { count = 5 } } }")
+    ])
+    func chartHeightEditsRoundTripWithoutChangingCode(kind: NrqlCellKind, code: String) {
+        var document = NRQL_EditorDocument(text: kind.wrap(code))
+        document.cells[0].configurationText = "chart: billboard\nheight: 30"
+        let reopened = NRQL_EditorDocument(text: document.text)
+        #expect(reopened.cells[0].editorText == code)
+        #expect(reopened.cells[0].query.format?.heightInLines == 30)
+        document.cells[0].configurationText = NrqlCellSource.updating(
+            "height", values: [], in: document.cells[0].configurationText
+        )
+        #expect(document.cells[0].query.format?.heightInLines == nil)
+        #expect(document.cells[0].query.format?.type == .billboard)
+    }
+
     @Test(arguments: [
         (NrqlCellKind.nrql, "SELECT 1"),
         (.lua, "return { rows = {} }"),
@@ -761,6 +811,39 @@ struct NrqlQueryTests {
 
 @MainActor
 struct NrqlExportTests {
+    @Test func exportsConfiguredChartHeightAndFitsTallChartsOnPdfPages() throws {
+        let document = NRQL_EditorDocument(text: """
+            ```cell_config
+            title: Large billboard
+            height: 80
+            ```
+            ```nrql
+            SELECT count(*) FROM Transaction
+            ```
+            """)
+        let results = try JSONDecoder().decode(NrdbResultContainer.self, from: Data(
+            #"{"nrql":"","results":[{"count":5}],"metadata":{}}"#.utf8
+        ))
+        document.cells[0].query.setState(.loaded(results))
+        let html = NrqlExport.html(for: document)
+        let start = try #require(html.range(of: "data:image/png;base64,")?.upperBound)
+        let end = try #require(html[start...].firstIndex(of: "\""))
+        let png = try #require(Data(base64Encoded: String(html[start..<end])))
+        let image = try #require(NSBitmapImageRep(data: png))
+        #expect(image.pixelsHigh == 2400)
+
+        let data = try #require(NrqlExport.data(for: .pdf, document: document))
+        let pdf = try #require(PDFDocument(data: data))
+        #expect(pdf.pageCount == 1)
+        let page = try #require(pdf.page(at: 0))
+        #expect(page.string?.contains("Large billboard") == true)
+        let contentBounds = page.bounds(for: .mediaBox).insetBy(dx: 39, dy: 39)
+        for index in 0..<page.numberOfCharacters {
+            let bounds = page.characterBounds(at: index)
+            if !bounds.isEmpty { #expect(contentBounds.contains(bounds)) }
+        }
+    }
+
     private func pdfText(for document: NRQL_EditorDocument) throws -> String {
         let data = try #require(NrqlExport.data(for: .pdf, document: document))
         return try #require(PDFDocument(data: data)?.string)

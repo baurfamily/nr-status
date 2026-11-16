@@ -255,8 +255,16 @@ cells until you fix the bindings and rerun.
 
 The toolbar's **Bindings** button opens a workbook-wide inspector with document
 variables and cell result bindings. NRQL and Lua bindings show row counts instead
-of copying their result data. The inspector marks pending, failed, duplicate,
-and out-of-date bindings.
+of copying their result data into the sidebar; click a row count to inspect the
+results in a scrollable table popover. Bindings are indented under their source
+cell's heading. Use the heading's **Jump to Cell** button to scroll to, expand,
+and focus that cell. The inspector marks pending, failed, duplicate, and
+out-of-date bindings.
+
+Opening the inspector grows the document window to the right as far as screen
+space permits, preserving the workbook width when there is enough room. Closing it restores
+the previous width unless you resized the window yourself. Full-screen windows
+and windows at the screen edge share their existing width with the inspector.
 
 Right-click a field or value in a Nerdgraph JSON response and choose **Add Binding
 to This Value…** to create a named extraction. Array paths use Lua's 1-based

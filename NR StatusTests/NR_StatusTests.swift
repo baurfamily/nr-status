@@ -59,6 +59,59 @@ struct BindingResultsLayoutTests {
     }
 }
 
+@MainActor
+struct InspectorWindowExpansionTests {
+    @Test(arguments: [1200.0, 1700.0, 2000.0])
+    func growsOnlyIntoAvailableSpaceOnTheRight(_ screenWidth: Double) {
+        let original = NSRect(x: 100, y: 120, width: 900, height: 700)
+        let screen = NSRect(x: 0, y: 0, width: screenWidth, height: 1000)
+        let expanded = InspectorWindowExpansion.expandedFrame(
+            from: original, inspectorWidth: 440, visibleFrame: screen, maxWidth: 1800
+        )
+        let expectedWidth = original.width + min(CGFloat(440), screen.width - original.maxX)
+        #expect(expanded.origin == original.origin)
+        #expect(expanded.height == original.height)
+        #expect(abs(expanded.width - expectedWidth) < 0.5)
+        #expect(expanded.maxX <= screen.maxX)
+    }
+
+    @Test func respectsWindowLimitsAndDoesNotShrinkWhenThereIsNoSpace() {
+        let original = NSRect(x: 100, y: 120, width: 900, height: 700)
+        let screen = NSRect(x: 0, y: 0, width: 2000, height: 1000)
+        #expect(InspectorWindowExpansion.expandedFrame(
+            from: original, inspectorWidth: 440, visibleFrame: screen, maxWidth: 1000
+        ).width == 1000)
+        #expect(InspectorWindowExpansion.expandedFrame(
+            from: original, inspectorWidth: 440,
+            visibleFrame: NSRect(x: 0, y: 0, width: 1000, height: 1000), maxWidth: 1800
+        ) == original)
+    }
+
+    @Test func closingRestoresAutomaticGrowthButPreservesAManualResize() throws {
+        let screen = try #require(NSScreen.main)
+        let rect = NSRect(
+            x: screen.visibleFrame.minX + 20, y: screen.visibleFrame.minY + 40,
+            width: min(500, screen.visibleFrame.width - 200), height: 300
+        )
+        let window = NSWindow(contentRect: rect, styleMask: [.titled, .resizable], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        defer { window.close() }
+        let anchor = InspectorWindowExpansion.AnchorView()
+        window.contentView = anchor
+        let original = window.frame
+        anchor.update(isPresented: true, inspectorWidth: 120)
+        #expect(window.frame.width > original.width && window.frame.minX == original.minX)
+        anchor.update(isPresented: false, inspectorWidth: 120)
+        #expect(window.frame == original)
+        anchor.update(isPresented: true, inspectorWidth: 120)
+        var manual = window.frame
+        manual.size.width -= 30
+        window.setFrame(manual, display: false)
+        anchor.update(isPresented: false, inspectorWidth: 120)
+        #expect(window.frame == manual)
+    }
+}
+
 struct ConfigurationTextEditorTests {
     @MainActor @Test func nativeCompletionReplacesOnlyTheBindingExpressionPrefix() throws {
         let text = "var: user = data.act"

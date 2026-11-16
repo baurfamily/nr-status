@@ -17,11 +17,12 @@ struct DocumentView: View {
     @AppStorage("nerdgraphProfiles", store: NerdgraphConfig.sharedDefaults) private var profileSettingsData = Data()
     @State private var profileSettings = NerdgraphProfiles.Settings()
     @State private var configurationError: String?
-    @State private var configRevealRequest = UUID()
+    @State private var cellRevealRequest = UUID()
     @State private var publishing: PublicationSheet?
     @State private var publishedIDs: Set<UUID> = []
     @State private var isUnpublishingAll = false
     @State private var showsBindingsInspector = false
+    @State private var bindingsInspectorWidth: CGFloat = 440
 
     private enum PublicationSheet: Identifiable {
         case cell(UUID), all
@@ -36,16 +37,25 @@ struct DocumentView: View {
     var body: some View {
         ScrollViewReader { proxy in
             notebook
-                .onChange(of: configRevealRequest) {
+                .onChange(of: cellRevealRequest) {
                     if let id = document.focusedCellId {
                         withAnimation { proxy.scrollTo(id, anchor: .top) }
                     }
                 }
         }
+        .background(InspectorWindowExpansion(
+            isPresented: showsBindingsInspector, inspectorWidth: bindingsInspectorWidth + 1
+        ).allowsHitTesting(false))
         .toolbar { documentToolbar }
         .inspector(isPresented: $showsBindingsInspector) {
-            WorkbookBindingsView(document: document, profiles: profileSettings)
+            WorkbookBindingsView(document: document, profiles: profileSettings, onJumpToCell: { id in
+                document.revealCell(id)
+                cellRevealRequest = UUID()
+            })
                 .inspectorColumnWidth(min: 320, ideal: 440, max: 650)
+                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
+                    if width > 0 { bindingsInspectorWidth = width }
+                }
         }
         .sheet(item: $publishing) { selection in
             switch selection {
@@ -211,7 +221,7 @@ struct DocumentView: View {
             ControlGroup("Document Config") {
                 Button("Document Config", systemImage: "gearshape") {
                     document.addConfiguration()
-                    configRevealRequest = UUID()
+                    cellRevealRequest = UUID()
                 }
                 .help("Show and expand the document configuration")
                 keyMenu

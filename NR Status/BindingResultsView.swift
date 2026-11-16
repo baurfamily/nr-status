@@ -3,6 +3,7 @@ import SwiftUI
 
 struct BindingResultsView: View {
     let bindings: [BindingResult]
+    var resultContainer: NrdbResultContainer?
 
     var body: some View {
         if bindings.isEmpty {
@@ -28,7 +29,7 @@ struct BindingResultsView: View {
                                 NSPasteboard.general.setString(binding.reference, forType: .string)
                             }
                         }
-                        BindingValueView(binding: binding)
+                        BindingValueView(binding: binding, resultContainer: resultContainer)
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -41,17 +42,27 @@ struct BindingResultsView: View {
 
 struct BindingValueView: View {
     let binding: BindingResult
+    var resultContainer: NrdbResultContainer?
     @State private var showsValue = false
 
     var body: some View {
-        if let value = binding.value {
+        if binding.value != nil || resultContainer != nil {
             Button { showsValue = true } label: {
                 Text(binding.summary).lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
             }
             .buttonStyle(.borderless)
-            .help("Inspect the bound value")
+            .help(resultContainer == nil ? "Inspect the bound value" : "Inspect the result table")
             .popover(isPresented: $showsValue) {
-                JSONResultView(value: value).padding().frame(width: 500, height: 400)
+                if let value = binding.value {
+                    JSONResultView(value: value).padding().frame(width: 500, height: 400)
+                } else if let resultContainer {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(binding.name).font(.headline)
+                        TableChart(config: ChartConfiguration(resultContainer: resultContainer))
+                    }
+                    .padding()
+                    .frame(width: 640, height: 360)
+                }
             }
         } else {
             Text(binding.summary)

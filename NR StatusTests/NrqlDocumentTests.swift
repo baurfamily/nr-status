@@ -424,10 +424,43 @@ struct NerdgraphCellTests {
         let groups = WorkbookBindingGroup.groups(in: document, profiles: .init())
         #expect(groups[0].bindings.first(where: { $0.name == "service" })?.value == .string("Checkout"))
         #expect(groups[0].bindings.allSatisfy { $0.namespace == "config" })
+        #expect(groups[0].cellID == document.cells[0].id)
         #expect(groups[1].bindings.first?.summary == "1 row")
         #expect(groups[1].bindings.first?.value == nil)
+        #expect(groups[1].resultContainer?.data.first?.numberFields["count"] == 7)
+        #expect(groups[1].cellID == document.cells[1].id)
         #expect(groups[2].bindings.first?.name == "user")
+        #expect(groups[2].resultContainer == nil)
         #expect(groups[2].warning?.contains("Run this cell") == true)
+    }
+
+    @Test func inspectorNavigationRevealsAndFocusesCellsWithoutEditingTheirSource() {
+        var document = NRQL_EditorDocument(text: """
+            ```config
+            var service = "Checkout"
+            ```
+
+            ```cell_config
+            query: hide
+            var: traffic
+            ```
+            ```nrql
+            SELECT count(*) FROM Transaction
+            ```
+            """)
+        let source = document.text
+        let cellID = document.cells[1].id
+        #expect(document.cells[1].isCollapsed)
+        document.revealCell(cellID)
+        #expect(document.focusedCellId == cellID)
+        #expect(!document.cells[1].isCollapsed && document.cells[1].focusOnAppear)
+        #expect(document.text == source)
+        document.revealCell(document.cells[0].id)
+        #expect(document.focusedCellId == document.cells[0].id)
+        #expect(!document.cells[0].isCollapsed && document.cells[0].focusOnAppear)
+        document.revealCell(UUID())
+        #expect(document.focusedCellId == document.cells[0].id)
+        #expect(document.text == source)
     }
 
     @Test func jsonAndNoneDisplayModesPreserveLoadedNRQLBindings() throws {

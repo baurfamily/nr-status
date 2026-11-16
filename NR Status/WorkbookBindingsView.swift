@@ -5,6 +5,8 @@ struct WorkbookBindingGroup: Identifiable {
     let title: String
     let bindings: [BindingResult]
     var warning: String?
+    var cellID: UUID?
+    var resultContainer: NrdbResultContainer?
 
     static func groups(in document: NRQL_EditorDocument, profiles: NerdgraphProfiles.Settings) -> [Self] {
         let config: [BindingResult]
@@ -20,7 +22,10 @@ struct WorkbookBindingGroup: Identifiable {
         } catch {
             config = [BindingResult(name: "config", error: error.localizedDescription, namespace: "config")]
         }
-        var groups = [Self(id: "config", title: "Document Configuration", bindings: config)]
+        var groups = [Self(
+            id: "config", title: "Document Configuration", bindings: config,
+            cellID: document.cells.first(where: { $0.kind == .config })?.id
+        )]
         let stale = document.staleCellIds(profiles: profiles)
         let names = document.cells.flatMap(\.query.resultNames)
         for cell in document.cells {
@@ -58,7 +63,8 @@ struct WorkbookBindingGroup: Identifiable {
             }
             groups.append(Self(
                 id: cell.id.uuidString, title: cell.query.title, bindings: bindings,
-                warning: warnings.isEmpty ? nil : warnings.joined(separator: "\n")
+                warning: warnings.isEmpty ? nil : warnings.joined(separator: "\n"),
+                cellID: cell.id, resultContainer: cell.query.resultContainer
             ))
         }
         return groups
@@ -68,20 +74,34 @@ struct WorkbookBindingGroup: Identifiable {
 struct WorkbookBindingsView: View {
     let document: NRQL_EditorDocument
     let profiles: NerdgraphProfiles.Settings
+    var onJumpToCell: (UUID) -> Void = { _ in }
 
     var body: some View {
         ScrollView(.vertical) {
             LazyVStack(alignment: .leading, spacing: 16) {
                 Text("Workbook Bindings").font(.headline)
-                Text("Use config.<name> for document variables and results.<name> for cell bindings. Click a value to inspect it. NRQL and Lua results show row counts instead.")
+                Text("Use config.<name> for document variables and results.<name> for cell bindings. Click a value to inspect it, or a row count to open its result table.")
                     .font(.caption).foregroundStyle(.secondary)
                 ForEach(WorkbookBindingGroup.groups(in: document, profiles: profiles)) { group in
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(group.title).font(.subheadline.bold())
-                        if let warning = group.warning {
-                            Text(warning).font(.caption).foregroundStyle(.orange).textSelection(.enabled)
+                        HStack(alignment: .firstTextBaseline) {
+                            Text(group.title).font(.subheadline.bold())
+                            Spacer(minLength: 8)
+                            if let id = group.cellID {
+                                Button("Jump to Cell", systemImage: "arrow.up.forward") { onJumpToCell(id) }
+                                    .labelStyle(.iconOnly)
+                                    .buttonStyle(.borderless)
+                                    .help("Jump to \(group.title)")
+                                    .accessibilityIdentifier("jump-to-cell-\(id.uuidString)")
+                            }
                         }
-                        BindingResultsView(bindings: group.bindings)
+                        VStack(alignment: .leading, spacing: 8) {
+                            if let warning = group.warning {
+                                Text(warning).font(.caption).foregroundStyle(.orange).textSelection(.enabled)
+                            }
+                            BindingResultsView(bindings: group.bindings, resultContainer: group.resultContainer)
+                        }
+                        .padding(.leading, 12)
                     }
                 }
             }

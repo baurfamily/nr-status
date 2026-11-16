@@ -161,6 +161,13 @@ struct NRQL_EditorDocument: FileDocument {
         cells.first { $0.id == focusedCellId }
     }
 
+    mutating func revealCell(_ id: NrqlCell.ID) {
+        guard let index = cells.firstIndex(where: { $0.id == id }) else { return }
+        cells[index].isCollapsed = false
+        cells[index].focusOnAppear = true
+        focusedCellId = id
+    }
+
     var connection: Result<NrqlConnection, Error> {
         Result {
             let configs = cells.enumerated().filter { $0.element.kind == .config }

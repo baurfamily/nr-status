@@ -1,6 +1,6 @@
 import Foundation
 
-/// A cell's configuration travels with its code when it is moved, copied, or saved.
+/// A cell's configuration travels with its content when it is moved, copied, or saved.
 struct NrqlCellSource {
     var configuration: String?
     var code: String

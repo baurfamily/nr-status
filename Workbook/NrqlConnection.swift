@@ -1,6 +1,6 @@
 import Foundation
 
-/// Non-secret routing options shared by document and cell config fences.
+/// Non-secret routing options shared by document and cell configuration fences.
 struct NrqlConnection: Equatable, Sendable {
     var apiKeyName: String?
     var accountIds: [Int]?

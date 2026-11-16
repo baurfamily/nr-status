@@ -72,7 +72,7 @@ enum NrqlCellKind: String, CaseIterable, Identifiable {
     /// The stored text without its fence lines; text without a fence is returned as it is.
     func unwrap(_ stored: String) -> String {
         if self == .nerdgraph { return NerdgraphCellSource(stored: stored).editorText }
-        guard fenceTag != nil else { return stored }
+        guard fenceTag != nil else { return NrqlCellSource(stored: stored).code }
         var lines = NrqlCellSource(stored: stored).code.components(separatedBy: "\n")
         guard let open = lines.firstIndex(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }),
               Self.fenced(by: lines[open]) == self

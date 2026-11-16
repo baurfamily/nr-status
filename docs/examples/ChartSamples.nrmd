@@ -1,0 +1,111 @@
+```config
+description: Deterministic Lua examples of every chart type. No API key, accounts, or network access required. Run each cell or publish them all from Document Config.
+```
+
+```cell_config
+title: Billboard - service health
+chart: billboard
+attributes: gauge, max(140), style(linear)
+widget-id: 437C775A-2780-463D-A935-BFA45C130129
+height: 20
+```
+```lua
+return { rows = { { Healthy = 98 } } }
+```
+
+```cell_config
+title: Line - requests over time
+chart: line
+height: 14
+attributes: lines, points
+widget-id: 435FBB18-3B85-4A78-A58C-A11E94D68762
+```
+```lua
+local rows = {}
+local east = { 24, 32, 28, 40, 36, 44 }
+local west = { 18, 22, 30, 26, 34, 32 }
+for i = 1, #east do
+  local start = 1735689600 + (i - 1) * 3600
+  rows[#rows + 1] = {
+    beginTimeSeconds = start, endTimeSeconds = start + 3600,
+    facet = "East", Requests = east[i]
+  }
+  rows[#rows + 1] = {
+    beginTimeSeconds = start, endTimeSeconds = start + 3600,
+    facet = "West", Requests = west[i]
+  }
+end
+return { facets = { "Region" }, rows = rows }
+```
+
+```cell_config
+title: Bar - requests by service
+chart: bar
+height: 12
+widget-id: 02CFF323-C90E-49C1-A696-8397C98F9530
+```
+```lua
+return {
+  facets = { "Service" },
+  rows = {
+    { facet = "API", Requests = 48 },
+    { facet = "Web", Requests = 32 },
+    { facet = "Worker", Requests = 20 }
+  }
+}
+```
+
+```cell_config
+title: Pie - traffic share
+chart: pie
+height: 14
+attributes: donut
+widget-id: BE1A6B9F-94B9-4DA9-A83A-843987F65996
+```
+```lua
+return {
+  facets = { "Service" },
+  rows = {
+    { facet = "API", Requests = 48 },
+    { facet = "Web", Requests = 32 },
+    { facet = "Worker", Requests = 20 }
+  }
+}
+```
+
+```cell_config
+title: Plot - latency versus throughput
+chart: plot
+height: 14
+attributes: color-facets, x(Latency), y(Requests)
+widget-id: 7559F604-AD74-4AAD-B5E2-13F8592D3A92
+```
+```lua
+return {
+  facets = { "Service" },
+  rows = {
+    { facet = "API", Latency = 20, Requests = 120 },
+    { facet = "API", Latency = 35, Requests = 100 },
+    { facet = "API", Latency = 50, Requests = 80 },
+    { facet = "Web", Latency = 15, Requests = 90 },
+    { facet = "Web", Latency = 30, Requests = 70 },
+    { facet = "Web", Latency = 45, Requests = 50 }
+  }
+}
+```
+
+```cell_config
+title: Table - service summary
+chart: table
+height: 10
+widget-id: 918C3705-9A41-4362-A24B-96F6A6798EF2
+```
+```lua
+return {
+  rows = {
+    { Service = "API", Status = "Healthy", Requests = 48, Errors = 1 },
+    { Service = "Web", Status = "Healthy", Requests = 32, Errors = 0 },
+    { Service = "Worker", Status = "Degraded", Requests = 20, Errors = 3 }
+  }
+}
+```

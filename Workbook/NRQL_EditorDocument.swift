@@ -49,6 +49,14 @@ struct NrqlCell: Identifiable {
         }
     }
 
+    var widgetID: UUID? {
+        UUID(uuidString: NrqlCellSource.value("widget-id", in: configurationText))
+    }
+
+    var canPublishWidget: Bool {
+        kind == .markdown || kind == .nrql || kind == .lua
+    }
+
     func storedText(forEditorText value: String) -> String {
         NrqlCellSource(configuration: NrqlCellSource(stored: text).configuration, code: kind.wrap(value)).storedText
     }
@@ -234,6 +242,10 @@ struct NRQL_EditorDocument: FileDocument {
         case .duplicate:
             let original = cells[index]
             var copy = NrqlCell(text: original.query.text, kind: original.kind, focusOnAppear: true)
+            if copy.widgetID != nil {
+                copy.configurationText = NrqlCellSource.updating("widget-id", values: [], in: copy.configurationText)
+                if copy.configurationText.isEmpty, copy.kind != .markdown { copy.removeConfiguration() }
+            }
             if copy.kind != .markdown {
                 var configuration = NrqlCellSource.updating(
                     "title", values: [original.query.title + " (copy)"], in: copy.configurationText
@@ -278,7 +290,7 @@ struct NRQL_EditorDocument: FileDocument {
     }
 
     func markdownText(for cell: NrqlCell, profiles: NerdgraphProfiles.Settings? = nil) throws -> String {
-        let text = cell.query.text
+        let text = cell.editorText
         guard NrqlInterpolation.containsPlaceholders(text) else { return text }
         let config = try connection.get().effectiveConfiguration(profiles: profiles ?? NerdgraphProfiles.shared.load())
         return try NrqlInterpolation.expand(text, results: priorResults, config: config)
@@ -292,6 +304,7 @@ struct NRQL_EditorDocument: FileDocument {
     }
 
     /// What a Lua expression in the given cell can read from the other cells.
+#if !WORKBOOK_WIDGET
     func completionScope(excluding id: NrqlCell.ID) -> LuaCompletion.Scope {
         let others = cells.filter { $0.id != id && $0.kind != .markdown }
         return LuaCompletion.Scope(
@@ -301,6 +314,7 @@ struct NRQL_EditorDocument: FileDocument {
             revision: others.map { "\($0.id):\($0.query.text):\($0.query.loadedAt?.timeIntervalSince1970 ?? 0):\($0.query.hasResult)" }.joined()
         )
     }
+#endif
 
     /// Runs every query, each after the ones it reads.
     @discardableResult

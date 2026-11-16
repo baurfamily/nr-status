@@ -7,6 +7,8 @@ import Testing
 import Foundation
 import SwiftUI
 import AppKit
+import Charts
+import WidgetKit
 @testable import NR_Status
 
 struct NrdbTests {
@@ -317,6 +319,109 @@ struct NrdbTests {
             }
             #expect(hasTile, "Short charts should use all four columns instead of wrapping after three tiles.")
         }
+    }
+
+    @MainActor @Test(arguments: ["billboard"] + BillboardConfiguration.GaugeStyle.allCases.map(\.rawValue))
+    func widgetBillboardsUseAvailableHeightWithoutADocumentHeight(style: String) throws {
+        func paintedHeight(height: CGFloat) throws -> Int {
+            let config = ChartConfiguration(resultContainer: try container(results: #"[{"count":50}]"#))
+            if let gaugeStyle = BillboardConfiguration.GaugeStyle(rawValue: style) {
+                config.billboard.showGauge = true
+                config.billboard.gaugeStyle = gaugeStyle
+            }
+            let renderer = ImageRenderer(content: ConfigurableChartView(config: config)
+                .widgetSized().frame(width: 300, height: height).foregroundStyle(.white))
+            let image = NSBitmapImageRep(cgImage: try #require(renderer.cgImage))
+            let paintedRows = (0..<image.pixelsHigh).filter { y in
+                (0..<image.pixelsWide).contains { x in
+                    (image.colorAt(x: x, y: y)?.alphaComponent ?? 0) > 0.2
+                }
+            }
+            return (paintedRows.last ?? 0) - (paintedRows.first ?? 0)
+        }
+        let small = try paintedHeight(height: 100)
+        let large = try paintedHeight(height: 240)
+        #expect(small > 40)
+        #expect(large > 120)
+        #expect(large > small * 3 / 2)
+    }
+
+    @MainActor @Test(arguments: [BillboardConfiguration.GaugeStyle.linear, .linearCapacity])
+    func widgetLinearGaugesRenderCapacityAndClampToTheirBounds(style: BillboardConfiguration.GaugeStyle) throws {
+        func bluePixels(value: Double, maximum: Double = 100) throws -> Int {
+            let config = ChartConfiguration(resultContainer: try container(results: "[{\"count\":\(value)}]"))
+            config.billboard.showGauge = true
+            config.billboard.gaugeStyle = style
+            config.billboard.gaugeMax = maximum
+            let renderer = ImageRenderer(content: ConfigurableChartView(config: config)
+                .widgetSized().frame(width: 160, height: 110)
+                .foregroundStyle(.white).accentColor(.blue))
+            let image = NSBitmapImageRep(cgImage: try #require(renderer.cgImage))
+            var count = 0
+            for y in 0..<image.pixelsHigh {
+                for x in 0..<image.pixelsWide {
+                    if let color = image.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB),
+                       color.alphaComponent > 0.5, color.blueComponent > color.redComponent + 0.3 {
+                        count += 1
+                    }
+                }
+            }
+            return count
+        }
+        let half = try bluePixels(value: 50)
+        #expect(half > 100)
+        #expect(try bluePixels(value: 150) > half * 3 / 2)
+        #expect(try bluePixels(value: -10) == 0)
+        #expect(try bluePixels(value: 50, maximum: 0) == half)
+    }
+
+    @MainActor @Test func widgetTablesRenderHeadersAndRowsWithoutPlatformControls() throws {
+        let result = try container(results: #"[{"Service":"API","Count":48},{"Service":"Web","Count":32}]"#)
+        let config = ChartConfiguration(resultContainer: result)
+        config.chartType = .table
+        let renderer = ImageRenderer(content: ConfigurableChartView(config: config)
+            .widgetSized().frame(width: 320, height: 96).foregroundStyle(.white))
+        let image = NSBitmapImageRep(cgImage: try #require(renderer.cgImage))
+        for row in 0..<3 {
+            let hasText = (row * 22 + 3..<row * 22 + 19).contains { y in
+                (0..<image.pixelsWide).contains { x in
+                    (image.colorAt(x: x, y: y)?.alphaComponent ?? 0) > 0.2
+                }
+            }
+            #expect(hasText, "The widget should draw its header and each data row, not a platform Table placeholder.")
+        }
+    }
+
+    @MainActor @Test func widgetSizeHidesAxesAndLegendsToExpandThePlot() throws {
+        let result = try container(results: """
+            [
+              {"beginTimeSeconds":1000,"endTimeSeconds":1060,"count":10,"average":5},
+              {"beginTimeSeconds":1060,"endTimeSeconds":1120,"count":20,"average":8}
+            ]
+            """)
+        func plotFrame(for family: WidgetFamily) throws -> CGRect {
+            let config = ChartConfiguration(resultContainer: result)
+            var frames: [CGRect] = []
+            let renderer = ImageRenderer(content: ConfigurableChartView(config: config)
+                .widgetSized(for: family)
+                .chartOverlay { proxy in
+                    GeometryReader { geometry in
+                        if let frame = proxy.plotFrame {
+                            let _ = frames.append(geometry[frame])
+                        }
+                        Color.clear
+                    }
+                }
+                .frame(width: 320, height: 180))
+            _ = try #require(renderer.cgImage)
+            return try #require(frames.last)
+        }
+        let small = try plotFrame(for: .systemSmall)
+        let medium = try plotFrame(for: .systemMedium)
+        let large = try plotFrame(for: .systemLarge)
+        #expect(medium.width > large.width + 10)
+        #expect(small.height > medium.height + 8)
+        #expect(abs(small.width - medium.width) < 1)
     }
 
     @Test func formatAppliesToTimeseriesConfig() throws {

@@ -9,6 +9,44 @@ import Security
 @testable import NR_Status
 
 struct KeychainStoreTests {
+    @Test func migratesAnAccessibleCredentialIntoTheSharedAppGroup() throws {
+        let label = "NR Status group migration test \(UUID().uuidString)"
+        let id = UUID().uuidString
+        let original = KeychainStore(label: label, accessGroup: NerdgraphConfig.appGroup, identifier: id)
+        let group = try #require(NerdgraphConfig.keychainAccessGroup)
+        let migrated = KeychainStore(label: label, accessGroup: group, identifier: id,
+                                     legacyAccessGroup: NerdgraphConfig.appGroup)
+        let credential = Credential(host: "\(UUID().uuidString).example.com", apiKey: "test-credential")
+        defer {
+            original.remove()
+            migrated.remove()
+        }
+        try original.saveChecked(credential)
+        #expect(try migrated.loadChecked() == credential)
+        let sharedOnly = KeychainStore(label: label, accessGroup: group, identifier: id)
+        #expect(try sharedOnly.loadChecked() == credential)
+        #expect(try original.loadChecked() == credential)
+        try migrated.removeChecked()
+        #expect(try original.loadChecked() == nil)
+        #expect(try sharedOnly.loadChecked() == nil)
+    }
+
+    @Test func configuredSharedGroupSupportsNamedProfiles() throws {
+        let suite = "NR Status shared keychain test \(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defaults.set(try JSONEncoder().encode(NerdgraphProfiles.Settings()), forKey: "nerdgraphProfiles")
+        let profiles = NerdgraphProfiles(defaults: defaults, labelPrefix: suite)
+        let profile = NerdgraphProfile(name: suite, host: "\(UUID().uuidString).example.com", preferredAccountIds: [42])
+        defer {
+            profiles.keychain(for: profile).remove()
+            defaults.removePersistentDomain(forName: suite)
+        }
+        _ = try #require(NerdgraphConfig.keychainAccessGroup)
+        try profiles.save(profile, apiKey: "test-credential", makeDefault: true)
+        #expect(try profiles.resolve().apiKey == "test-credential")
+        #expect(try profiles.resolve().accountIdList == [42])
+    }
+
     @Test func keepsASingleCredentialAcrossHostChanges() {
         // unique label, so this never touches the real credential
         let store = KeychainStore(label: "NR Status test \(UUID().uuidString)", accessGroup: nil)

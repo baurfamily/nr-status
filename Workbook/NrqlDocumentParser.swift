@@ -18,7 +18,7 @@ enum NrqlDocumentParser {
 
     /// Splits text into cells: each ```nrql, ```lua, ```graphql or ```config fence is a cell, and
     /// whatever lies between them is one Markdown cell (blank lines included).
-    /// A ```cell_config fence belongs to the following code cell; an adjacent
+    /// A ```cell_config fence belongs to the following code or Markdown cell; an adjacent
     /// ```variables fence belongs to the preceding GraphQL cell.
     /// Other fences, such as ```swift, are Markdown content, so a ```nrql inside one stays text.
     static func blocks(_ text: String) -> [String] {
@@ -76,6 +76,13 @@ enum NrqlDocumentParser {
                 attachingToPrevious = true
                 inCode = true
             } else {
+                if current.allSatisfy({ $0.trimmingCharacters(in: .whitespaces).isEmpty }),
+                   !line.trimmingCharacters(in: .whitespaces).isEmpty,
+                   let previous = blocks.last, previous.hasPrefix("```cell_config\n"),
+                   NrqlCellSource(stored: previous).code.isEmpty {
+                    current.removeAll()
+                    attachingToPrevious = true
+                }
                 if NrqlCellKind.isFence(line) { inProseFence = true }
                 current.append(line)
             }

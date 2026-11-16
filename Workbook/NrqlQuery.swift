@@ -6,9 +6,11 @@
 //
 
 import Foundation
+#if !WORKBOOK_WIDGET
 import CodeEditorView
-import CryptoKit
 import LanguageSupport
+#endif
+import CryptoKit
 
 @Observable class NrqlQuery : Identifiable, Equatable {
     enum State {
@@ -43,10 +45,10 @@ import LanguageSupport
         lhs.text == rhs.text
     }
     
-    // so we can be embeded in a code editor, we need a position and messages... I guess?
-    // not sure if I really need these, or if they need/should be here.
+#if !WORKBOOK_WIDGET
     var position: CodeEditor.Position
     var messages: Set<TextLocated<Message>> = Set()
+#endif
     
     // Views switch on this, so a new result replaces the "running" content and
     // charts that copy their data at creation get rebuilt with the new results.
@@ -120,7 +122,7 @@ import LanguageSupport
 
     var expressionCode: String {
         if let script { return script }
-        let source = kind == .nerdgraph ? variables : kind == .markdown ? text : nrql
+        let source = kind == .nerdgraph ? variables : kind == .markdown ? kind.unwrap(text) : nrql
         let expressions = NrqlInterpolation.expressions(in: source)
         let bindings = kind == .nerdgraph ? NerdgraphCellSource(stored: text).bindingExpressions : []
         return (expressions + bindings).joined(separator: "\n")
@@ -138,7 +140,7 @@ import LanguageSupport
     var title: String {
         if kind == .config { return "Document Config" }
         if kind == .markdown {
-            let heading = text.split(separator: "\n").first { $0.hasPrefix("#") }
+            let heading = kind.unwrap(text).split(separator: "\n").first { $0.hasPrefix("#") }
             return heading.map { $0.drop { $0 == "#" }.trimmingCharacters(in: .whitespaces) } ?? "Markdown"
         }
         let defaultTitle = kind == .nerdgraph ? "Nerdgraph Query" : isScript ? "Lua Script" : "NRQL Query"
@@ -160,8 +162,10 @@ import LanguageSupport
         self.kind = kind ?? (detected == .markdown ? .nrql : detected)
         self.nrql = ""
         self.text = text
+#if !WORKBOOK_WIDGET
         self.position = .init(selections: [NSMakeRange(0, 0)], verticalScrollPosition: 0)
         self.messages = Set<TextLocated<Message>>()
+#endif
         
         textWillUpdate(to: text)
         

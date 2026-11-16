@@ -72,7 +72,7 @@ struct NRQL_EditorApp: App {
     var body: some Scene {
         // first, so File > New (Cmd-N) creates a saveable document
         DocumentGroup(newDocument: NRQL_EditorDocument()) { file in
-            DocumentView(document: file.$document)
+            DocumentView(document: file.$document, sourceName: file.fileURL?.lastPathComponent ?? "Untitled.nrmd")
                 .focusedSceneValue(\.document, file.$document)
         }
         .defaultSize(width: 900, height: 1000)
@@ -85,9 +85,14 @@ struct NRQL_EditorApp: App {
             NerdgraphSchemaView(documentation: .shared)
         }
         .defaultSize(width: 800, height: 600)
+        Window("Published Widgets", id: "published-widgets") {
+            PublishedWidgetsView()
+        }
+        .defaultSize(width: 550, height: 400)
         WindowGroup(id: "query-builder") { QueryBuilderView() }
         .commands {
             CommandMenu("Features") {
+                Button("Published Widgets") { openWindow(id: "published-widgets") }
                 Button(action: {
                     openWindow(id: "nrql-editor")
                 }, label: {

@@ -9,7 +9,73 @@ This is current a passion project of mine. I love playing with data and I wanted
 ## Features
 
 ### Desktop Widgets!
-<img width="1098" alt="Widget Examples" src="https://github.com/user-attachments/assets/ea4d0898-afb6-4506-9513-b23987b5a3ff" />
+
+The **Workbook** widget displays a chart or Markdown cell published from an
+NR Markdown workbook. In the cell's menu, choose **Publish as Widget**, give it
+a name, and save the workbook. Add a Workbook widget to the desktop, then
+choose that name in **Edit Widget**. Manage publications under
+**Features > Published Widgets**.
+
+Use **Unpublish Widget** in the cell menu to remove its publication. Republishing
+the cell reconnects widgets using the same saved identity. The widget picker and
+Published Widgets window organize cells under their source filenames. In the
+**Document Config** cell's kebab menu, **Publish All Widgets** publishes all chart and
+Markdown cells or updates their existing publications, preserving custom names.
+The confirmation sheet lists the cells before publishing.
+When the workbook has published cells, the config menu also offers **Update All
+Widgets** (published cells only) and **Unpublish All Widgets**, with confirmation
+before unpublishing. Neither action affects publications from other workbooks.
+Published cells show a **Published** badge. Their configuration sidebar includes
+**Update Widget** to refresh the published snapshot without another naming dialog.
+
+For repeatable chart and widget comparisons, open
+[`docs/examples/ChartSamples.nrmd`](docs/examples/ChartSamples.nrmd). It contains
+fixed Lua data for billboard, line, bar, pie, scatter plot, and table charts and
+requires no API key or network access.
+
+Widget charts hide axes at small and medium sizes, and hide legends at small
+sizes. Large widgets retain both; workbook charts are unchanged. Billboard
+widgets fit their tiles to the available space, and table widgets show a static
+grid with a remaining-row count when the data does not fit.
+
+Publishing stores a snapshot of the entire workbook in the shared App Group.
+The extension refreshes the chosen cell and its transitive dependencies without
+requiring the app to be open. Source edits are not automatically synchronized:
+use **Update Published Widget** on the same cell to publish them. A saved
+`widget-id` in the cell's configuration keeps the reference stable through title
+changes and moves; duplicated cells do not inherit that identity. Markdown cells
+also support an adjacent `cell_config` fence for this metadata; it is not rendered.
+Publishing an unsaved workbook is allowed, but save it to retain the identity.
+
+Widget dependencies must use named references (`results.name` or
+`results["name"]`), not positional or computed references. Missing/ambiguous
+dependencies, cycles, and Nerdgraph mutations/subscriptions are rejected.
+Connection and chart settings come from the workbook, with named API keys still
+resolved through Keychain. Widgets request a refresh after five minutes, subject
+to WidgetKit scheduling. A failed refresh retains the last successful output and
+marks it as stale.
+
+The old chart-specific widgets have been replaced, not migrated. Remove old
+desktop widgets and add **Workbook** widgets after installing the rebuilt app.
+The extension now has a new bundle ID and requires its own development
+provisioning profile. Do not delete system widget caches to install it.
+
+During development, keep only the current app build registered with macOS.
+Older test builds with the same app bundle ID can prevent WidgetKit from
+resolving the new configuration intent, leaving a placeholder with no **Edit
+Widget**. Unregister obsolete app paths with Launch Services rather than deleting
+widget caches; unregistering an extension alone does not remove its containing
+app's intent registration.
+
+The configuration intent belongs only to the widget extension; do not compile
+it into the app as well. Test-host builds add sandbox permissions that normal
+builds do not have, so verify configuration using a normal signed app build.
+Both targets enable App Groups registration for automatic provisioning and must
+have profiles authorizing `group.net.baurhome.NR-Status`. This registered group
+shares Keychain items even if the targets have different App ID prefixes. Saved
+keys are copied from the original access group when first used; the old copy is
+kept until the profile is deleted. Workbook storage remains in the original
+macOS App Group.
 
 ### NRQL Editor
 <img width="1263" alt="Editor Example" src="https://github.com/user-attachments/assets/2186b07e-22cc-4997-b854-d182604c8264" />

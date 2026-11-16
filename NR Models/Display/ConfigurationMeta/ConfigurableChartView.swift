@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Charts
+import WidgetKit
 
 struct ConfigurableChartView: View {
     var resultsContainer: NrdbResultContainer {
@@ -18,6 +19,8 @@ struct ConfigurableChartView: View {
 
     var hideConfiguration: Bool = false
     private var usesDocumentSizing = false
+    private var usesWidgetSizing = false
+    private var widgetFamily: WidgetFamily = .systemLarge
     
     // shown at the top of the inspector, above the chart configuration
     private var inspectorHeader = AnyView(EmptyView())
@@ -52,13 +55,16 @@ struct ConfigurableChartView: View {
         Section {
             switch config.chartType {
             case .line, nil: TimeseriesChart(config: config)
-            case .billboard: BillboardChart(config: config)
+            case .billboard: BillboardChart(config: config, fillsAvailableSpace: usesWidgetSizing)
             case .plot: ScatterPlot(config: config)
             case .pie: PieChart(config: config)
             case .bar: BarChart(config: config)
-            case .table: TableChart(config: config)
+            case .table: TableChart(config: config, isWidget: usesWidgetSizing)
             }
         }
+        .chartXAxis(usesWidgetSizing && widgetFamily != .systemLarge ? .hidden : .automatic)
+        .chartYAxis(usesWidgetSizing && widgetFamily != .systemLarge ? .hidden : .automatic)
+        .chartLegend(usesWidgetSizing && widgetFamily == .systemSmall ? .hidden : .automatic)
     }
 
     /// The chart alone, with no inspector; used when rendering to an image or PDF.
@@ -71,6 +77,14 @@ struct ConfigurableChartView: View {
     func documentSized() -> ConfigurableChartView {
         var copy = self
         copy.usesDocumentSizing = true
+        return copy
+    }
+
+    func widgetSized(for family: WidgetFamily = .systemLarge) -> ConfigurableChartView {
+        var copy = self
+        copy.hideConfiguration = true
+        copy.usesWidgetSizing = true
+        copy.widgetFamily = family
         return copy
     }
 

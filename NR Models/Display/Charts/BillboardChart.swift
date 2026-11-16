@@ -10,6 +10,7 @@ import Charts
 
 struct BillboardChart: View {
     var config: ChartConfiguration
+    var fillsAvailableSpace = false
     
     var resultContainer: NrdbResultContainer {
         config.resultContainer
@@ -39,7 +40,9 @@ struct BillboardChart: View {
     }
 
     var body: some View {
-        if config.heightInLines != nil {
+        if fillsAvailableSpace {
+            widgetGrid
+        } else if config.heightInLines != nil {
             GeometryReader { geometry in
                 let grid = ScaledBillboardGrid(itemCount: data.count, size: geometry.size)
 
@@ -58,6 +61,25 @@ struct BillboardChart: View {
             }
         } else {
             compactGrid
+        }
+    }
+
+    private var widgetGrid: some View {
+        GeometryReader { geometry in
+            let grid = ScaledBillboardGrid(
+                itemCount: data.count, size: geometry.size, horizontalPadding: 0,
+                maximumSpacing: 8, referenceSize: CGSize(width: 110, height: 100)
+            )
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(minimum: 0), spacing: 8), count: grid.columns),
+                spacing: grid.spacing
+            ) {
+                ForEach(data, id: \.id) { item in
+                    WidgetBillboardTile(datum: item, configuration: config.billboard, size: grid.tileSize)
+                        .frame(width: grid.tileSize.width, height: grid.tileSize.height)
+                }
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
     }
 
@@ -97,17 +119,20 @@ private struct ScaledBillboardGrid {
     var tileSize = CGSize.zero
     var scale: CGFloat = 0
 
-    init(itemCount: Int, size: CGSize) {
+    init(
+        itemCount: Int, size: CGSize, horizontalPadding: CGFloat = 16,
+        maximumSpacing: CGFloat = 16, referenceSize: CGSize = CGSize(width: 200, height: 135)
+    ) {
         let count = max(1, itemCount)
-        let width = max(1, size.width - 32)
+        let width = max(1, size.width - horizontalPadding * 2)
         let height = max(1, size.height)
         for columns in 1...count {
-            let tileWidth = (width - CGFloat(columns - 1) * 16) / CGFloat(columns)
+            let tileWidth = (width - CGFloat(columns - 1) * maximumSpacing) / CGFloat(columns)
             guard tileWidth > 0 else { break }
             let rows = (count + columns - 1) / columns
-            let spacing = min(16, height / CGFloat(rows * 4))
+            let spacing = min(maximumSpacing, height / CGFloat(rows * 4))
             let tileHeight = (height - CGFloat(rows - 1) * spacing) / CGFloat(rows)
-            let scale = min(tileWidth / 200, tileHeight / 135)
+            let scale = min(tileWidth / referenceSize.width, tileHeight / referenceSize.height)
             // Ties keep fewer columns, avoiding unnecessary empty cells in the last row.
             if scale > self.scale {
                 self.columns = columns
@@ -116,6 +141,99 @@ private struct ScaledBillboardGrid {
                 self.scale = scale
             }
         }
+    }
+}
+
+private struct WidgetBillboardTile: View {
+    let datum: NrdbResults.MiniDatum
+    let configuration: BillboardConfiguration
+    let size: CGSize
+
+    private var isCircular: Bool {
+        configuration.showGauge && [.circular, .circularCapacity].contains(configuration.gaugeStyle)
+    }
+    private var upperBound: Double {
+        configuration.gaugeMax.isFinite && configuration.gaugeMax > 0 ? configuration.gaugeMax : 100
+    }
+    private var fraction: Double { min(1, max(0, datum.value / upperBound)) }
+    private var captionSize: CGFloat { max(1, min(size.width * 0.16, size.height * 0.14)) }
+    private var diameter: CGFloat { max(1, min(size.width, size.height * (datum.facet == nil ? 0.75 : 0.6))) }
+    private var numberFormat: FloatingPointFormatStyle<Double> {
+        .number.notation(.compactName).precision(.significantDigits(2))
+    }
+
+    var body: some View {
+        VStack(spacing: min(6, size.height * 0.04)) {
+            if let facet = datum.facet {
+                Text(facet).font(.system(size: captionSize, weight: .light))
+            }
+            if isCircular {
+                circularGauge
+            } else {
+                Text(datum.value, format: numberFormat)
+                    .font(.system(size: max(1, min(size.width * 0.6, size.height * valueHeight)), weight: .bold))
+                    .monospacedDigit()
+            }
+            Text(datum.field)
+                .font(.system(size: captionSize))
+                .fontWidth(.condensed)
+            if configuration.showGauge && !isCircular {
+                linearGauge
+                HStack {
+                    Text(0, format: numberFormat)
+                    Spacer(minLength: 0)
+                    Text(upperBound, format: numberFormat)
+                }
+                .font(.system(size: max(1, captionSize * 0.8)))
+                .foregroundStyle(.secondary)
+            }
+        }
+        .lineLimit(1)
+        .minimumScaleFactor(0.2)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var valueHeight: CGFloat {
+        configuration.showGauge ? 0.3 : datum.facet == nil ? 0.55 : 0.44
+    }
+
+    private var circularGauge: some View {
+        let span = configuration.gaugeStyle == .circular ? 0.75 : 1.0
+        let rotation = configuration.gaugeStyle == .circular ? 135.0 : -90.0
+        let stroke = StrokeStyle(lineWidth: diameter * 0.09, lineCap: .round)
+        return ZStack {
+            Circle().trim(from: 0, to: span)
+                .stroke(Color.primary.opacity(0.12), style: stroke)
+                .rotationEffect(.degrees(rotation))
+            Circle().trim(from: 0, to: span * fraction)
+                .stroke(Color.accentColor, style: stroke)
+                .rotationEffect(.degrees(rotation))
+            Text(datum.value, format: numberFormat)
+                .font(.system(size: diameter * 0.32, weight: .bold))
+                .monospacedDigit()
+                .padding(diameter * 0.12)
+        }
+        .padding(diameter * 0.05)
+        .frame(width: diameter, height: diameter)
+    }
+
+    private var linearGauge: some View {
+        let marker = configuration.gaugeStyle == .compactLinear
+        let thickness = max(3, min(marker ? 8 : 12, size.height * 0.08))
+        return GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color.primary.opacity(0.12))
+                if marker {
+                    Circle().fill(Color.accentColor)
+                        .frame(width: thickness, height: thickness)
+                        .offset(x: max(0, geometry.size.width - thickness) * fraction)
+                } else {
+                    Capsule().fill(Color.accentColor)
+                        .frame(width: geometry.size.width * fraction)
+                }
+            }
+        }
+        .frame(height: thickness)
     }
 }
 

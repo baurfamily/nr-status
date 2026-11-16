@@ -14,8 +14,9 @@
 		3FA5BADA2CC22C5400B75771 /* HexGrid in Frameworks */ = {isa = PBXBuildFile; productRef = 3FA5BAD92CC22C5400B75771 /* HexGrid */; };
 		3FA635082CD7D4E30050F813 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B29F2CBB3CBD00CCB8DD /* WidgetKit.framework */; };
 		3FA635092CD7D4E30050F813 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F28B2A12CBB3CBD00CCB8DD /* SwiftUI.framework */; };
-		3FA635172CD7D4E40050F813 /* NRQL WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3FA635072CD7D4E30050F813 /* NRQL WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		3FA635172CD7D4E40050F813 /* Workbook WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3FA635072CD7D4E30050F813 /* Workbook WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		3FC6BEC42D79679300E38D17 /* CodeEditor in Frameworks */ = {isa = PBXBuildFile; productRef = 3FC6BEC32D79679300E38D17 /* CodeEditor */; };
+		BA0000010000000000000001 /* LuaSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 3FA3FF0830A5860D00AA543D /* LuaSwift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -30,8 +31,8 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 3F57146B2C9EA7BC00685FEA /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 3FA635062CD7D4E30050F813;
-			remoteInfo = "NRQL WidgetExtension";
+			remoteGlobalIDString = BA0000010000000000000003;
+			remoteInfo = "Workbook WidgetExtension";
 		};
 		3FD0000A2DC0000100D9E068 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -49,7 +50,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				3FA635172CD7D4E40050F813 /* NRQL WidgetExtension.appex in Embed Foundation Extensions */,
+				3FA635172CD7D4E40050F813 /* Workbook WidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -64,7 +65,7 @@
 		3F28B36E2CBB996200CCB8DD /* NR ModelsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "NR ModelsTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3F5714842C9EA7BD00685FEA /* NR StatusTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "NR StatusTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3F57148E2C9EA7BD00685FEA /* NR StatusUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "NR StatusUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		3FA635072CD7D4E30050F813 /* NRQL WidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "NRQL WidgetExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3FA635072CD7D4E30050F813 /* Workbook WidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Workbook WidgetExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -131,19 +132,19 @@
 			);
 			target = 3F28B3642CBB996200CCB8DD /* NR Models */;
 		};
-		3F4479D42DA37BFC007C7EDD /* Exceptions for "NR Models" folder in "NRQL WidgetExtension" target */ = {
+		3F4479D42DA37BFC007C7EDD /* Exceptions for "NR Models" folder in "Workbook WidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Samples/ChartData/TimeseriesMedium.json,
 			);
-			target = 3FA635062CD7D4E30050F813 /* NRQL WidgetExtension */;
+			target = BA0000010000000000000003 /* Workbook WidgetExtension */;
 		};
-		3F5501902D49F05500950FE2 /* Exceptions for "NRQL Widget" folder in "NRQL WidgetExtension" target */ = {
+		3F5501902D49F05500950FE2 /* Exceptions for "Workbook Widget" folder in "Workbook WidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 3FA635062CD7D4E30050F813 /* NRQL WidgetExtension */;
+			target = BA0000010000000000000003 /* Workbook WidgetExtension */;
 		};
 		3FA636312CDDDFD20050F813 /* Exceptions for "NR Status" folder in "NR Models" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
@@ -168,7 +169,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				3F28B37C2CBB996200CCB8DD /* Exceptions for "NR Models" folder in "NR Models" target */,
-				3F4479D42DA37BFC007C7EDD /* Exceptions for "NR Models" folder in "NRQL WidgetExtension" target */,
+				3F4479D42DA37BFC007C7EDD /* Exceptions for "NR Models" folder in "Workbook WidgetExtension" target */,
 			);
 			path = "NR Models";
 			sourceTree = "<group>";
@@ -188,12 +189,17 @@
 			path = "NR StatusUITests";
 			sourceTree = "<group>";
 		};
-		3FA6350A2CD7D4E30050F813 /* NRQL Widget */ = {
+		3FA6350A2CD7D4E30050F813 /* Workbook Widget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				3F5501902D49F05500950FE2 /* Exceptions for "NRQL Widget" folder in "NRQL WidgetExtension" target */,
+				3F5501902D49F05500950FE2 /* Exceptions for "Workbook Widget" folder in "Workbook WidgetExtension" target */,
 			);
-			path = "NRQL Widget";
+			path = "Workbook Widget";
+			sourceTree = "<group>";
+		};
+		BA0000010000000000000002 /* Workbook */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Workbook;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -244,6 +250,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BA0000010000000000000001 /* LuaSwift in Frameworks */,
 				3FA635092CD7D4E30050F813 /* SwiftUI.framework in Frameworks */,
 				3FA635082CD7D4E30050F813 /* WidgetKit.framework in Frameworks */,
 			);
@@ -269,7 +276,8 @@
 				3F5714912C9EA7BD00685FEA /* NR StatusUITests */,
 				3F28B3662CBB996200CCB8DD /* NR Models */,
 				3F28B3742CBB996200CCB8DD /* NR ModelsTests */,
-				3FA6350A2CD7D4E30050F813 /* NRQL Widget */,
+				BA0000010000000000000002 /* Workbook */,
+				3FA6350A2CD7D4E30050F813 /* Workbook Widget */,
 				3F5714742C9EA7BC00685FEA /* Products */,
 				3F28B29E2CBB3CBD00CCB8DD /* Frameworks */,
 			);
@@ -283,7 +291,7 @@
 				3F28B3652CBB996200CCB8DD /* NR_Models.framework */,
 				3F28B36E2CBB996200CCB8DD /* NR ModelsTests.xctest */,
 				3F01FD252CBDFADF00D9E068 /* NR Status.app */,
-				3FA635072CD7D4E30050F813 /* NRQL WidgetExtension.appex */,
+				3FA635072CD7D4E30050F813 /* Workbook WidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -318,6 +326,7 @@
 			fileSystemSynchronizedGroups = (
 				3F01FD262CBDFADF00D9E068 /* NR Status */,
 				3F28B3662CBB996200CCB8DD /* NR Models */,
+				BA0000010000000000000002 /* Workbook */,
 			);
 			name = "NR Status";
 			packageProductDependencies = (
@@ -422,9 +431,9 @@
 			productReference = 3F57148E2C9EA7BD00685FEA /* NR StatusUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
-		3FA635062CD7D4E30050F813 /* NRQL WidgetExtension */ = {
+		BA0000010000000000000003 /* Workbook WidgetExtension */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 3FA6351B2CD7D4E40050F813 /* Build configuration list for PBXNativeTarget "NRQL WidgetExtension" */;
+			buildConfigurationList = 3FA6351B2CD7D4E40050F813 /* Build configuration list for PBXNativeTarget "Workbook WidgetExtension" */;
 			buildPhases = (
 				3FA635032CD7D4E30050F813 /* Sources */,
 				3FA635042CD7D4E30050F813 /* Frameworks */,
@@ -436,13 +445,15 @@
 			);
 			fileSystemSynchronizedGroups = (
 				3F28B3662CBB996200CCB8DD /* NR Models */,
-				3FA6350A2CD7D4E30050F813 /* NRQL Widget */,
+				3FA6350A2CD7D4E30050F813 /* Workbook Widget */,
+				BA0000010000000000000002 /* Workbook */,
 			);
-			name = "NRQL WidgetExtension";
+			name = "Workbook WidgetExtension";
 			packageProductDependencies = (
+				3FA3FF0830A5860D00AA543D /* LuaSwift */,
 			);
-			productName = "NRQL WidgetExtension";
-			productReference = 3FA635072CD7D4E30050F813 /* NRQL WidgetExtension.appex */;
+			productName = "Workbook WidgetExtension";
+			productReference = 3FA635072CD7D4E30050F813 /* Workbook WidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -457,6 +468,11 @@
 				TargetAttributes = {
 					3F01FD242CBDFADF00D9E068 = {
 						CreatedOnToolsVersion = 16.0;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+						};
 					};
 					3F28B3642CBB996200CCB8DD = {
 						CreatedOnToolsVersion = 16.0;
@@ -473,8 +489,13 @@
 						CreatedOnToolsVersion = 16.0;
 						TestTargetID = 3F5714722C9EA7BC00685FEA;
 					};
-					3FA635062CD7D4E30050F813 = {
+					BA0000010000000000000003 = {
 						CreatedOnToolsVersion = 16.1;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
@@ -503,7 +524,7 @@
 				3F57148D2C9EA7BD00685FEA /* NR StatusUITests */,
 				3F28B3642CBB996200CCB8DD /* NR Models */,
 				3F28B36D2CBB996200CCB8DD /* NR ModelsTests */,
-				3FA635062CD7D4E30050F813 /* NRQL WidgetExtension */,
+				BA0000010000000000000003 /* Workbook WidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -606,7 +627,7 @@
 		};
 		3FA635162CD7D4E40050F813 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 3FA635062CD7D4E30050F813 /* NRQL WidgetExtension */;
+			target = BA0000010000000000000003 /* Workbook WidgetExtension */;
 			targetProxy = 3FA635152CD7D4E40050F813 /* PBXContainerItemProxy */;
 		};
 		3FD0000B2DC0000100D9E068 /* PBXTargetDependency */ = {
@@ -625,7 +646,7 @@
 				CODE_SIGN_ENTITLEMENTS = "NR Status/NR_Status.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 6;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"NR Status/Preview Content\"";
 				DEVELOPMENT_TEAM = EHM929N34N;
@@ -646,6 +667,7 @@
 				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -660,7 +682,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 6;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"NR Status/Preview Content\"";
 				DEVELOPMENT_TEAM = EHM929N34N;
@@ -681,6 +703,7 @@
 				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -989,17 +1012,16 @@
 		3FA635192CD7D4E40050F813 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = "NRQL Widget/NRQL_Widget.entitlements";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = "Workbook Widget/WorkbookWidget.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 6;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = EHM929N34N;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "NRQL Widget/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "NRQL Widget";
+				INFOPLIST_FILE = "Workbook Widget/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Workbook Widget";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1008,9 +1030,11 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0.3;
-				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status.NRQL-Widget";
+				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status.WorkbookWidget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "WORKBOOK_WIDGET $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -1019,17 +1043,16 @@
 		3FA6351A2CD7D4E40050F813 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = "NRQL Widget/NRQL_Widget.entitlements";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = "Workbook Widget/WorkbookWidget.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 6;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = EHM929N34N;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "NRQL Widget/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "NRQL Widget";
+				INFOPLIST_FILE = "Workbook Widget/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Workbook Widget";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1038,9 +1061,11 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0.3;
-				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status.NRQL-Widget";
+				PRODUCT_BUNDLE_IDENTIFIER = "net.baurhome.NR-Status.WorkbookWidget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "WORKBOOK_WIDGET $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -1103,7 +1128,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		3FA6351B2CD7D4E40050F813 /* Build configuration list for PBXNativeTarget "NRQL WidgetExtension" */ = {
+		3FA6351B2CD7D4E40050F813 /* Build configuration list for PBXNativeTarget "Workbook WidgetExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3FA635192CD7D4E40050F813 /* Debug */,

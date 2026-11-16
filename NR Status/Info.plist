@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NRStatusKeychainAccessGroup</key>
+	<string>group.net.baurhome.NR-Status</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
@@ -18,10 +20,6 @@
 			<key>NSUbiquitousDocumentUserActivityType</key>
 			<string>$(PRODUCT_BUNDLE_IDENTIFIER).nrmd</string>
 		</dict>
-	</array>
-	<key>INIntentsSupported</key>
-	<array>
-		<string>ConfigurationAppIntent</string>
 	</array>
 	<key>UTExportedTypeDeclarations</key>
 	<array>

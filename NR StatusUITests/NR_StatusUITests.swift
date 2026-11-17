@@ -126,21 +126,25 @@ final class NR_StatusUITests: XCTestCase {
         let title = app.textFields["cell-configuration-title"]
         XCTAssertTrue(title.waitForExistence(timeout: 5))
         title.click()
-        title.typeText("Configured title")
-        for label in ["Title", "Variable binding", "API Key name", "Account IDs"] {
+        title.typeKey("a", modifierFlags: .command)
+        title.typeText("ConfiguredTitle")
+        for label in ["Title", "Variable binding", "Account IDs"] {
             XCTAssertTrue(app.staticTexts[label].exists)
         }
+        XCTAssertFalse(app.staticTexts["API Key name"].exists)
+        XCTAssertFalse(app.textFields["API Key name"].exists)
         XCTAssertTrue(app.buttons["Remove Cell Configuration"].exists)
         XCTAssertFalse(app.staticTexts["Remove Cell Configuration"].exists)
         app.radioButtons["Text"].firstMatch.click()
         let text = app.textViews["cell-configuration-text"]
         XCTAssertTrue(text.waitForExistence(timeout: 5))
-        XCTAssertTrue((text.value as? String)?.contains("title: Configured title") == true)
+        XCTAssertTrue((text.value as? String)?.contains("title: ConfiguredTitle") == true)
         text.click()
         text.typeKey("a", modifierFlags: .command)
-        text.typeText("title: From text\nchart: billboard\nattributes: gauge, max(250)")
+        text.typeText("title: From text\napi-key: Staging\nchart: billboard\nattributes: gauge, max(250)")
         app.radioButtons["Settings"].firstMatch.click()
         XCTAssertEqual(title.value as? String, "From text")
+        XCTAssertFalse(app.textFields["API Key name"].exists)
         let maximum = app.textFields["Maximum value"]
         XCTAssertTrue(maximum.waitForExistence(timeout: 5))
         XCTAssertEqual(maximum.value as? String, "250")
@@ -150,6 +154,17 @@ final class NR_StatusUITests: XCTestCase {
         maximum.typeText("500")
         app.radioButtons["Text"].firstMatch.click()
         XCTAssertTrue((text.value as? String)?.contains("max(500)") == true)
+        XCTAssertTrue((text.value as? String)?.contains("api-key: Staging") == true)
+
+        app.buttons["Close"].firstMatch.click()
+        app.buttons["Document Config"].firstMatch.click()
+        app.radioButtons["Settings"].firstMatch.click()
+        let documentKey = app.textFields["API Key name"]
+        XCTAssertTrue(documentKey.waitForExistence(timeout: 5))
+        documentKey.click()
+        documentKey.typeText("Production")
+        app.radioButtons["Text"].firstMatch.click()
+        XCTAssertTrue((text.value as? String)?.contains("api-key: Production") == true)
     }
 
     @MainActor

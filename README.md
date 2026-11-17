@@ -235,7 +235,10 @@ SELECT count(*) FROM TransactionError
 ````
 
 Each query independently overrides `api-key`, `accounts`, or both in its
-`cell_config` fence. Document settings are plain key/value lines inside the
+`cell_config` fence. Per-cell API-key overrides are an advanced, text-only option:
+add `api-key: Staging` (or `api_key: Staging`) in the cell configuration's **Text**
+editor. The API-key field remains visible in document-level **Settings**.
+Document settings are plain key/value lines inside the
 `config` fence; `//` lines are comments, not settings.
 Only `api-key` and `accounts` affect document connection settings. Other
 `key: value` metadata is accepted without affecting execution and is preserved

@@ -375,6 +375,29 @@ struct NrdbTests {
         #expect(try bluePixels(value: 50, maximum: 0) == half)
     }
 
+    @MainActor @Test(arguments: [110.0, 240.0])
+    func widgetLinearGaugesKeepDistinctBarShapes(height: Double) throws {
+        func paintedRows(style: BillboardConfiguration.GaugeStyle) throws -> Int {
+            let config = ChartConfiguration(resultContainer: try container(results: #"[{"count":50}]"#))
+            config.billboard.showGauge = true
+            config.billboard.gaugeStyle = style
+            let renderer = ImageRenderer(content: ConfigurableChartView(config: config)
+                .widgetSized().frame(width: 160, height: height)
+                .foregroundStyle(.white).accentColor(.blue))
+            let image = NSBitmapImageRep(cgImage: try #require(renderer.cgImage))
+            return (0..<image.pixelsHigh).filter { y in
+                (0..<image.pixelsWide).contains { x in
+                    guard let color = image.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB) else { return false }
+                    return color.alphaComponent > 0.5 && color.blueComponent > color.redComponent + 0.3
+                }
+            }.count
+        }
+        let linear = try paintedRows(style: .linear)
+        let capacity = try paintedRows(style: .linearCapacity)
+        #expect(capacity > 0)
+        #expect(linear > capacity * 3 / 2, "Linear should use a substantial bar rather than the thin capacity capsule.")
+    }
+
     @MainActor @Test func widgetTablesRenderHeadersAndRowsWithoutPlatformControls() throws {
         let result = try container(results: #"[{"Service":"API","Count":48},{"Service":"Web","Count":32}]"#)
         let config = ChartConfiguration(resultContainer: result)

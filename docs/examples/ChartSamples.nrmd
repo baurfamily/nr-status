@@ -59,7 +59,7 @@ return {
 title: Pie - traffic share
 chart: pie
 height: 14
-attributes: donut
+attributes: donut, separated
 widget-id: BE1A6B9F-94B9-4DA9-A83A-843987F65996
 ```
 ```lua

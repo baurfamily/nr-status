@@ -17,6 +17,54 @@ struct NrdbTests {
         return try JSONDecoder().decode(NrdbResultContainer.self, from: Data(json.utf8))
     }
 
+    @Test func categoryBarLegendsHideOnlyWhenTheAxisAlreadyIdentifiesTheColors() throws {
+        let config = ChartConfiguration(resultContainer: try container(results: """
+            [{"facet":"API","count":10,"average":5},{"facet":"Web","count":20,"average":8}]
+            """))
+        #expect(BarChart(config: config).effectiveLegendVisibility == .hidden)
+        #expect(BarChart(config: config, categoryAxisVisible: false).effectiveLegendVisibility == .automatic)
+        #expect(BarChart(config: config, legendVisibility: .visible).effectiveLegendVisibility == .visible)
+        config.bar.pivotData = true
+        #expect(BarChart(config: config).effectiveLegendVisibility == .automatic)
+        #expect(BarChart(config: config, legendVisibility: .hidden).effectiveLegendVisibility == .hidden)
+    }
+
+    @Test(arguments: [
+        #"[{"beginTimeSeconds":100,"endTimeSeconds":160,"facet":"API","count":10}]"#,
+        #"[{"facet":["API","200"],"count":10},{"facet":["Web","200"],"count":20}]"#
+    ])
+    func barLegendsKeepDimensionsNotNamedOnTheCategoryAxis(results: String) throws {
+        let config = ChartConfiguration(resultContainer: try container(results: results))
+        #expect(BarChart(config: config).effectiveLegendVisibility == .automatic)
+    }
+
+    @MainActor @Test func categoryBarsReclaimLegendSpaceInSharedChartRendering() throws {
+        let config = ChartConfiguration(resultContainer: try container(results: """
+            [{"facet":"API","count":10},{"facet":"Web","count":20}]
+            """))
+        config.chartType = .bar
+        func plotHeight<Content: View>(_ content: Content) throws -> CGFloat {
+            var heights: [CGFloat] = []
+            let renderer = ImageRenderer(content: content
+                .chartOverlay { proxy in
+                    GeometryReader { geometry in
+                        if let frame = proxy.plotFrame {
+                            let _ = heights.append(geometry[frame].height)
+                        }
+                        Color.clear
+                    }
+                }
+                .frame(width: 320, height: 180))
+            _ = try #require(renderer.cgImage)
+            return try #require(heights.last)
+        }
+        let withLegend = try plotHeight(BarChart(config: config, legendVisibility: .visible))
+        let workbook = try plotHeight(ConfigurableChartView(config: config).withoutConfiguration())
+        let widget = try plotHeight(ConfigurableChartView(config: config).widgetSized(for: .systemLarge))
+        #expect(workbook > withLegend + 8)
+        #expect(abs(widget - workbook) < 1)
+    }
+
     @Test func emptyResultsDoNotCrash() throws {
         let container = try container(results: "[]")
 

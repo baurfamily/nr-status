@@ -28,6 +28,16 @@ before unpublishing. Neither action affects publications from other workbooks.
 Published cells show a **Published** badge. Their configuration sidebar includes
 **Update Widget** to refresh the published snapshot without another naming dialog.
 
+Widget chart legends are hidden when their labels would take more than two lines
+at the available width, including when a few facet names are unusually long.
+Small widgets continue to omit legends.
+
+Category bar charts omit redundant legends when the x-axis already names their
+colored categories, in workbooks, exports, and widgets. Time-series, pivoted, and
+multi-facet bar charts keep legends that identify a separate dimension. Widgets
+with hidden category axes retain their legends unless the size/overflow rules
+above hide them.
+
 Click a configured desktop widget to open its source workbook and reveal the
 published cell. Save the workbook before publishing (or update the publication
 after saving) to record its location, and save again after publishing to retain
@@ -44,7 +54,7 @@ fixed Lua data for billboard, line, bar, pie, scatter plot, and table charts and
 requires no API key or network access.
 
 Widget charts hide axes at small and medium sizes, and hide legends at small
-sizes. Large widgets retain both; workbook charts are unchanged. Billboard
+sizes. Large widgets retain axes and nonredundant legends that fit in two lines. Billboard
 widgets fit their tiles to the available space, and table widgets show a static
 grid with a remaining-row count when the data does not fit.
 

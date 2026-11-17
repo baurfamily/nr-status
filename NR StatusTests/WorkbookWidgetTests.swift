@@ -3,6 +3,30 @@ import Testing
 @testable import NR_Status
 
 struct WorkbookWidgetTests {
+    @Test func widgetLegendsFitAtMostTwoLinesAtTheAvailableWidth() {
+        #expect(WidgetLegendPolicy.fits(labels: ["API", "Web"], width: 140))
+        #expect(WidgetLegendPolicy.fits(labels: ["API", "Web"], width: 300))
+        #expect(!WidgetLegendPolicy.fits(labels: (1...30).map { "App \($0)" }, width: 300))
+        #expect(!WidgetLegendPolicy.fits(labels: [
+            String(repeating: "very long application name ", count: 8),
+            String(repeating: "another long application name ", count: 8)
+        ], width: 300))
+        #expect(!WidgetLegendPolicy.fits(labels: [String(repeating: "LongApplicationName", count: 20)], width: 300))
+        #expect(WidgetLegendPolicy.fits(labels: [], width: 0))
+        #expect(!WidgetLegendPolicy.fits(labels: ["API"], width: 0))
+        #expect(WidgetLegendPolicy.fits(labels: ["API", "Web"], width: 40))
+        #expect(!WidgetLegendPolicy.fits(labels: ["API", "Web", "DB"], width: 40))
+    }
+
+    @Test func widgetLegendWrappingRespondsToWidthAndExplicitLineBreaks() {
+        let labels = ["First application", "Second application", "Third application"]
+        #expect(!WidgetLegendPolicy.fits(labels: labels, width: 110))
+        #expect(WidgetLegendPolicy.fits(labels: labels, width: 300))
+        #expect(WidgetLegendPolicy.fits(labels: ["First\nSecond"], width: 300))
+        #expect(!WidgetLegendPolicy.fits(labels: ["First\nSecond\nThird"], width: 300))
+        #expect(!WidgetLegendPolicy.fits(labels: ["First\nSecond"], width: 300, additionalLines: 1))
+    }
+
     @Test func widgetLinksRoundTripAndRejectUnrelatedURLs() throws {
         let id = UUID()
         #expect(WorkbookWidgetLink.widgetID(from: WorkbookWidgetLink.url(for: id)) == id)

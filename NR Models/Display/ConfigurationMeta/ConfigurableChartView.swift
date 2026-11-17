@@ -8,6 +8,40 @@
 import SwiftUI
 import Charts
 import WidgetKit
+import AppKit
+
+enum WidgetLegendPolicy {
+    static func fits(labels: [String], width: CGFloat, additionalLines: Int = 0) -> Bool {
+        guard !labels.isEmpty else { return additionalLines <= 2 }
+        guard width > 14, additionalLines < 2 else { return false }
+        let font = NSFont.preferredFont(forTextStyle: .caption1)
+        let lineHeight = font.ascender - font.descender + font.leading
+        let maximumHeight = CGFloat(2 - additionalLines) * lineHeight
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        for label in labels {
+            // Include the symbol and spacing when measuring each legend entry.
+            let text = (label as NSString).boundingRect(
+                with: CGSize(width: width - 14, height: .greatestFiniteMagnitude),
+                options: [.usesLineFragmentOrigin, .usesFontLeading],
+                attributes: [.font: font]
+            )
+            let itemWidth = min(width, ceil(text.width) + 14)
+            let itemHeight = max(lineHeight, ceil(text.height))
+            if x > 0, x + 8 + itemWidth > width {
+                y += rowHeight
+                x = 0
+                rowHeight = 0
+            }
+            if x > 0 { x += 8 }
+            x += itemWidth
+            rowHeight = max(rowHeight, itemHeight)
+            if y + rowHeight > maximumHeight { return false }
+        }
+        return true
+    }
+}
 
 struct ConfigurableChartView: View {
     var resultsContainer: NrdbResultContainer {
@@ -51,20 +85,70 @@ struct ConfigurableChartView: View {
         return copy
     }
     
-    private var chart: some View {
+    private var widgetLegendLabels: [String] {
+        let labels: [String]
+        switch config.chartType {
+        case .line, nil:
+            let chart = TimeseriesChart(config: config)
+            labels = chart.data.filter { $0.facet == nil || chart.selectedFacets.contains($0.facet!) }
+                .flatMap { datum in
+                    chart.selectedFields.sorted().map { chart.seriesNames(for: $0, in: datum).1 }
+                }
+        case .bar:
+            let chart = BarChart(config: config)
+            labels = chart.filteredData.flatMap { datum -> [String] in
+                if datum.isTimeseries {
+                    return chart.selectedFields.map { chart.seriesNames(for: $0, in: datum).1 }
+                }
+                guard !chart.selectedFields.isEmpty else { return [] }
+                if let facet = datum.facet, chart.selectedFacets.contains(facet) { return [facet] }
+                if !chart.switchFieldsAndFacets, let facets = datum.facets, facets.count >= 2 { return [facets[0]] }
+                return []
+            }
+        case .pie:
+            labels = PieChart(config: config).data.compactMap(\.facet)
+        case .plot:
+            labels = ScatterPlot(config: config).filteredData.map(\.color)
+        case .billboard, .table:
+            labels = []
+        }
+        var seen = Set<String>()
+        return labels.filter { seen.insert($0).inserted }
+    }
+
+    @ViewBuilder private var chart: some View {
+        if usesWidgetSizing {
+            GeometryReader { geometry in
+                chartContent(legendVisibility:
+                    widgetFamily == .systemSmall || !WidgetLegendPolicy.fits(
+                        labels: widgetLegendLabels, width: geometry.size.width,
+                        additionalLines: config.chartType == .plot && config.plot.sizeField != nil ? 1 : 0
+                    ) ? .hidden : .automatic
+                )
+            }
+        } else {
+            chartContent()
+        }
+    }
+
+    private func chartContent(legendVisibility: Visibility = .automatic) -> some View {
         Section {
             switch config.chartType {
             case .line, nil: TimeseriesChart(config: config)
             case .billboard: BillboardChart(config: config, fillsAvailableSpace: usesWidgetSizing)
             case .plot: ScatterPlot(config: config)
             case .pie: PieChart(config: config)
-            case .bar: BarChart(config: config)
+            case .bar:
+                BarChart(
+                    config: config, categoryAxisVisible: !usesWidgetSizing || widgetFamily == .systemLarge,
+                    legendVisibility: legendVisibility
+                )
             case .table: TableChart(config: config, isWidget: usesWidgetSizing)
             }
         }
         .chartXAxis(usesWidgetSizing && widgetFamily != .systemLarge ? .hidden : .automatic)
         .chartYAxis(usesWidgetSizing && widgetFamily != .systemLarge ? .hidden : .automatic)
-        .chartLegend(usesWidgetSizing && widgetFamily == .systemSmall ? .hidden : .automatic)
+        .chartLegend(legendVisibility)
     }
 
     /// The chart alone, with no inspector; used when rendering to an image or PDF.

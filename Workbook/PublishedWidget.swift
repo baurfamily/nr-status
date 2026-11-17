@@ -8,6 +8,31 @@ struct PublishedWidget: Codable, Identifiable, Sendable {
     let cellTitle: String
     let workbook: String
     let publishedAt: Date
+    var sourceBookmark: Data? = nil
+
+    func sourceURL() throws -> URL? {
+        guard let sourceBookmark else { return nil }
+        var stale = false
+        return try URL(resolvingBookmarkData: sourceBookmark, options: [.withSecurityScope, .withoutUI],
+                       bookmarkDataIsStale: &stale)
+    }
+}
+
+enum WorkbookWidgetLink {
+    static func url(for id: UUID) -> URL {
+        URL(string: "nrstatus://widget/\(id.uuidString)")!
+    }
+
+    static func widgetID(from url: URL) -> UUID? {
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              components.scheme?.lowercased() == "nrstatus",
+              components.host?.lowercased() == "widget",
+              components.user == nil, components.password == nil, components.port == nil,
+              components.query == nil, components.fragment == nil else { return nil }
+        let path = components.path.split(separator: "/", omittingEmptySubsequences: false)
+        guard path.count == 2, path[0].isEmpty else { return nil }
+        return UUID(uuidString: String(path[1]))
+    }
 }
 
 struct PublishedWidgetGroup: Identifiable {

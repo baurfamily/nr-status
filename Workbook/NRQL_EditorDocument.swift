@@ -168,6 +168,14 @@ struct NRQL_EditorDocument: FileDocument {
         focusedCellId = id
     }
 
+    @discardableResult
+    mutating func revealWidget(_ widgetID: UUID) -> Bool {
+        let matches = cells.filter { $0.widgetID == widgetID }
+        guard matches.count == 1, let cell = matches.first else { return false }
+        revealCell(cell.id)
+        return true
+    }
+
     var connection: Result<NrqlConnection, Error> {
         Result {
             let configs = cells.enumerated().filter { $0.element.kind == .config }

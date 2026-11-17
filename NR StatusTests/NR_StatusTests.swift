@@ -170,17 +170,21 @@ struct ConfigurationTextEditorTests {
 
 // Serves canned responses so the client can be exercised without a network.
 final class StubURLProtocol: URLProtocol {
-    nonisolated(unsafe) static var handler: ((URLRequest) -> (Int, Data))?
+    nonisolated(unsafe) static var handler: ((URLRequest) throws -> (Int, Data))?
 
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
     override func startLoading() {
-        let (status, data) = Self.handler?(request) ?? (500, Data())
-        let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!
-        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-        client?.urlProtocol(self, didLoad: data)
-        client?.urlProtocolDidFinishLoading(self)
+        do {
+            let (status, data) = try Self.handler?(request) ?? (500, Data())
+            let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: data)
+            client?.urlProtocolDidFinishLoading(self)
+        } catch {
+            client?.urlProtocol(self, didFailWithError: error)
+        }
     }
 
     override func stopLoading() {}
@@ -188,6 +192,44 @@ final class StubURLProtocol: URLProtocol {
 
 @Suite(.serialized)
 struct NerdgraphClientTests {
+    @MainActor @Test(arguments: ["", "timeout: 10", "timeout: 120", "timeout: invalid"])
+    func nrqlCellAppliesTimeout(configuration: String) async throws {
+        let suite = "NR Status timeout test \(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        let profiles = NerdgraphProfiles(
+            defaults: defaults, legacyStore: KeychainStore(label: suite + " legacy", accessGroup: nil),
+            labelPrefix: suite, accessGroup: nil
+        )
+        let profile = NerdgraphProfile(name: "Timeout", preferredAccountIds: [12])
+        try profiles.save(profile, apiKey: "test-key", makeDefault: true)
+        defer {
+            profiles.keychain(for: profile).remove()
+            defaults.removePersistentDomain(forName: suite)
+        }
+        nonisolated(unsafe) var captured: URLRequest?
+        StubURLProtocol.handler = { request in
+            captured = request
+            return (200, Data(#"{"data":{"actor":{"nrql":null}},"errors":[{"message":"Query timed out"}]}"#.utf8))
+        }
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [StubURLProtocol.self]
+        let session = URLSession(configuration: sessionConfig)
+        defer { session.invalidateAndCancel() }
+        let query = NrqlQuery(from: "```cell_config\n\(configuration)\n```\n```nrql\nSELECT 1\n```")
+        await query.getData(profiles: profiles, session: session)
+        if configuration == "timeout: invalid" {
+            #expect(captured == nil)
+            #expect(query.errorMessage?.contains("timeout must be a positive whole number") == true)
+        } else {
+            #expect(captured?.timeoutInterval == (configuration == "timeout: 120" ? 150 : 90))
+            #expect(query.executedNrql == "SELECT 1")
+            let seconds = configuration.isEmpty ? 30 : configuration == "timeout: 10" ? 10 : 120
+            #expect(query.errorMessage?.contains("timed out after \(seconds) seconds") == true)
+            #expect(query.errorMessage?.contains("timeout: 120") == true)
+            #expect(!query.hasResult)
+        }
+    }
+
     @MainActor @Test func multipleResultBindingsExportValuesAndReportMissingPaths() async throws {
         let suite = "NR Status extracted bindings test \(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suite))
@@ -427,7 +469,8 @@ struct NerdgraphClientTests {
         #expect(captured?.httpMethod == "POST")
     }
 
-    @Test func sendsResolvedKeyAndMultipleAccountsAsVariables() async throws {
+    @Test(arguments: [nil, 10, 120] as [Int?])
+    func sendsResolvedKeyAndMultipleAccountsAsVariables(timeout: Int?) async throws {
         nonisolated(unsafe) var captured: URLRequest?
         StubURLProtocol.handler = { request in
             captured = request
@@ -438,12 +481,18 @@ struct NerdgraphClientTests {
         let session = URLSession(configuration: sessionConfig)
         defer { session.invalidateAndCancel() }
         let config = NerdgraphConfig(host: "eu.example.com", apiKey: "selected-key", accountIds: "12,34")
-        _ = try await Queries(config: config, session: session).getNrqlData(query: "SELECT count(*) FROM Log")
+        let queries = Queries(config: config, session: session)
+        if let timeout {
+            _ = try await queries.getNrqlData(query: "SELECT count(*) FROM Log", timeout: timeout)
+        } else {
+            _ = try await queries.getNrqlData(query: "SELECT count(*) FROM Log")
+        }
+        let expectedTimeout = timeout ?? 30
 
         let request = try #require(captured)
         #expect(request.url?.host == "eu.example.com")
         #expect(request.value(forHTTPHeaderField: "api-key") == "selected-key")
-        #expect(request.timeoutInterval == 90)
+        #expect(request.timeoutInterval == max(90, TimeInterval(expectedTimeout) + 30))
         // URLSession may move the payload into a stream before URLProtocol sees it.
         let data: Data
         if let body = request.httpBody {
@@ -462,10 +511,54 @@ struct NerdgraphClientTests {
             data = body
         }
         let json = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
-        #expect((json["query"] as? String)?.contains("nrql(accounts: $accountIds, query: $nrql, timeout: 60)") == true)
+        #expect((json["query"] as? String)?.contains("nrql(accounts: $accountIds, query: $nrql, timeout: \(expectedTimeout))") == true)
         let variables = try #require(json["variables"] as? [String: Any])
         #expect(variables["accountIds"] as? [Int] == [12, 34])
         #expect(variables["nrql"] as? String == "SELECT count(*) FROM Log")
+    }
+
+    @Test(arguments: [
+        #"{"errors":[{"message":"Query timeout"}]}"#,
+        #"{"data":{"actor":{"nrql":null}},"errors":[{"message":"Query deadline exceeded"}]}"#
+    ])
+    func reportsNrqlTimeoutWithoutResults(response: String) async throws {
+        StubURLProtocol.handler = { _ in (200, Data(response.utf8)) }
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [StubURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer { session.invalidateAndCancel() }
+        let queries = Queries(config: NerdgraphConfig(host: "localhost", apiKey: "test-key", accountIds: "12"), session: session)
+        await #expect(throws: Queries.NrqlError.self) {
+            _ = try await queries.getNrqlData(query: "SELECT 1")
+        }
+    }
+
+    @Test func preservesNrqlResultsAndUnrelatedErrors() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [StubURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer { session.invalidateAndCancel() }
+        let queries = Queries(config: NerdgraphConfig(host: "localhost", apiKey: "test-key", accountIds: "12"), session: session)
+        StubURLProtocol.handler = { _ in
+            (200, Data(#"{"data":{"actor":{"nrql":{"nrql":"SELECT 1","results":[],"metadata":{}}}},"errors":[{"message":"Other field timed out"}]}"#.utf8))
+        }
+        #expect(try await queries.getNrqlData(query: "SELECT 1") != nil)
+        StubURLProtocol.handler = { _ in
+            (200, Data(#"{"data":{"actor":{"nrql":null}},"errors":[{"message":"Invalid NRQL syntax"}]}"#.utf8))
+        }
+        await #expect(throws: NerdgraphClient.ClientError.self) {
+            _ = try await queries.getNrqlData(query: "SELECT 1")
+        }
+        StubURLProtocol.handler = { _ in (200, Data(#"{"data":{}}"#.utf8)) }
+        #expect(try await queries.getNrqlData(query: "SELECT 1") == nil)
+        StubURLProtocol.handler = { _ in throw URLError(.timedOut) }
+        await #expect(throws: Queries.NrqlError.self) {
+            _ = try await queries.getNrqlData(query: "SELECT 1")
+        }
+        StubURLProtocol.handler = { _ in throw URLError(.notConnectedToInternet) }
+        await #expect(throws: URLError.self) {
+            _ = try await queries.getNrqlData(query: "SELECT 1")
+        }
     }
 
     @Test func throwsOnHttpError() async {

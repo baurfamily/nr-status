@@ -14,6 +14,7 @@ import WidgetKit
 struct DocumentView: View {
     @Binding var document: NRQL_EditorDocument
     var sourceName: String = "Untitled.nrmd"
+    var sourceURL: URL? = nil
     @AppStorage("nerdgraphProfiles", store: NerdgraphConfig.sharedDefaults) private var profileSettingsData = Data()
     @State private var profileSettings = NerdgraphProfiles.Settings()
     @State private var configurationError: String?
@@ -23,6 +24,7 @@ struct DocumentView: View {
     @State private var isUnpublishingAll = false
     @State private var showsBindingsInspector = false
     @State private var bindingsInspectorWidth: CGFloat = 440
+    private let widgetNavigation = WidgetSourceNavigation.shared
 
     private enum PublicationSheet: Identifiable {
         case cell(UUID), all
@@ -60,12 +62,24 @@ struct DocumentView: View {
         .sheet(item: $publishing) { selection in
             switch selection {
             case .cell(let id):
-                PublishWidgetSheet(document: $document, cellID: id, sourceName: sourceName)
+                PublishWidgetSheet(document: $document, cellID: id, sourceName: sourceName, sourceURL: sourceURL)
             case .all:
-                PublishWidgetSheet(document: $document, cellID: nil, sourceName: sourceName)
+                PublishWidgetSheet(document: $document, cellID: nil, sourceName: sourceName, sourceURL: sourceURL)
             }
         }
         .onAppear { loadPublishedIDs() }
+        .task(id: widgetNavigation.revealRequest?.id) {
+            guard let request = widgetNavigation.revealRequest,
+                  sourceURL?.standardizedFileURL == request.fileURL else { return }
+            if document.revealWidget(request.widget.id) {
+                cellRevealRequest = UUID()
+            } else {
+                await widgetNavigation.recover(
+                    request.widget, title: "Published chart not found in source file",
+                    detail: "The workbook opened, but this cell's saved widget identity is missing or duplicated. It may have been removed or not saved after publishing."
+                )
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: WidgetRegistry.didChangeNotification)) { _ in
             loadPublishedIDs()
         }
@@ -176,7 +190,8 @@ struct DocumentView: View {
     private func updatePublished(_ cellID: UUID) {
         do {
             try WorkbookWidgetPublishing.update(
-                cellID: cellID, document: &document, sourceName: sourceName, registry: WidgetRegistry.shared()
+                cellID: cellID, document: &document, sourceName: sourceName,
+                sourceURL: sourceURL, registry: WidgetRegistry.shared()
             )
             WidgetCenter.shared.reloadTimelines(ofKind: WidgetRegistry.widgetKind)
         } catch { configurationError = error.localizedDescription }
@@ -195,7 +210,7 @@ struct DocumentView: View {
         defer { WidgetCenter.shared.reloadTimelines(ofKind: WidgetRegistry.widgetKind) }
         do {
             try WorkbookWidgetPublishing.updateAll(
-                document: &document, sourceName: sourceName, registry: WidgetRegistry.shared()
+                document: &document, sourceName: sourceName, sourceURL: sourceURL, registry: WidgetRegistry.shared()
             )
         } catch { configurationError = error.localizedDescription }
     }

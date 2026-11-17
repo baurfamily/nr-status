@@ -47,9 +47,10 @@ struct NerdgraphClient {
     }
 
     func sendResponse<Response: Decodable, Variables: Encodable>(
-        _ query: String, variables: Variables, debug: Bool = false
+        _ query: String, variables: Variables, debug: Bool = false,
+        timeoutInterval: TimeInterval = Self.requestTimeoutInterval
     ) async throws -> Response {
-        var request = URLRequest(url: url, timeoutInterval: Self.requestTimeoutInterval)
+        var request = URLRequest(url: url, timeoutInterval: timeoutInterval)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(apiKey, forHTTPHeaderField: "api-key")
@@ -76,8 +77,11 @@ struct NerdgraphClient {
         }
     }
 
-    func send<Variables: Encodable>(_ query: String, variables: Variables, debug: Bool = false) async throws -> Root {
-        let root: Root = try await sendResponse(query, variables: variables, debug: debug)
+    func send<Variables: Encodable>(
+        _ query: String, variables: Variables, debug: Bool = false,
+        timeoutInterval: TimeInterval = Self.requestTimeoutInterval
+    ) async throws -> Root {
+        let root: Root = try await sendResponse(query, variables: variables, debug: debug, timeoutInterval: timeoutInterval)
         if let errors = root.errors, !errors.isEmpty {
             let messages = errors.map(\.message)
             Self.logger.error("GraphQL errors: \(messages.joined(separator: "; "), privacy: .public)")

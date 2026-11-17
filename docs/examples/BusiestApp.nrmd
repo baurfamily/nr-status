@@ -119,6 +119,7 @@ In those caess, you can use `chart: none`. If you also collapse the query sectio
 title: Transactions for the busiest app
 var: transactions
 chart: none
+widget-id: A597057E-5795-475C-A43A-E8A4329016BF
 ```
 ```nrql
 

@@ -11,6 +11,22 @@ import AppKit
 @testable import NR_Status
 
 struct CellConfigurationTests {
+    @Test func nrqlTimeoutIsOptionalAndSurvivesConfigurationEdits() throws {
+        #expect(try NrqlCellSource(code: "SELECT 1").nrqlTimeout() == nil)
+        var cell = NrqlCell(text: "```cell_config\ntimeout: 120\n```\n```nrql\nSELECT 1\n```")
+        cell.configurationText = NrqlCellSource.updating("title", values: ["Slow query"], in: cell.configurationText)
+        let reopened = NRQL_EditorDocument(text: cell.text)
+        #expect(try NrqlCellSource(stored: reopened.cells[0].text).nrqlTimeout() == 120)
+        #expect(reopened.cells[0].editorText == "SELECT 1")
+    }
+
+    @Test(arguments: ["", "0", "-1", "1.5", "slow", "60\ntimeout: 120"])
+    func rejectsInvalidNrqlTimeout(value: String) {
+        #expect(throws: NrqlConnection.ConfigurationError.self) {
+            try NrqlCellSource(configuration: "timeout: \(value)", code: "SELECT 1").nrqlTimeout()
+        }
+    }
+
     @MainActor @Test func resizingPersistsWithoutDiscardingResultsOrOtherSettings() throws {
         var cell = NrqlCell(text: """
             ```cell_config

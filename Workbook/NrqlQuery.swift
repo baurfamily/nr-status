@@ -201,9 +201,10 @@ import CryptoKit
         executionID = id
         let script = script
         let nrql = nrql
+        let source = NrqlCellSource(stored: text)
         let graphQL = kind == .nerdgraph ? NerdgraphCellSource(stored: text) : nil
         let options = Result {
-            try NrqlConnection.parse(NrqlCellSource(stored: text).configuration ?? "")
+            try NrqlConnection.parse(source.configuration ?? "")
         }
         setState(.running)
         setExecuted(nil)
@@ -285,6 +286,7 @@ import CryptoKit
                 }
                 return
             }
+            let timeout = try source.nrqlTimeout() ?? Queries.defaultNrqlTimeout
             let sent = try await Task.detached {
                 try NrqlInterpolation.expand(nrql, results: results, config: documentConfig)
             }.value
@@ -293,7 +295,7 @@ import CryptoKit
             let snapshot = try connection.snapshot(profiles: profiles.load())
             let config = try connection.resolve(profiles: profiles)
             setExecuted(sent)
-            let container = try await Queries(config: config, session: session).getNrqlData(query: sent)
+            let container = try await Queries(config: config, session: session).getNrqlData(query: sent, timeout: timeout)
             // a newer run has taken over, so don't clobber its state
             guard !Task.isCancelled, executionID == id else { return }
             

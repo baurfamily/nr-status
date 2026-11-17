@@ -28,6 +28,16 @@ before unpublishing. Neither action affects publications from other workbooks.
 Published cells show a **Published** badge. Their configuration sidebar includes
 **Update Widget** to refresh the published snapshot without another naming dialog.
 
+Click a configured desktop widget to open its source workbook and reveal the
+published cell. Save the workbook before publishing (or update the publication
+after saving) to record its location, and save again after publishing to retain
+the cell's widget identity. File bookmarks can follow moves and renames.
+If the file or cell cannot be found, **Recover Workbook...** saves and opens a copy
+of the published workbook snapshot, including the query, configuration, and
+dependencies. Changes made after publishing are not recoverable this way.
+Existing publications need to be updated once to record their source location.
+Unpublishing also removes the recovery snapshot.
+
 For repeatable chart and widget comparisons, open
 [`docs/examples/ChartSamples.nrmd`](docs/examples/ChartSamples.nrmd). It contains
 fixed Lua data for billboard, line, bar, pie, scatter plot, and table charts and
@@ -90,6 +100,14 @@ and results. Configure its title, result bindings, connection overrides, display
 mode, and chart settings there, even before running it. **Settings** and **Text**
 edit the same configuration; changes are saved directly in the document.
 Configuration fences are hidden by default.
+
+For an NRQL cell, set `timeout: 120` in the **Text** editor to override the
+query timeout in seconds (a positive whole number). This advanced option has no
+Settings control and applies only to that cell, not Lua or Nerdgraph cells.
+Omitting it uses the 30-second default. If a timeout prevents results from arriving,
+the cell shows a warning explaining what happened and how to increase the timeout.
+The HTTP request deadline is at least
+90 seconds and at least 30 seconds longer than the query timeout.
 
 A `cell_config` fence immediately precedes the cell it configures. It uses the
 same keys for NRQL, Lua, and Nerdgraph; document defaults use a separate `config`

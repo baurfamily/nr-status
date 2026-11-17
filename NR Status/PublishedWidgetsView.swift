@@ -3,14 +3,15 @@ import WidgetKit
 
 enum WorkbookWidgetPublishing {
     static func updateAll(
-        document: inout NRQL_EditorDocument, sourceName: String, registry: WidgetRegistry
+        document: inout NRQL_EditorDocument, sourceName: String, sourceURL: URL? = nil, registry: WidgetRegistry
     ) throws {
         let published = try document.cells.filter { cell in
             guard let id = cell.widgetID else { return false }
             return try registry.widget(id: id) != nil
         }
         guard !published.isEmpty else { return }
-        try publish(cellIDs: published.map(\.id), document: &document, sourceName: sourceName, registry: registry)
+        try publish(cellIDs: published.map(\.id), document: &document, sourceName: sourceName,
+                    sourceURL: sourceURL, registry: registry)
     }
 
     static func unpublishAll(document: NRQL_EditorDocument, registry: WidgetRegistry) throws {
@@ -22,23 +23,26 @@ enum WorkbookWidgetPublishing {
     }
 
     static func update(
-        cellID: UUID, document: inout NRQL_EditorDocument, sourceName: String, registry: WidgetRegistry
+        cellID: UUID, document: inout NRQL_EditorDocument, sourceName: String, sourceURL: URL? = nil,
+        registry: WidgetRegistry
     ) throws {
         guard let id = document.cells.first(where: { $0.id == cellID })?.widgetID,
               try registry.widget(id: id) != nil else {
             throw NrqlConnection.ConfigurationError(message: "This cell is not published. Use Publish as Widget first.")
         }
-        try publish(cellIDs: [cellID], document: &document, sourceName: sourceName, registry: registry)
+        try publish(cellIDs: [cellID], document: &document, sourceName: sourceName,
+                    sourceURL: sourceURL, registry: registry)
     }
 
     static func publish(
         cellIDs: [UUID], document: inout NRQL_EditorDocument, sourceName: String,
-        names: [UUID: String] = [:], registry: WidgetRegistry
+        sourceURL: URL? = nil, names: [UUID: String] = [:], registry: WidgetRegistry
     ) throws {
         let selected = document.cells.indices.filter { cellIDs.contains(document.cells[$0].id) }
         guard !selected.isEmpty, selected.count == cellIDs.count else {
             throw NrqlConnection.ConfigurationError(message: "The selected cells no longer exist.")
         }
+        let sourceBookmark = try sourceURL?.bookmarkData(options: .withSecurityScope)
         var texts = document.cells.map(\.text)
         var configurations: [Int: String] = [:]
         var identities: [Int: UUID] = [:]
@@ -77,7 +81,8 @@ enum WorkbookWidgetPublishing {
             }
             return PublishedWidget(
                 id: id, revision: UUID(), name: name, sourceName: sourceName,
-                cellTitle: cell.query.title, workbook: snapshot.text, publishedAt: Date()
+                cellTitle: cell.query.title, workbook: snapshot.text, publishedAt: Date(),
+                sourceBookmark: sourceBookmark
             )
         }
         // Validate the entire batch before writing; keep identities for any successful saves.
@@ -100,6 +105,7 @@ struct PublishWidgetSheet: View {
     @Binding var document: NRQL_EditorDocument
     let cellID: UUID?
     let sourceName: String
+    var sourceURL: URL? = nil
     @State private var name = ""
     @State private var error: String?
 
@@ -131,6 +137,11 @@ struct PublishWidgetSheet: View {
             Text("Save the workbook after publishing to keep the cell's widget identity. Only named results references are supported for widget dependencies.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            if sourceURL == nil {
+                Text("Save this workbook, then update the publication to let widget clicks open the source file. Until then, clicks offer to recover the published snapshot.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             if let error { Text(error).foregroundStyle(.red) }
             HStack {
                 Spacer()
@@ -160,7 +171,7 @@ struct PublishWidgetSheet: View {
         do {
             try WorkbookWidgetPublishing.publish(
                 cellIDs: cells.map(\.id), document: &document, sourceName: sourceName,
-                names: cellID.map { [$0: name] } ?? [:], registry: WidgetRegistry.shared()
+                sourceURL: sourceURL, names: cellID.map { [$0: name] } ?? [:], registry: WidgetRegistry.shared()
             )
             dismiss()
         } catch {

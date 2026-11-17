@@ -8,6 +8,7 @@ struct WorkbookWidgetEntry: TimelineEntry {
     var error: String?
     var isConfigured = false
     var isPreview = false
+    var widgetID: UUID?
 }
 
 struct WorkbookWidgetProvider: AppIntentTimelineProvider {
@@ -32,6 +33,7 @@ struct WorkbookWidgetProvider: AppIntentTimelineProvider {
     private func load(_ configuration: WorkbookWidgetIntent) async -> WorkbookWidgetEntry {
         var entry = WorkbookWidgetEntry(date: Date(), isConfigured: configuration.widget != nil)
         guard let selection = configuration.widget, let id = UUID(uuidString: selection.id) else { return entry }
+        entry.widgetID = id
         do {
             let registry = try WidgetRegistry.shared()
             guard let widget = try registry.widget(id: id) else {
@@ -54,7 +56,8 @@ struct WorkbookWidgetProvider: AppIntentTimelineProvider {
             }
             // Publishing or removing a widget while it refreshes invalidates that run.
             guard try registry.widget(id: id)?.revision == widget.revision else {
-                return WorkbookWidgetEntry(date: Date(), error: "Widget source changed. Refreshing shortly.", isConfigured: true)
+                return WorkbookWidgetEntry(date: Date(), error: "Widget source changed. Refreshing shortly.",
+                                           isConfigured: true, widgetID: id)
             }
             entry.output = output
             do { try registry.cache(output, for: widget) }
@@ -108,6 +111,7 @@ struct WorkbookWidgetView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .clipped()
+        .widgetURL(entry.widgetID.map { WorkbookWidgetLink.url(for: $0) })
     }
 }
 

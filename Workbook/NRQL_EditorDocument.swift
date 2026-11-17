@@ -71,6 +71,25 @@ struct NrqlCell: Identifiable {
         )
     }
 
+    mutating func addResultBinding(name: String, expression: String?) throws {
+        guard kind == .nerdgraph else {
+            throw NrqlConnection.ConfigurationError(message: "Result extraction is only available for Nerdgraph cells.")
+        }
+        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard LuaRuntime.Variable.isIdentifier(name) else {
+            throw NrqlConnection.ConfigurationError(message: "Use a Lua identifier for the binding name: letters, digits, or underscores, starting with a letter or underscore, and not a keyword.")
+        }
+        let bindings = try NerdgraphCellSource(stored: text).resultBindings()
+        guard !bindings.contains(where: { $0.name == name }) else {
+            throw NrqlConnection.ConfigurationError(message: "A binding named '\(name)' already exists.")
+        }
+        let declaration = name + (expression.map { " = \($0)" } ?? "")
+        configurationText = NrqlCellSource.updating(
+            "var", values: NrqlCellSource.values("var", in: configurationText) + [declaration],
+            in: configurationText
+        )
+    }
+
     // a reference type, so running it doesn't mutate the document
     let query: NrqlQuery
 
@@ -140,6 +159,21 @@ struct NRQL_EditorDocument: FileDocument {
 
     var focusedCell: NrqlCell? {
         cells.first { $0.id == focusedCellId }
+    }
+
+    mutating func revealCell(_ id: NrqlCell.ID) {
+        guard let index = cells.firstIndex(where: { $0.id == id }) else { return }
+        cells[index].isCollapsed = false
+        cells[index].focusOnAppear = true
+        focusedCellId = id
+    }
+
+    @discardableResult
+    mutating func revealWidget(_ widgetID: UUID) -> Bool {
+        let matches = cells.filter { $0.widgetID == widgetID }
+        guard matches.count == 1, let cell = matches.first else { return false }
+        revealCell(cell.id)
+        return true
     }
 
     var connection: Result<NrqlConnection, Error> {

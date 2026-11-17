@@ -14,7 +14,7 @@ height: 8
 ```nrql
 FROM Transaction
 SELECT count(*)
-FACET name
+FACET appName
 SINCE 1 week ago
 LIMIT 4
 ```
@@ -119,6 +119,7 @@ In those caess, you can use `chart: none`. If you also collapse the query sectio
 title: Transactions for the busiest app
 var: transactions
 chart: none
+widget-id: A597057E-5795-475C-A43A-E8A4329016BF
 ```
 ```nrql
 
@@ -167,7 +168,10 @@ We can run arbitrary Nerdgraph queries with a light GraphQL editor. Binding of r
 title: Entity Search
 var: entity_search
 var: entities = data.actor.entitySearch.results.entities
-chart: none
+var: account_name = data.actor.account.name
+var: key = data.actor.entitySearch.results.entities[1].tags[1].key
+var: tags = data.actor.entitySearch.results.entities[1].tags[6]
+chart: bindings
 ```
 ```graphql
 query FindEntity($account_id: Int!, $query: String) {

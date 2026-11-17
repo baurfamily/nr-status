@@ -30,6 +30,15 @@ struct NrqlCellSource {
         return "```cell_config\n\(configuration)\n```\n\(code)"
     }
 
+    func nrqlTimeout() throws -> Int? {
+        let values = Self.values("timeout", in: configuration ?? "")
+        guard !values.isEmpty else { return nil }
+        guard values.count == 1, let seconds = Int(values[0]), seconds > 0 else {
+            throw NrqlConnection.ConfigurationError(message: "timeout must be a positive whole number of seconds, specified once.")
+        }
+        return seconds
+    }
+
     static func value(_ key: String, in text: String) -> String {
         values(key, in: text).first ?? ""
     }

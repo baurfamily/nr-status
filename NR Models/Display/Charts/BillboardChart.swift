@@ -219,16 +219,18 @@ private struct WidgetBillboardTile: View {
 
     private var linearGauge: some View {
         let marker = configuration.gaugeStyle == .compactLinear
-        let thickness = max(3, min(marker ? 8 : 12, size.height * 0.08))
+        let isLinear = configuration.gaugeStyle == .linear
+        let thickness = max(3, min(isLinear ? 16 : 8, size.height * (isLinear ? 0.12 : 0.08)))
+        let cornerRadius: CGFloat = isLinear ? 2 : thickness / 2
         return GeometryReader { geometry in
             ZStack(alignment: .leading) {
-                Capsule().fill(Color.primary.opacity(0.12))
+                RoundedRectangle(cornerRadius: cornerRadius).fill(Color.primary.opacity(0.12))
                 if marker {
                     Circle().fill(Color.accentColor)
                         .frame(width: thickness, height: thickness)
                         .offset(x: max(0, geometry.size.width - thickness) * fraction)
                 } else {
-                    Capsule().fill(Color.accentColor)
+                    RoundedRectangle(cornerRadius: cornerRadius).fill(Color.accentColor)
                         .frame(width: geometry.size.width * fraction)
                 }
             }

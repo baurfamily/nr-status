@@ -28,13 +28,33 @@ before unpublishing. Neither action affects publications from other workbooks.
 Published cells show a **Published** badge. Their configuration sidebar includes
 **Update Widget** to refresh the published snapshot without another naming dialog.
 
+Widget chart legends are hidden when their labels would take more than two lines
+at the available width, including when a few facet names are unusually long.
+Small widgets continue to omit legends.
+
+Category bar charts omit redundant legends when the x-axis already names their
+colored categories, in workbooks, exports, and widgets. Time-series, pivoted, and
+multi-facet bar charts keep legends that identify a separate dimension. Widgets
+with hidden category axes retain their legends unless the size/overflow rules
+above hide them.
+
+Click a configured desktop widget to open its source workbook and reveal the
+published cell. Save the workbook before publishing (or update the publication
+after saving) to record its location, and save again after publishing to retain
+the cell's widget identity. File bookmarks can follow moves and renames.
+If the file or cell cannot be found, **Recover Workbook...** saves and opens a copy
+of the published workbook snapshot, including the query, configuration, and
+dependencies. Changes made after publishing are not recoverable this way.
+Existing publications need to be updated once to record their source location.
+Unpublishing also removes the recovery snapshot.
+
 For repeatable chart and widget comparisons, open
 [`docs/examples/ChartSamples.nrmd`](docs/examples/ChartSamples.nrmd). It contains
 fixed Lua data for billboard, line, bar, pie, scatter plot, and table charts and
 requires no API key or network access.
 
 Widget charts hide axes at small and medium sizes, and hide legends at small
-sizes. Large widgets retain both; workbook charts are unchanged. Billboard
+sizes. Large widgets retain axes and nonredundant legends that fit in two lines. Billboard
 widgets fit their tiles to the available space, and table widgets show a static
 grid with a remaining-row count when the data does not fit.
 
@@ -90,6 +110,14 @@ and results. Configure its title, result bindings, connection overrides, display
 mode, and chart settings there, even before running it. **Settings** and **Text**
 edit the same configuration; changes are saved directly in the document.
 Configuration fences are hidden by default.
+
+For an NRQL cell, set `timeout: 120` in the **Text** editor to override the
+query timeout in seconds (a positive whole number). This advanced option has no
+Settings control and applies only to that cell, not Lua or Nerdgraph cells.
+Omitting it uses the 30-second default. If a timeout prevents results from arriving,
+the cell shows a warning explaining what happened and how to increase the timeout.
+The HTTP request deadline is at least
+90 seconds and at least 30 seconds longer than the query timeout.
 
 A `cell_config` fence immediately precedes the cell it configures. It uses the
 same keys for NRQL, Lua, and Nerdgraph; document defaults use a separate `config`
@@ -241,6 +269,38 @@ GraphQL errors remain visible alongside partial data, including the full
 The **Variables Sent** button shows the last request's interpolated variables
 as formatted JSON, rather than repeating the literal GraphQL query.
 
+Choose **Display > Bindings** in a Nerdgraph cell's configuration to see a compact list
+of each result binding's expression and value. Click a value to inspect its JSON;
+switch **Display** to **JSON** to see the complete response. Binding lists grow
+with their contents rather than scrolling independently. This mode is saved as
+`chart: bindings` and exports as a table in HTML and PDF.
+
+Binding extraction errors no longer discard the response. The error remains
+visible alongside the JSON, even for hidden results. In Bindings mode, each
+binding shows its value or its own extraction error. If any binding fails, all
+values from that run are diagnostic only: none are made available to other
+cells until you fix the bindings and rerun.
+
+The toolbar's **Bindings** button opens a workbook-wide inspector with document
+variables and cell result bindings. NRQL and Lua bindings show row counts instead
+of copying their result data into the sidebar; click a row count to inspect the
+results in a scrollable table popover. Bindings are indented under their source
+cell's heading. Use the heading's **Jump to Cell** button to scroll to, expand,
+and focus that cell. The inspector marks pending, failed, duplicate, and
+out-of-date bindings.
+
+Opening the inspector grows the document window to the right as far as screen
+space permits, preserving the workbook width when there is enough room. Closing it restores
+the previous width unless you resized the window yourself. Full-screen windows
+and windows at the screen edge share their existing width with the inspector.
+
+Right-click a field or value in a Nerdgraph JSON response and choose **Add Binding
+to This Value…** to create a named extraction. Array paths use Lua's 1-based
+indexes, even though the JSON tree labels elements from zero. The query and its
+input variables are left unchanged; run the cell again to populate the new
+binding. In configuration and binding expressions, press **Esc** for completion
+of `config`, other cells' `results`, and fields in the current GraphQL response.
+
 Nerdgraph defaults to JSON. Set `chart: none` in its `cell_config` to hide its result pane
 while keeping variable bindings available to other cells. Execution errors and
 GraphQL errors remain visible even when the result data is hidden.
@@ -274,8 +334,8 @@ that cell's response. Each expression is evaluated independently; document
 variables and earlier cell results are also available. Numeric `results[i]`
 access follows exported bindings in cell/declaration order. Duplicate names or
 missing paths fail the cell with a named error rather than exporting stale or
-partial bindings. Successful runs still show the complete response in the JSON
-viewer.
+partial bindings. The response remains available for troubleshooting in JSON
+display mode, even when binding extraction fails.
 
 ````text
 ```cell_config

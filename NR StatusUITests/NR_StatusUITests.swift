@@ -8,6 +8,90 @@
 import XCTest
 
 final class NR_StatusUITests: XCTestCase {
+    private func openInApp(_ url: URL) throws {
+        var runner = Bundle(for: Self.self).bundleURL
+        while runner.pathExtension != "app" && runner.path != "/" {
+            runner.deleteLastPathComponent()
+        }
+        let application = runner.deletingLastPathComponent().appendingPathComponent("NR Status.app")
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+        process.arguments = ["-a", application.path, url.absoluteString]
+        try process.run()
+        process.waitUntilExit()
+        XCTAssertEqual(process.terminationStatus, 0)
+    }
+
+    @MainActor
+    func testWidgetLinkReopensSourceAndRecoversMissingWorkbook() throws {
+        let id = UUID()
+        let link = try XCTUnwrap(URL(string: "nrstatus://widget/\(id.uuidString)"))
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("widget-source-\(id).nrmd")
+        let recovered = file.deletingLastPathComponent().appendingPathComponent("recovered-\(id).nrmd")
+        try """
+            ```cell_config
+            widget-id: \(id)
+            title: Widget navigation target
+            query: hide
+            ```
+            ```lua
+            return { rows = { { count = 42 } } }
+            ```
+            """.write(to: file, atomically: true, encoding: .utf8)
+        defer {
+            try? FileManager.default.removeItem(at: file)
+            try? FileManager.default.removeItem(at: recovered)
+        }
+
+        let app = XCUIApplication()
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES"]
+        app.launch()
+        try openInApp(file)
+        let window = app.windows[file.lastPathComponent]
+        XCTAssertTrue(window.waitForExistence(timeout: 5))
+        XCTAssertTrue(window.buttons["Show query"].firstMatch.exists)
+        window.menuButtons["Cell Actions"].firstMatch.click()
+        app.menuItems["Publish as Widget..."].click()
+        let publish = app.buttons["Publish"].firstMatch
+        XCTAssertTrue(publish.waitForExistence(timeout: 5))
+        publish.click()
+        XCTAssertTrue(window.staticTexts["Published"].firstMatch.waitForExistence(timeout: 5))
+        app.typeKey("s", modifierFlags: .command)
+        app.terminate()
+        try openInApp(link)
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+        XCTAssertTrue(window.waitForExistence(timeout: 5))
+        XCTAssertTrue(window.buttons["Hide query"].firstMatch.waitForExistence(timeout: 5))
+        window.buttons["Hide query"].firstMatch.click()
+        try openInApp(link)
+        XCTAssertTrue(window.buttons["Hide query"].firstMatch.waitForExistence(timeout: 5))
+
+        app.typeKey("w", modifierFlags: .command)
+        try FileManager.default.removeItem(at: file)
+        try openInApp(link)
+        let missing = app.dialogs.firstMatch
+        XCTAssertTrue(missing.staticTexts["Widget chart source file not found"].waitForExistence(timeout: 5))
+        XCTAssertTrue(missing.staticTexts.containing(NSPredicate(format: "value CONTAINS %@", "workbook dependencies")).firstMatch.exists)
+        missing.buttons["Recover Workbook..."].click()
+        let save = app.dialogs.buttons["Save"].firstMatch
+        XCTAssertTrue(save.waitForExistence(timeout: 5))
+        app.typeKey("g", modifierFlags: [.command, .shift])
+        app.typeText(recovered.path)
+        app.typeKey(.return, modifierFlags: [])
+        save.click()
+        let recoveredWindow = app.windows[recovered.lastPathComponent]
+        XCTAssertTrue(recoveredWindow.waitForExistence(timeout: 5))
+        XCTAssertTrue(recoveredWindow.staticTexts["Widget navigation target"].firstMatch.exists)
+        XCTAssertTrue(try String(contentsOf: recovered, encoding: .utf8).contains("count = 42"))
+
+        recoveredWindow.menuButtons["Cell Actions"].firstMatch.click()
+        app.menuItems["Unpublish Widget"].click()
+        try openInApp(link)
+        let removed = app.dialogs.firstMatch
+        XCTAssertTrue(removed.staticTexts["Widget chart source file not found"].waitForExistence(timeout: 5))
+        XCTAssertFalse(removed.buttons["Recover Workbook..."].exists)
+        removed.buttons["OK"].click()
+    }
 
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.

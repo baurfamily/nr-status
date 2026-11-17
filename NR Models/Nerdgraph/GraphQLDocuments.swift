@@ -8,27 +8,29 @@ enum GraphQLDocuments {
 
     static let accounts = "query NRStatus_Accounts { actor { accounts { id name } } }"
 
-    static let nrql = """
-    query NRStatus_Nrql($accountIds: [Int!]!, $nrql: Nrql!) {
-        actor {
-            user { email name }
-            nrql(accounts: $accountIds, query: $nrql) {
-                nrql
-                results
-                metadata {
-                    facets
-                    eventTypes
-                    timeWindow {
-                        begin
-                        end
-                        since
-                        until
+    static func nrql(timeout: Int = Queries.defaultNrqlTimeout) -> String {
+        """
+        query NRStatus_Nrql($accountIds: [Int!]!, $nrql: Nrql!) {
+            actor {
+                user { email name }
+                nrql(accounts: $accountIds, query: $nrql, timeout: \(timeout)) {
+                    nrql
+                    results
+                    metadata {
+                        facets
+                        eventTypes
+                        timeWindow {
+                            begin
+                            end
+                            since
+                            until
+                        }
                     }
                 }
             }
         }
+        """
     }
-    """
 
     // just enough to render an application/monitor list
     static let basicEntitySearch = """

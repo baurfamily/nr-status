@@ -61,6 +61,8 @@ import CryptoKit
     private(set) var loadedConnection: NrqlConnection.Snapshot?
     private(set) var loadedDocumentConfig: NrqlConnection?
     private(set) var loadedBindings: [LuaRuntime.PriorResult]?
+    private(set) var bindingResults: [BindingResult] = []
+    private(set) var failedBindingResponse: JSONValue?
     
     // the query as last sent, with `{{ }}` expressions replaced; nil before a run
     private(set) var executedNrql: String?
@@ -74,6 +76,7 @@ import CryptoKit
     }
 
     var namedResults: [LuaRuntime.PriorResult] {
+        guard hasResult else { return [] }
         if let value = jsonResult {
             if let loadedBindings { return loadedBindings }
             let bindings = (try? NerdgraphCellSource(stored: text).resultBindings()) ?? []
@@ -99,10 +102,21 @@ import CryptoKit
 
     var jsonResult: JSONValue? {
         if case .jsonLoaded(let value) = state { return value }
-        return nil
+        return failedBindingResponse
     }
 
-    var hasResult: Bool { resultContainer != nil || jsonResult != nil }
+    var hasResult: Bool {
+        if case .jsonLoaded = state { return true }
+        return resultContainer != nil
+    }
+
+    var inspectedBindings: [BindingResult] {
+        if !bindingResults.isEmpty { return bindingResults }
+        return namedResults.compactMap { result in
+            guard let name = result.name else { return nil }
+            return BindingResult(name: name, value: try? JSONValue(luaValue: result.value))
+        }
+    }
 
     var showsResultPane: Bool {
         kind != .nerdgraph || format?.hidesChart != true || isRunning || errorMessage != nil
@@ -110,7 +124,8 @@ import CryptoKit
     }
 
     var displayedJSON: Result<JSONValue, Error>? {
-        guard format?.hidesChart != true else { return nil }
+        guard format?.showsBindings != true else { return nil }
+        guard format?.hidesChart != true || failedBindingResponse != nil else { return nil }
         if let jsonResult { return .success(jsonResult) }
         guard format?.showsJSON == true, let container = resultContainer else { return nil }
         return Result { try JSONValue(luaValue: LuaResultBridge.rowsValue(from: container)) }
@@ -186,13 +201,15 @@ import CryptoKit
         executionID = id
         let script = script
         let nrql = nrql
+        let source = NrqlCellSource(stored: text)
         let graphQL = kind == .nerdgraph ? NerdgraphCellSource(stored: text) : nil
         let options = Result {
-            try NrqlConnection.parse(NrqlCellSource(stored: text).configuration ?? "")
+            try NrqlConnection.parse(source.configuration ?? "")
         }
         setState(.running)
         setExecuted(nil)
         loadedBindings = nil
+        executedBindings = nil
         
         do {
             let consumesConfig = readsDocumentConfig
@@ -206,8 +223,6 @@ import CryptoKit
                 return
             }
             if let graphQL {
-                let bindings = try graphQL.resultBindings()
-                executedBindings = bindings
                 guard graphQL.isClosed else {
                     throw NrqlConnection.ConfigurationError(message: "Close the GraphQL and variables fences with ```.")
                 }
@@ -226,10 +241,18 @@ import CryptoKit
                 guard case .object = value else {
                     throw NrqlConnection.ConfigurationError(message: "Nerdgraph returned an invalid response: expected a JSON object.")
                 }
-                let exported = try await Task.detached {
-                    try bindings.map { binding -> LuaRuntime.PriorResult in
+                let bindings: [LuaRuntime.Variable]
+                do {
+                    bindings = try graphQL.resultBindings()
+                    executedBindings = bindings
+                } catch {
+                    setState(.failed(error.localizedDescription), response: value)
+                    return
+                }
+                let inspected = await Task.detached {
+                    bindings.map { binding -> BindingResult in
                         guard let expression = binding.expression else {
-                            return .init(name: binding.name, value: value.luaValue)
+                            return BindingResult(name: binding.name, value: value)
                         }
                         do {
                             let extracted = try LuaRuntime.run(
@@ -238,17 +261,32 @@ import CryptoKit
                             if case .nil = extracted {
                                 throw NrqlConnection.ConfigurationError(message: "The expression has no value.")
                             }
-                            _ = try JSONValue(luaValue: extracted)
-                            return .init(name: binding.name, value: extracted)
+                            return BindingResult(
+                                name: binding.name, expression: expression, value: try JSONValue(luaValue: extracted)
+                            )
                         } catch {
-                            throw NrqlConnection.ConfigurationError(message: "Nerdgraph variable '\(binding.name)': \(error.localizedDescription)")
+                            return BindingResult(
+                                name: binding.name, expression: expression,
+                                error: "Nerdgraph variable '\(binding.name)': \(error.localizedDescription)"
+                            )
                         }
                     }
                 }.value
                 guard !Task.isCancelled, executionID == id else { return }
-                setState(.jsonLoaded(value), connection: snapshot, documentConfig: configSnapshot, bindings: exported)
+                let errors = inspected.compactMap(\.error)
+                if !errors.isEmpty {
+                    setState(.failed(errors.joined(separator: "\n")), bindingResults: inspected, response: value)
+                } else {
+                    let exported = inspected.compactMap { binding -> LuaRuntime.PriorResult? in
+                        guard let value = binding.value else { return nil }
+                        return .init(name: binding.name, value: value.luaValue)
+                    }
+                    setState(.jsonLoaded(value), connection: snapshot, documentConfig: configSnapshot,
+                             bindings: exported, bindingResults: inspected)
+                }
                 return
             }
+            let timeout = try source.nrqlTimeout() ?? Queries.defaultNrqlTimeout
             let sent = try await Task.detached {
                 try NrqlInterpolation.expand(nrql, results: results, config: documentConfig)
             }.value
@@ -257,7 +295,7 @@ import CryptoKit
             let snapshot = try connection.snapshot(profiles: profiles.load())
             let config = try connection.resolve(profiles: profiles)
             setExecuted(sent)
-            let container = try await Queries(config: config, session: session).getNrqlData(query: sent)
+            let container = try await Queries(config: config, session: session).getNrqlData(query: sent, timeout: timeout)
             // a newer run has taken over, so don't clobber its state
             guard !Task.isCancelled, executionID == id else { return }
             
@@ -305,8 +343,10 @@ import CryptoKit
     
     @MainActor func setState(
         _ newState: State, connection: NrqlConnection.Snapshot? = nil, documentConfig: NrqlConnection? = nil,
-        bindings: [LuaRuntime.PriorResult]? = nil
+        bindings: [LuaRuntime.PriorResult]? = nil, bindingResults: [BindingResult] = [], response: JSONValue? = nil
     ) {
+        self.bindingResults = bindingResults
+        failedBindingResponse = response
         switch newState {
         case .loaded, .jsonLoaded:
             loadedAt = Date()

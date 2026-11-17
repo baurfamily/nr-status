@@ -10,6 +10,8 @@ import Charts
 
 struct BarChart: View {
     var config: ChartConfiguration
+    var categoryAxisVisible = true
+    var legendVisibility: Visibility = .automatic
     
     var resultContainer: NrdbResultContainer {
         config.resultContainer
@@ -34,6 +36,15 @@ struct BarChart: View {
                 $0.facet == nil || selectedFacets.contains($0.facet!)
             }
         }
+    }
+
+    var effectiveLegendVisibility: Visibility {
+        guard legendVisibility == .automatic, categoryAxisVisible, !switchFieldsAndFacets else {
+            return legendVisibility
+        }
+        let rows = filteredData
+        let repeatsCategories = !rows.isEmpty && rows.allSatisfy { !$0.isTimeseries && $0.isFaceted }
+        return repeatsCategories ? .hidden : .automatic
     }
 
     func seriesNames(for field: String, in datum: NrdbResults.Datum ) -> (String,String) {
@@ -114,6 +125,7 @@ struct BarChart: View {
                 }
             }
         }
+        .chartLegend(effectiveLegendVisibility)
     }
 }
 

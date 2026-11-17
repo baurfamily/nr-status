@@ -5,6 +5,7 @@ struct CellConfigurationView: View {
     @Binding var isPresented: Bool
     let isPublished: Bool
     let onUpdatePublished: () -> Void
+    var completionScope: () -> LuaCompletion.Scope = { .empty }
     @State private var showsText = false
 
     private var isDocument: Bool { cell.kind == .config }
@@ -54,10 +55,11 @@ struct CellConfigurationView: View {
             if showsText {
                 Text(isDocument ? "```config" : "```cell_config")
                     .font(.caption.monospaced()).foregroundStyle(.secondary)
-                TextEditor(text: $cell.configurationText)
-                    .accessibilityIdentifier("cell-configuration-text")
-                    .font(.system(.body, design: .monospaced))
+                ConfigurationTextEditor(
+                    text: $cell.configurationText, identifier: "cell-configuration-text", completionScope: bindingScope
+                )
                     .frame(minHeight: 180)
+                    .help("Press Escape to complete Lua expressions after '='.")
                 Text("```").font(.caption.monospaced()).foregroundStyle(.secondary)
             } else {
                 settings
@@ -97,7 +99,7 @@ struct CellConfigurationView: View {
             if isDocument || cell.kind == .nerdgraph {
                 Text(isDocument ? "Variables (name = Lua expression)" : "Bindings (name or name = Lua expression)")
                     .font(.caption).foregroundStyle(.secondary)
-                TextEditor(text: Binding(
+                ConfigurationTextEditor(text: Binding(
                     get: { NrqlCellSource.values("var", in: cell.configurationText).joined(separator: "\n") },
                     set: {
                         cell.configurationText = NrqlCellSource.updating(
@@ -105,10 +107,11 @@ struct CellConfigurationView: View {
                             in: cell.configurationText, includeEmptyValues: true
                         )
                     }
-                ))
-                .accessibilityIdentifier("cell-configuration-bindings")
-                .font(.system(.body, design: .monospaced))
+                ), identifier: "cell-configuration-bindings", completionScope: bindingScope)
                 .frame(height: 80)
+                .help("Press Escape to complete expressions using config, results, and the current GraphQL response.")
+                Text("Press Esc to complete expressions.")
+                    .font(.caption).foregroundStyle(.secondary)
             } else {
                 labeledField("Variable binding", text: value("var"), placeholder: "Result variable")
             }
@@ -133,6 +136,12 @@ struct CellConfigurationView: View {
         }
     }
 
+    private func bindingScope() -> LuaCompletion.Scope {
+        var scope = completionScope()
+        if cell.kind == .nerdgraph { scope.response = cell.query.jsonResult }
+        return scope
+    }
+
     private var displaySelector: some View {
         HStack {
             Text("Display")
@@ -146,6 +155,9 @@ struct CellConfigurationView: View {
                     }
                 }
                 displayOption("JSON", value: "json")
+                if cell.kind == .nerdgraph {
+                    displayOption("Bindings", value: "bindings")
+                }
                 displayOption("Hidden", value: "none")
             } label: {
                 Text(chart.isEmpty ? (cell.kind == .nerdgraph ? "Automatic (JSON)" : "Automatic")

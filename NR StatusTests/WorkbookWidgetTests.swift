@@ -3,6 +3,143 @@ import Testing
 @testable import NR_Status
 
 struct WorkbookWidgetTests {
+    @Test func widgetLegendsFitAtMostTwoLinesAtTheAvailableWidth() {
+        #expect(WidgetLegendPolicy.fits(labels: ["API", "Web"], width: 140))
+        #expect(WidgetLegendPolicy.fits(labels: ["API", "Web"], width: 300))
+        #expect(!WidgetLegendPolicy.fits(labels: (1...30).map { "App \($0)" }, width: 300))
+        #expect(!WidgetLegendPolicy.fits(labels: [
+            String(repeating: "very long application name ", count: 8),
+            String(repeating: "another long application name ", count: 8)
+        ], width: 300))
+        #expect(!WidgetLegendPolicy.fits(labels: [String(repeating: "LongApplicationName", count: 20)], width: 300))
+        #expect(WidgetLegendPolicy.fits(labels: [], width: 0))
+        #expect(!WidgetLegendPolicy.fits(labels: ["API"], width: 0))
+        #expect(WidgetLegendPolicy.fits(labels: ["API", "Web"], width: 40))
+        #expect(!WidgetLegendPolicy.fits(labels: ["API", "Web", "DB"], width: 40))
+    }
+
+    @Test func widgetLegendWrappingRespondsToWidthAndExplicitLineBreaks() {
+        let labels = ["First application", "Second application", "Third application"]
+        #expect(!WidgetLegendPolicy.fits(labels: labels, width: 110))
+        #expect(WidgetLegendPolicy.fits(labels: labels, width: 300))
+        #expect(WidgetLegendPolicy.fits(labels: ["First\nSecond"], width: 300))
+        #expect(!WidgetLegendPolicy.fits(labels: ["First\nSecond\nThird"], width: 300))
+        #expect(!WidgetLegendPolicy.fits(labels: ["First\nSecond"], width: 300, additionalLines: 1))
+    }
+
+    @Test func widgetLinksRoundTripAndRejectUnrelatedURLs() throws {
+        let id = UUID()
+        #expect(WorkbookWidgetLink.widgetID(from: WorkbookWidgetLink.url(for: id)) == id)
+        for value in [
+            "https://widget/\(id)", "nrstatus://other/\(id)", "nrstatus://widget/not-a-uuid",
+            "nrstatus://widget/\(id)/extra", "nrstatus://widget/\(id)?file=/tmp/other.nrmd",
+            "nrstatus://widget/\(id)#extra", "nrstatus://user@widget/\(id)"
+        ] {
+            #expect(WorkbookWidgetLink.widgetID(from: try #require(URL(string: value))) == nil)
+        }
+    }
+
+    @Test func oldPublicationsRemainRecoverableWithoutASourceBookmark() throws {
+        let id = UUID()
+        let text = """
+            ```config
+            accounts: 42
+            ```
+
+            ```cell_config
+            var: base
+            ```
+            ```nrql
+            SELECT count(*) FROM Transaction
+            ```
+
+            ```cell_config
+            widget-id: \(id)
+            title: Derived count
+            ```
+            ```lua
+            return results.base
+            ```
+            """
+        let original = publication(text, target: id)
+        let encoded = try JSONEncoder().encode(original)
+        var fields = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        fields.removeValue(forKey: "sourceBookmark")
+        let decoded = try JSONDecoder().decode(PublishedWidget.self, from: JSONSerialization.data(withJSONObject: fields))
+        #expect(try decoded.sourceURL() == nil)
+        var recovered = NRQL_EditorDocument(text: decoded.workbook)
+        #expect(recovered.text == NRQL_EditorDocument(text: text).text)
+        let revealed = recovered.revealWidget(decoded.id)
+        #expect(revealed)
+        #expect(recovered.focusedCell?.widgetID == id)
+        #expect(recovered.focusedCell?.editorText == "return results.base")
+        #expect(recovered.cells.contains { $0.editorText.contains("SELECT count(*) FROM Transaction") })
+        let plan = try WorkbookWidgetRunner.plan(target: #require(recovered.focusedCell), in: recovered.cells)
+        #expect(plan.count == 2)
+    }
+
+    @Test func publishingRecordsAndUpdatesTheSourceFileBookmark() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let registry = WidgetRegistry(directory: directory.appendingPathComponent("registry"))
+        var document = NRQL_EditorDocument(text: "# Ready")
+        let cellID = document.cells[0].id
+        let first = directory.appendingPathComponent("First.nrmd")
+        try document.text.write(to: first, atomically: true, encoding: .utf8)
+        try WorkbookWidgetPublishing.publish(
+            cellIDs: [cellID], document: &document, sourceName: first.lastPathComponent,
+            sourceURL: first, registry: registry
+        )
+        let id = try #require(document.cells[0].widgetID)
+        let original = try #require(try registry.widget(id: id))
+        #expect(try original.sourceURL()?.resolvingSymlinksInPath() == first.resolvingSymlinksInPath())
+        let moved = directory.appendingPathComponent("Moved.nrmd")
+        try FileManager.default.moveItem(at: first, to: moved)
+        #expect(try original.sourceURL()?.resolvingSymlinksInPath() == moved.resolvingSymlinksInPath())
+        let second = directory.appendingPathComponent("Second.nrmd")
+        try document.text.write(to: second, atomically: true, encoding: .utf8)
+        try WorkbookWidgetPublishing.updateAll(
+            document: &document, sourceName: second.lastPathComponent, sourceURL: second, registry: registry
+        )
+        let updated = try #require(try registry.widget(id: id))
+        #expect(try updated.sourceURL()?.resolvingSymlinksInPath() == second.resolvingSymlinksInPath())
+        #expect(updated.workbook == document.text)
+        #expect(updated.revision != original.revision)
+    }
+
+    @Test func revealingWidgetsUsesSavedIdentityAndExpandsOnlyTheTargetCell() {
+        let id = UUID()
+        var document = NRQL_EditorDocument(text: """
+            ```lua
+            return { rows = { { other = 1 } } }
+            ```
+
+            ```cell_config
+            widget-id: \(id)
+            title: Renamed chart
+            ```
+            ```lua
+            return { rows = { { count = 42 } } }
+            ```
+            """)
+        document.setAllCollapsed(true)
+        let revealed = document.revealWidget(id)
+        #expect(revealed)
+        #expect(document.focusedCell?.widgetID == id)
+        #expect(document.focusedCell?.isCollapsed == false)
+        #expect(document.focusedCell?.focusOnAppear == true)
+        #expect(document.cells[0].isCollapsed)
+        let focused = document.focusedCellId
+        let missing = document.revealWidget(UUID())
+        #expect(!missing)
+        #expect(document.focusedCellId == focused)
+        document.cells.append(NrqlCell(text: document.cells[1].text))
+        let duplicate = document.revealWidget(id)
+        #expect(!duplicate)
+        #expect(document.focusedCellId == focused)
+    }
+
     @MainActor private func run(_ widget: PublishedWidget, withProfile: Bool = true) async throws -> WorkbookWidgetOutput {
         let suite = "NR Status widget test \(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suite))

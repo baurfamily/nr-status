@@ -33,6 +33,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private weak var launchDocument: NSDocument?
     private var observer: Any?
 
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls {
+            if WorkbookWidgetLink.widgetID(from: url) != nil {
+                Task { await WidgetSourceNavigation.shared.open(url) }
+            } else if url.isFileURL {
+                Task {
+                    do {
+                        _ = try await NSDocumentController.shared.openDocument(withContentsOf: url, display: true)
+                    } catch {
+                        NSApp.presentError(error)
+                    }
+                }
+            }
+        }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        WidgetSourceNavigation.shared.stopAccessingSources()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [self] in
             let hasWindow = NSApp.windows.contains { $0.isVisible && !($0 is NSPanel) }
@@ -72,7 +92,8 @@ struct NRQL_EditorApp: App {
     var body: some Scene {
         // first, so File > New (Cmd-N) creates a saveable document
         DocumentGroup(newDocument: NRQL_EditorDocument()) { file in
-            DocumentView(document: file.$document, sourceName: file.fileURL?.lastPathComponent ?? "Untitled.nrmd")
+            DocumentView(document: file.$document, sourceName: file.fileURL?.lastPathComponent ?? "Untitled.nrmd",
+                         sourceURL: file.fileURL)
                 .focusedSceneValue(\.document, file.$document)
         }
         .defaultSize(width: 900, height: 1000)

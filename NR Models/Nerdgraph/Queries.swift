@@ -8,6 +8,22 @@
 import Foundation
 
 struct Queries {
+    static let defaultNrqlTimeout = 30
+
+    enum NrqlError: LocalizedError {
+        case timedOut(Int)
+        case requestTimedOut
+
+        var errorDescription: String? {
+            switch self {
+            case .timedOut(let seconds):
+                return "The NRQL query timed out after \(seconds) seconds without returning results. Increase timeout in Cell Configuration > Text (for example, timeout: 120) and run it again."
+            case .requestTimedOut:
+                return "The NRQL request timed out before results were received. Try again, or increase timeout in Cell Configuration > Text (for example, timeout: 120)."
+            }
+        }
+    }
+
     enum EntityDetail {
         case basic
         case full
@@ -53,10 +69,28 @@ struct Queries {
         return root.data?.actor?.accounts
     }
 
-    func getNrqlData(query nrql: String, debug: Bool = false) async throws -> NrdbResultContainer? {
+    func getNrqlData(
+        query nrql: String, timeout: Int = Self.defaultNrqlTimeout, debug: Bool = false
+    ) async throws -> NrdbResultContainer? {
         let variables = NrqlVariables(accountIds: config.accountIdList, nrql: nrql)
-        let root = try await client.send(GraphQLDocuments.nrql, variables: variables, debug: debug)
-        return root.data?.actor?.nrql
+        do {
+            let root = try await client.send(
+                GraphQLDocuments.nrql(timeout: timeout), variables: variables, debug: debug,
+                timeoutInterval: max(NerdgraphClient.requestTimeoutInterval, TimeInterval(timeout) + 30)
+            )
+            if let result = root.data?.actor?.nrql { return result }
+            if let errors = root.errors, !errors.isEmpty {
+                throw NerdgraphClient.ClientError.graphQL(errors.map(\.message))
+            }
+            return nil
+        } catch NerdgraphClient.ClientError.graphQL(let messages) where messages.contains(where: {
+            let message = $0.lowercased()
+            return ["timeout", "timed out", "time limit", "deadline exceeded"].contains { message.contains($0) }
+        }) {
+            throw NrqlError.timedOut(timeout)
+        } catch let error as URLError where error.code == .timedOut {
+            throw NrqlError.requestTimedOut
+        }
     }
 
     func entities(domain: Entity.Domain, detail: EntityDetail = .full, debug: Bool = false) async throws -> [Entity]? {

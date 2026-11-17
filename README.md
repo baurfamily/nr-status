@@ -155,10 +155,22 @@ The chart updates while dragging; releasing saves the height to `cell_config`.
 Double-click the grip to reset to Auto.
 In the query builder, facet selections filter the chart, and **Filter Query to
 Selected Facets** can add a `WHERE` clause for a single facet.
+The **Account** picker scopes event discovery, attributes, attribute summaries,
+and chart queries to one of the default API key's preferred accounts. **Default
+(all preferred accounts)** keeps the existing combined-account behavior. The
+selection applies only to that Query Builder window and does not change Settings.
 
 With no `cell_config` fence, the first code line can supply the title via a
 `//` NRQL comment, `--` Lua comment, or `#` GraphQL comment. Any cell configuration,
 even an empty fence, disables that fallback; use `title:` instead.
+
+#### Editor keyboard preferences
+
+In **Settings > Editor**, **Return accepts autocomplete** is on by default and
+**Return runs query** is on by default. With a completion visible, Return accepts
+it when enabled; otherwise Return inserts a new line or runs the current cell
+according to the second setting. Tab always accepts a completion, Command-Return
+always runs the query, and Shift-Return always inserts a new line.
 
 #### API keys and accounts
 

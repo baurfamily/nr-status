@@ -8,6 +8,9 @@
 import SwiftUI
 
 struct PreferencesView: View {
+    @AppStorage(CompletionKeyRouter.returnAcceptsAutocompleteKey) private var returnAcceptsAutocomplete = true
+    @AppStorage(CompletionKeyRouter.returnRunsQueryKey) private var returnRunsQuery = true
+
     private struct AvailableAccount: Identifiable {
         let id: Int
         let name: String
@@ -34,6 +37,28 @@ struct PreferencesView: View {
     }
 
     var body: some View {
+        TabView {
+            accountPreferences
+                .tabItem { Label("API Keys", systemImage: "key") }
+            Form {
+                Toggle("Return accepts autocomplete", isOn: $returnAcceptsAutocomplete)
+                Toggle("Return runs query", isOn: $returnRunsQuery)
+                Text("A visible completion takes priority when Return accepts autocomplete is enabled. Otherwise, Return inserts a new line unless Return runs query is enabled.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Text("Command-Return always runs the query. Shift-Return always inserts a new line. Tab always accepts autocomplete.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            .padding()
+            .tabItem { Label("Editor", systemImage: "text.cursor") }
+        }
+        .frame(minWidth: 740, minHeight: 520)
+        .onAppear { load() }
+        .onChange(of: apiKey) { clearDiscovery() }
+        .onChange(of: profile.host) { clearDiscovery() }
+        .onDisappear { testTask?.cancel() }
+    }
+
+    private var accountPreferences: some View {
         HStack(alignment: .top, spacing: 20) {
             VStack(alignment: .leading) {
                 List(settings.profiles) { item in
@@ -98,10 +123,6 @@ struct PreferencesView: View {
         }
         .padding()
         .frame(minWidth: 740, minHeight: 480)
-        .onAppear { load() }
-        .onChange(of: apiKey) { clearDiscovery() }
-        .onChange(of: profile.host) { clearDiscovery() }
-        .onDisappear { testTask?.cancel() }
     }
 
     private func load() {

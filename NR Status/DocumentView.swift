@@ -586,7 +586,10 @@ struct CellView: View {
         .environment(\.codeEditorLayoutConfiguration, CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true))
         .environment(\.codeEditorTheme, colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight)
         .frame(height: CGFloat(max(text.components(separatedBy: "\n").count, 3)) * 18 + 16)
-        .background(EditorFocusAnchor(focusRequested: !variables && cell.focusOnAppear) { cell.focusOnAppear = false })
+        .background(EditorFocusAnchor(focusRequested: !variables && cell.focusOnAppear, onRun: {
+            onFocus()
+            onRun()
+        }) { cell.focusOnAppear = false })
         .onChange(of: variables ? variablesPosition : position) {
             onFocus()
             followGraphqlDocumentation()
@@ -695,7 +698,10 @@ struct CellView: View {
         .environment(\.codeEditorLayoutConfiguration, CodeEditor.LayoutConfiguration(showMinimap: false, wrapText: true))
         .environment(\.codeEditorTheme, (colorScheme == .dark ? Theme.defaultDark : Theme.defaultLight))
         .frame(height: editorHeight)
-        .background(EditorFocusAnchor(focusRequested: cell.focusOnAppear) { cell.focusOnAppear = false })
+        .background(EditorFocusAnchor(focusRequested: cell.focusOnAppear, onRun: cell.isRunnable ? {
+            onFocus()
+            onRun()
+        } : nil) { cell.focusOnAppear = false })
         .onAppear {
             // a new cell starts with the cursor after its template
             if cell.focusOnAppear {

@@ -32,6 +32,7 @@ struct RemovablePill : View {
 struct AttributeListItemView : View {
     let attribute: Attribute
     @Binding var query: QueryBuilder
+    @Environment(\.queryBuilderConfig) private var queryBuilderConfig
     
     @State private var detailPresented: Bool = false
     @State private var summaryStats: AttributeSummary?
@@ -96,8 +97,11 @@ struct AttributeListItemView : View {
                         AttributeSummaryView(summary: summaryStats)
                     }
                 }.padding(.all)
-                    .task {
-                        self.summaryStats = await AttributeSummary.generate(from: attribute)
+                    .task(id: queryBuilderConfig) {
+                        summaryStats = nil
+                        let summary = await AttributeSummary.generate(from: attribute, config: queryBuilderConfig ?? .current)
+                        guard !Task.isCancelled else { return }
+                        self.summaryStats = summary
                     }
             }.buttonStyle(.borderless)
             

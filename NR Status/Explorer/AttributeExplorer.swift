@@ -9,6 +9,7 @@ import SwiftUI
 
 struct AttributeExplorer : View {
     let event: String
+    @Environment(\.queryBuilderConfig) private var queryBuilderConfig
     
     @Binding var query: QueryBuilder
     @State var attributes: [Attribute] = []
@@ -16,6 +17,8 @@ struct AttributeExplorer : View {
     @State private var errorMessage: String?
 
     @State private var filterText = ""
+
+    private var config: NerdgraphConfig { queryBuilderConfig ?? .current }
 
     var filteredAttributes: [Attribute] {
         let text = filterText.trimmingCharacters(in: .whitespaces)
@@ -50,7 +53,10 @@ struct AttributeExplorer : View {
                 .padding(8)
         }
         .navigationTitle("\(event) attributes")
-        .task {
+        .task(id: config) {
+            isLoading = true
+            attributes = []
+            errorMessage = nil
             // a bit bass-ackwards of a feedback loop to set the
             // event on the query, but this works for now
             query.event = event
@@ -58,12 +64,15 @@ struct AttributeExplorer : View {
             // find the attributes associated with the event
             // same window as the event list, otherwise events without very recent data come back empty
             do {
-                if let results = try await Queries().getNrqlData(query: "SELECT keyset() FROM \(event) SINCE 1 day ago") {
+                if let results = try await Queries(config: config).getNrqlData(query: "SELECT keyset() FROM \(event) SINCE 1 day ago") {
+                    guard !Task.isCancelled else { return }
                     attributes = Attribute.attributes(event: event, fromKeyset: results)
                 }
             } catch {
+                guard !Task.isCancelled else { return }
                 errorMessage = "Couldn't load attributes: \(error.localizedDescription)"
             }
+            guard !Task.isCancelled else { return }
             isLoading = false
         }
         

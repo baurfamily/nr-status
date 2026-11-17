@@ -28,17 +28,25 @@ struct AttributeSummary : Identifiable{
     // for the same attribute in a short span; and since the call is over 1 DAY
     // it seems silly to requery every time
     // TODO: add some level of TTL here
-    static var cache: [String: AttributeSummary] = [:]
+    private struct CacheKey: Hashable {
+        let attribute: Attribute
+        let config: NerdgraphConfig
+    }
+
+    private static var cache: [CacheKey: AttributeSummary] = [:]
     
-    static func generate(from attribute: Attribute) async -> Self {
-        let cacheKey = "\(attribute.event):\(attribute.key)"
+    static func generate(
+        from attribute: Attribute, config: NerdgraphConfig = .current, session: URLSession = .shared
+    ) async -> Self {
+        let cacheKey = CacheKey(attribute: attribute, config: config)
         if let cached = cache[cacheKey] {
             return cached
         }
         
         var summary = AttributeSummary(attribute: attribute)
+        let queries = Queries(config: config, session: session)
         
-        let results = try? await Queries().getNrqlData(query: """
+        let results = try? await queries.getNrqlData(query: """
             SELECT
                 uniqueCount(`\(attribute.key)`),
                 uniques(`\(attribute.key)`),
@@ -73,7 +81,7 @@ struct AttributeSummary : Identifiable{
                 // okay, this is a bit of a hack... basically, we only see a small number
                 // of samples when the values are fractional. No idea why uniques() doesn't work here
                 if attribute.type == "numeric" && summary.samples.count == 1 && summary.samples[0] == "0" {
-                    let uniquesResult = try? await Queries().getNrqlData(query: """
+                    let uniquesResult = try? await queries.getNrqlData(query: """
                         SELECT `\(attribute.key)`
                         FROM \(attribute.event)
                         WHERE `\(attribute.key)` IS NOT NULL
@@ -91,7 +99,7 @@ struct AttributeSummary : Identifiable{
         }
         
         if attribute.type == "numeric" {
-            summary.timeseriesResultsContainer = try? await Queries().getNrqlData(query: """
+            summary.timeseriesResultsContainer = try? await queries.getNrqlData(query: """
                 SELECT
                     count(*),
                     uniqueCount(`\(attribute.key)`),
@@ -105,7 +113,7 @@ struct AttributeSummary : Identifiable{
                 TIMESERIES 1 hour
             """)
         } else if attribute.type == "string" {
-            summary.timeseriesResultsContainer = try? await Queries().getNrqlData(query: """
+            summary.timeseriesResultsContainer = try? await queries.getNrqlData(query: """
                 SELECT
                     count(*),
                     uniqueCount(`\(attribute.key)`)
@@ -114,7 +122,7 @@ struct AttributeSummary : Identifiable{
                 TIMESERIES 1 hour
             """)
         }
-        cache[cacheKey] = summary
+        if !Task.isCancelled { cache[cacheKey] = summary }
         return summary
     }
 }

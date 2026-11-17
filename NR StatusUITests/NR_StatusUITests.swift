@@ -168,6 +168,20 @@ final class NR_StatusUITests: XCTestCase {
     }
 
     @MainActor
+    func testQueryBuilderOffersAnAccountPicker() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES"]
+        app.launch()
+        app.menuBars.menuBarItems["Features"].click()
+        app.menuItems["Query Builder"].click()
+        let picker = app.popUpButtons["query-builder-account-picker"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 5))
+        picker.click()
+        XCTAssertTrue(app.menuItems["Default (all preferred accounts)"].waitForExistence(timeout: 5))
+        app.typeKey(.escape, modifierFlags: [])
+    }
+
+    @MainActor
     func testChartHeightCanBeDraggedAndReset() throws {
         let file = FileManager.default.temporaryDirectory.appendingPathComponent("chart-resize-\(UUID().uuidString).nrmd")
         try """

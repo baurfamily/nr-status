@@ -554,6 +554,7 @@ struct NerdgraphCellTests {
         #expect(try NerdgraphCellSource(stored: "```cell_config\nvar: whole response\n```\n```graphql\n{}\n```").resultBindings().first?.name == "whole response")
         let query = NrqlCell(text: source.storedText)
         let reader = NrqlCell(text: "```lua\nreturn results.entity\n```")
+        #expect(NrqlDependencies.referencedNames(by: query).isEmpty)
         #expect(NrqlDependencies.dependencies(of: reader, in: [query, reader]).map(\.id) == [query.id])
         #expect(throws: NrqlConnection.ConfigurationError.self) {
             try NerdgraphCellSource(stored: "```cell_config\nvar: entity\nvar: entity = data.actor\n```\n```graphql\n{}\n```").resultBindings()

@@ -722,6 +722,77 @@ struct NerdgraphClientTests {
         #expect(requestCount == 4)
     }
 
+    @Test func valueCompletionRequestsAndCachesAreScopedToConnectionAttributeAndTimeWindow() async throws {
+        nonisolated(unsafe) var requests: [(accounts: [Int], nrql: String)] = []
+        StubURLProtocol.handler = { request in
+            let stream = try #require(request.httpBody.map { InputStream(data: $0) } ?? request.httpBodyStream)
+            stream.open()
+            defer { stream.close() }
+            let json = try #require(try JSONSerialization.jsonObject(with: stream) as? [String: Any])
+            let variables = try #require(json["variables"] as? [String: Any])
+            requests.append((try #require(variables["accountIds"] as? [Int]), try #require(variables["nrql"] as? String)))
+            #expect((json["query"] as? String)?.contains("timeout: 5") == true)
+            return (200, Data("""
+                {"data":{"actor":{"nrql":{"nrql":"","metadata":{},"results":[
+                    {"completionValues":["value-\(requests.count)","value-\(requests.count)"]}
+                ]}}}}
+                """.utf8))
+        }
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [StubURLProtocol.self]
+        let session = URLSession(configuration: sessionConfig)
+        defer { session.invalidateAndCancel() }
+        let metadata = NrqlMetadata(session: session)
+        let lookup = NrqlValueCompletion.Lookup(event: "Transaction", attribute: "appName", timeWindow: "SINCE 1 hour ago")
+        let original = NerdgraphConfig(host: "a.example.com", apiKey: "key-a", accountIds: "1")
+        #expect(try await metadata.values(for: lookup, config: original) == ["value-1"])
+        #expect(try await metadata.values(for: lookup, config: original) == ["value-1"])
+        var changed = original
+        changed.apiKey = "key-b"
+        #expect(try await metadata.values(for: lookup, config: changed) == ["value-2"])
+        changed = original
+        changed.accountIds = "2"
+        #expect(try await metadata.values(for: lookup, config: changed) == ["value-3"])
+        changed = original
+        changed.host = "b.example.com"
+        #expect(try await metadata.values(for: lookup, config: changed) == ["value-4"])
+        let time = NrqlValueCompletion.Lookup(event: "Transaction", attribute: "appName", timeWindow: "SINCE 2 days ago UNTIL 1 day ago")
+        #expect(try await metadata.values(for: time, config: original) == ["value-5"])
+        let attribute = NrqlValueCompletion.Lookup(event: "Transaction", attribute: "host", timeWindow: lookup.timeWindow)
+        #expect(try await metadata.values(for: attribute, config: original) == ["value-6"])
+        let event = NrqlValueCompletion.Lookup(event: "Log", attribute: "appName", timeWindow: lookup.timeWindow)
+        #expect(try await metadata.values(for: event, config: original) == ["value-7"])
+        #expect(try await metadata.values(for: lookup, config: original) == ["value-1"])
+        #expect(requests.count == 7)
+        #expect(requests[0].accounts == [1])
+        #expect(requests[2].accounts == [2])
+        #expect(requests[0].nrql == "SELECT uniques(`appName`, 100) AS completionValues FROM `Transaction` SINCE 1 hour ago")
+        #expect(requests[4].nrql.hasSuffix(time.timeWindow))
+    }
+
+    @Test func concurrentValueLookupsShareARequestAndDoNotSuggestNumericValues() async throws {
+        nonisolated(unsafe) var requestCount = 0
+        StubURLProtocol.handler = { _ in
+            requestCount += 1
+            return (200, Data("""
+                {"data":{"actor":{"nrql":{"nrql":"","metadata":{},"results":[{"completionValues":[1,2,3]}]}}}}
+                """.utf8))
+        }
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [StubURLProtocol.self]
+        let session = URLSession(configuration: sessionConfig)
+        defer { session.invalidateAndCancel() }
+        let metadata = NrqlMetadata(session: session)
+        let lookup = NrqlValueCompletion.Lookup(event: "Transaction", attribute: "duration", timeWindow: "SINCE 1 hour ago")
+        let config = NerdgraphConfig(host: "a.example.com", apiKey: "key", accountIds: "1")
+        async let first = metadata.values(for: lookup, config: config)
+        async let second = metadata.values(for: lookup, config: config)
+        #expect(try await first.isEmpty)
+        #expect(try await second.isEmpty)
+        #expect(try await metadata.values(for: lookup, config: config).isEmpty)
+        #expect(requestCount == 1)
+    }
+
     @Test func schemaCacheUsesEffectiveKeyAndHostAndReportsIntrospectionErrors() async throws {
         nonisolated(unsafe) var requestCount = 0
         StubURLProtocol.handler = { _ in

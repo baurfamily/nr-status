@@ -172,6 +172,19 @@ it when enabled; otherwise Return inserts a new line or runs the current cell
 according to the second setting. Tab always accepts a completion, Command-Return
 always runs the query, and Shift-Return always inserts a new line.
 
+#### Attribute-value autocomplete
+
+In an NRQL `WHERE` comparison, type an opening quote after `=`, `!=`, `<>`,
+`IN (`, or `NOT IN (` to suggest observed string values. Suggestions are filtered
+as you type and escape quotes and backslashes when inserted. Numeric values are
+not suggested; multi-event queries, subqueries, and computed attributes are skipped.
+
+Value lookups honor the query's completed `SINCE`/`UNTIL` clauses and timezone.
+Without a time range, they look back **one hour**. `UNTIL` alone uses the preceding
+hour; incomplete time clauses defer the lookup. Queries request at most 100 unique
+values with a five-second NRQL timeout. Results are cached for five minutes by
+connection, event, attribute, and time window, rather than queried on every keystroke.
+
 #### API keys and accounts
 
 In Settings, add a named API key (and its API host), then **Test & Load Accounts**.

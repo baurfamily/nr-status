@@ -167,6 +167,11 @@ struct NrqlCompletionTests {
                    Attribute(event: event, type: "string", key: "weird key")]
                 : []
         }
+
+        func values(for lookup: NrqlValueCompletion.Lookup) async -> [String] {
+            lookup.event == "Transaction" && lookup.attribute == "name"
+                ? ["Checkout", "Checkout API", "O'Brien", "C:\\services\\api", "😀 Checkout", "a//b"] : []
+        }
     }
 
     /// `|` marks the cursor.
@@ -174,6 +179,150 @@ struct NrqlCompletionTests {
         let location = (marked as NSString).range(of: "|").location
         let text = marked.replacingOccurrences(of: "|", with: "")
         return await NrqlCompletion.items(text: text, location: location, metadata: StubMetadata()).items.map(\.name)
+    }
+
+    @Test(arguments: [
+        "SELECT count(*) FROM Transaction WHERE name = '|",
+        "FROM Transaction SELECT count(*) WHERE name != 'Ch|",
+        "SELECT count(*) FROM Transaction WHERE name <> 'Ch|'",
+        "SELECT count(*) FROM Transaction WHERE name IN ('Ch|')",
+        "SELECT count(*) FROM Transaction WHERE name NOT IN ('Other',\n'Ch|')",
+        "SELECT count(*) FROM Transaction WHERE (name = 'Ch|')",
+        "SELECT count(*) FROM Transaction WHERE duration > 1 AND name = 'Ch|'"
+    ])
+    func completesStringComparisonsAndLists(_ marked: String) async {
+        let found = await names(marked)
+        #expect(found.contains("Checkout"))
+        #expect(found.contains("Checkout API"))
+        #expect(!found.contains("duration"))
+    }
+
+    @Test(arguments: [
+        ("", "SINCE 1 hour ago"),
+        ("SINCE 2 days ago UNTIL 1 day ago", "SINCE 2 days ago UNTIL 1 day ago"),
+        ("UNTIL 2 hours ago", "SINCE 10800000 milliseconds ago UNTIL 2 hours ago"),
+        ("SINCE today WITH TIMEZONE 'America/Los_Angeles'", "SINCE today WITH TIMEZONE 'America/Los_Angeles'")
+    ])
+    func valueDocumentationShowsTheLookupScopeWithoutChangingRowDetails(_ suffix: String, _ expected: String) async throws {
+        let text = "FROM Transaction SELECT count(*) WHERE name = '' \(suffix)"
+        let location = (text as NSString).range(of: "''").location + 1
+        let found = await NrqlCompletion.items(text: text, location: location, metadata: StubMetadata())
+        let completion = try #require(found.items.first)
+        #expect(completion.detail == nil)
+        #expect(completion.documentationText.hasPrefix("Transaction.name\n\n"))
+        #expect(completion.documentationText.contains("\n\n\(expected)\n\n"))
+    }
+
+    @Test func replacesTheWholeLiteralWithoutDuplicatingQuotesAndEscapesValues() async throws {
+        for (marked, expected) in [
+            ("SELECT count(*) FROM Transaction WHERE name = 'O|", #"name = 'O\'Brien'"#),
+            ("SELECT count(*) FROM Transaction WHERE name = 'O\\'|'", #"name = 'O\'Brien'"#),
+            ("SELECT count(*) FROM Transaction WHERE name = 'Che|obsolete'", "name = 'Checkout'"),
+            ("SELECT count(*) FROM Transaction WHERE name = 'C:|'", #"name = 'C:\\services\\api'"#),
+            ("SELECT count(*) FROM Transaction WHERE name = '😀|'", "name = '😀 Checkout'"),
+            ("SELECT count(*) FROM Transaction WHERE name = 'a//|'", "name = 'a//b'")
+        ] {
+            let location = (marked as NSString).range(of: "|").location
+            let text = marked.replacingOccurrences(of: "|", with: "")
+            let found = await NrqlCompletion.items(text: text, location: location, metadata: StubMetadata())
+            let completion = try #require(found.items.first)
+            #expect((text as NSString).replacingCharacters(in: found.range, with: completion.insertText).hasSuffix(expected))
+        }
+    }
+
+    @Test(arguments: [
+        ("", "SINCE 1 hour ago"),
+        ("SINCE 30 minutes ago", "SINCE 30 minutes ago"),
+        ("SINCE 2 days ago UNTIL 1 day ago", "SINCE 2 days ago UNTIL 1 day ago"),
+        ("SINCE '2026-01-01' UNTIL '2026-01-02T03:00:00Z'", "SINCE '2026-01-01' UNTIL '2026-01-02T03:00:00Z'"),
+        ("SINCE 1702899296789 UNTIL 1702902896789", "SINCE 1702899296789 UNTIL 1702902896789"),
+        ("UNTIL 1702902896789", "SINCE 1702899296789 UNTIL 1702902896789"),
+        ("UNTIL 2 hours ago", "SINCE 10800000 milliseconds ago UNTIL 2 hours ago"),
+        ("UNTIL now", "SINCE 3600000 milliseconds ago UNTIL now"),
+        ("SINCE this week", "SINCE this week"),
+        ("SINCE monday", "SINCE monday"),
+        ("SINCE yesterday AT '01:23:45'", "SINCE yesterday AT '01:23:45'"),
+        ("SINCE today WITH TIMEZONE 'America/Los_Angeles'", "SINCE today WITH TIMEZONE 'America/Los_Angeles'"),
+        ("SINCE 1 hour ago COMPARE WITH 1 day ago", "SINCE 1 hour ago"),
+        ("SINCE 1 hour ago TIMESERIES AUTO LIMIT 10", "SINCE 1 hour ago")
+    ])
+    func valueLookupsUseTheQueriesTimeWindow(_ suffix: String, _ expected: String) throws {
+        let marked = "SELECT count(*) FROM Transaction WHERE name = 'Ch|' \(suffix)"
+        let location = (marked as NSString).range(of: "|").location
+        let text = marked.replacingOccurrences(of: "|", with: "")
+        let analysis = try #require(NrqlValueCompletion.analyse(text: text, location: location))
+        guard case .values(let lookup, _) = analysis.context else {
+            Issue.record("Expected an attribute-value context")
+            return
+        }
+        #expect(lookup.timeWindow == expected)
+        #expect(lookup.nrql == "SELECT uniques(`name`, 100) AS completionValues FROM `Transaction` \(expected)")
+    }
+
+    @Test func untilOnlyAbsoluteTimesCoverThePrecedingHour() throws {
+        let text = "FROM Transaction SELECT count(*) WHERE name = '' UNTIL '2026-01-02 03:00' WITH TIMEZONE 'UTC'"
+        let location = (text as NSString).range(of: "''").location + 1
+        let analysis = try #require(NrqlValueCompletion.analyse(text: text, location: location))
+        guard case .values(let lookup, _) = analysis.context else {
+            Issue.record("Expected an attribute-value context")
+            return
+        }
+        let start = try #require(ISO8601DateFormatter().date(from: "2026-01-02T02:00:00Z"))
+        #expect(lookup.timeWindow == "SINCE \(Int64(start.timeIntervalSince1970 * 1000)) UNTIL '2026-01-02 03:00' WITH TIMEZONE 'UTC'")
+    }
+
+    @Test func untilOnlyWeekdaysUseMondayAsTheStartOfTheWeek() throws {
+        let text = "FROM Transaction SELECT count(*) WHERE name = '' UNTIL this week"
+        let location = (text as NSString).range(of: "''").location + 1
+        let formatter = ISO8601DateFormatter()
+        let now = try #require(formatter.date(from: "2026-11-18T12:00:00Z"))
+        let start = try #require(formatter.date(from: "2026-11-15T23:00:00Z"))
+        let analysis = try #require(NrqlValueCompletion.analyse(text: text, location: location, now: now))
+        guard case .values(let lookup, _) = analysis.context else {
+            Issue.record("Expected an attribute-value context")
+            return
+        }
+        #expect(lookup.timeWindow == "SINCE \(Int64(start.timeIntervalSince1970 * 1000)) UNTIL this week")
+    }
+
+    @MainActor @Test func openingQuotesAndSpacesInsideValuesReopenCompletions() async throws {
+        let service = NrqlLanguageService(metadata: StubMetadata())
+        var source = ""
+        var openings = 0
+        service.setTextSource { source }
+        service.setCompletionAction { openings += 1 }
+        for value in ["'", "'Checkout ", "'https://"] {
+            source = "FROM Transaction SELECT count(*) WHERE name = \(value)"
+            try await service.documentDidChange(
+                position: source.utf16.count - 1, changeInLength: 1, lineChange: 0,
+                columnChange: 1, newText: String(value.suffix(1))
+            )
+        }
+        #expect(openings == 3)
+    }
+
+    @Test(arguments: [
+        "SINCE", "SINCE 2", "SINCE 2 hours", "UNTIL", "UNTIL '2026-01-'",
+        "SINCE '2026-01-01", "SINCE 1 hour ago SINCE 2 hours ago", "WITH TIMEZONE 'unknown'",
+        "UNTIL 18446744073709551615 years ago"
+    ])
+    func incompleteTimeWindowsDoNotStartValueLookups(_ suffix: String) async {
+        #expect(await names("SELECT count(*) FROM Transaction WHERE name = 'Ch|' \(suffix)").isEmpty)
+    }
+
+    @Test(arguments: [
+        "// SELECT count(*) FROM Transaction WHERE name = 'Ch|",
+        "SELECT count(*) FROM Transaction -- WHERE name = 'Ch|",
+        "SELECT count(*) FROM Transaction /* WHERE name = 'Ch|",
+        "SELECT 'Ch|' FROM Transaction",
+        "SELECT count(*) FROM Transaction WHERE duration = '1|'",
+        "SELECT count(*) FROM Transaction WHERE lower(name) = 'Ch|'",
+        "SELECT count(*) FROM Transaction WHERE name LIKE 'Ch|'",
+        "SELECT count(*) FROM Transaction, PageView WHERE name = 'Ch|'",
+        "SELECT count(*) FROM (SELECT * FROM Transaction) WHERE name = 'Ch|'"
+    ])
+    func unsupportedValueContextsStayQuiet(_ marked: String) async {
+        #expect(await names(marked).isEmpty)
     }
 
     @Test func suggestsClauseKeywords() async {

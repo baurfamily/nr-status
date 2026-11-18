@@ -31,12 +31,31 @@ actor NrqlMetadata: NrqlMetadataProviding {
                 return []
             }
         }
+
+        func values(for lookup: NrqlValueCompletion.Lookup) async -> [String] {
+            do {
+                try Task.checkCancellation()
+                let values = try await NrqlMetadata.shared.values(for: lookup, config: connection.get().resolve())
+                return Task.isCancelled ? [] : values
+            } catch is CancellationError {
+                return []
+            } catch {
+                NrqlMetadata.logger.error("Value completion failed: \(error.localizedDescription, privacy: .public)")
+                return []
+            }
+        }
     }
 
     private static let logger = Logger(subsystem: "com.baurfamily.nrstatus", category: "Completion")
     private let session: URLSession
     private var cachedEvents: [NerdgraphConfig: [String]] = [:]
     private var cachedAttributes: [NerdgraphConfig: [String: [Attribute]]] = [:]
+    private struct ValueKey: Hashable {
+        let config: NerdgraphConfig
+        let lookup: NrqlValueCompletion.Lookup
+    }
+    private var cachedValues: [ValueKey: (values: [String], loadedAt: Date)] = [:]
+    private var pendingValues: [ValueKey: Task<[String], Error>] = [:]
 
     init(session: URLSession = .shared) {
         self.session = session
@@ -48,6 +67,29 @@ actor NrqlMetadata: NrqlMetadataProviding {
 
     func attributes(event: String) async -> [Attribute] {
         await Source(connection: .success(NrqlConnection())).attributes(event: event)
+    }
+
+    func values(for lookup: NrqlValueCompletion.Lookup) async -> [String] {
+        await Source(connection: .success(NrqlConnection())).values(for: lookup)
+    }
+
+    func values(for lookup: NrqlValueCompletion.Lookup, config: NerdgraphConfig) async throws -> [String] {
+        try Task.checkCancellation()
+        let key = ValueKey(config: config, lookup: lookup)
+        if let cached = cachedValues[key], Date().timeIntervalSince(cached.loadedAt) < 300 { return cached.values }
+        if let pending = pendingValues[key] { return try await pending.value }
+        let session = session
+        let pending = Task {
+            guard let results = try await Queries(config: config, session: session).getNrqlData(query: lookup.nrql, timeout: 5) else {
+                return [String]()
+            }
+            return Array(Set(results.data.flatMap { $0.stringArrayFields["completionValues"] ?? [] })).sorted()
+        }
+        pendingValues[key] = pending
+        defer { pendingValues[key] = nil }
+        let values = try await pending.value
+        cachedValues[key] = (values, Date())
+        return values
     }
 
     func eventTypes(config: NerdgraphConfig) async throws -> [String] {

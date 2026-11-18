@@ -212,6 +212,7 @@ import CryptoKit
         executedBindings = nil
         
         do {
+            let options = try options.get()
             let consumesConfig = readsDocumentConfig
             let documentConfig = script != nil || consumesConfig
                 ? try defaults.effectiveConfiguration(profiles: profiles.load()) : NrqlConnection()
@@ -230,7 +231,7 @@ import CryptoKit
                     try NrqlInterpolation.expandJSON(graphQL.variables, results: results, config: documentConfig)
                 }.value
                 guard !Task.isCancelled, executionID == id else { return }
-                let connection = try options.get().inheriting(defaults)
+                let connection = options.inheriting(defaults)
                 let snapshot = try connection.snapshot(profiles: profiles.load(), requiresAccounts: false)
                 let config = try connection.resolve(profiles: profiles, requiresAccounts: false)
                 setExecuted(graphQL.operation, variables: try variables.encodedText(pretty: true))
@@ -291,7 +292,7 @@ import CryptoKit
                 try NrqlInterpolation.expand(nrql, results: results, config: documentConfig)
             }.value
             guard !Task.isCancelled, executionID == id else { return }
-            let connection = try options.get().inheriting(defaults)
+            let connection = options.inheriting(defaults)
             let snapshot = try connection.snapshot(profiles: profiles.load())
             let config = try connection.resolve(profiles: profiles)
             setExecuted(sent)

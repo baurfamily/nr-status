@@ -168,6 +168,191 @@ final class NR_StatusUITests: XCTestCase {
     }
 
     @MainActor
+    func testFrontmatterSummaryCanBeExpandedEditedAndCollapsed() throws {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("config-summary-\(UUID().uuidString).nrmd")
+        try """
+            ---
+            author: Example team
+            description: "Example: summary"
+            ---
+
+            # Workbook notes
+            """.write(to: file, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: file) }
+        let app = XCUIApplication()
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES"]
+        app.launch()
+        app.typeKey("o", modifierFlags: .command)
+        app.typeKey("g", modifierFlags: [.command, .shift])
+        app.typeText(file.path)
+        app.typeKey(.return, modifierFlags: [])
+        app.typeKey(.return, modifierFlags: [])
+        let window = app.windows[file.lastPathComponent]
+        XCTAssertTrue(window.waitForExistence(timeout: 5), app.debugDescription)
+        let summary = window.descendants(matching: .any)["document-configuration-summary"].firstMatch
+        XCTAssertFalse(summary.exists)
+        window.buttons["Show config"].firstMatch.click()
+        XCTAssertTrue(summary.waitForExistence(timeout: 5))
+        XCTAssertTrue(window.staticTexts["Example team"].exists)
+        XCTAssertTrue(window.staticTexts["Example: summary"].exists)
+
+        window.buttons["Configure Cell"].firstMatch.click()
+        window.radioButtons["Text"].firstMatch.click()
+        let text = window.textViews["cell-configuration-text"]
+        XCTAssertTrue(text.waitForExistence(timeout: 5))
+        text.click()
+        text.typeKey("a", modifierFlags: .command)
+        text.typeText("author: Updated team\ndescription: A new summary")
+        window.buttons["Close"].firstMatch.click()
+        XCTAssertTrue(window.staticTexts["Updated team"].waitForExistence(timeout: 5))
+        window.buttons["Hide config"].firstMatch.click()
+        XCTAssertFalse(summary.exists)
+        app.typeKey("s", modifierFlags: .command)
+        let saved = NSPredicate { _, _ in
+            guard let source = try? String(contentsOf: file, encoding: .utf8) else { return false }
+            return source.hasPrefix("---\n") && source.contains("Updated team") && source.contains("# Workbook notes")
+        }
+        expectation(for: saved, evaluatedWith: nil)
+        waitForExpectations(timeout: 5)
+    }
+
+    @MainActor
+    func testGraphQLWholeResponseAndExtractionEditorsStaySeparate() throws {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("binding-split-\(UUID().uuidString).nrmd")
+        try """
+            ```cell_config
+            var: response
+            bindings:
+              - name: account
+                expression: data.actor.account
+            ```
+            ```graphql
+            { actor { user { name } } }
+            ```
+            """.write(to: file, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: file) }
+        let app = XCUIApplication()
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES"]
+        app.launch()
+        app.typeKey("o", modifierFlags: .command)
+        app.typeKey("g", modifierFlags: [.command, .shift])
+        app.typeText(file.path)
+        app.typeKey(.return, modifierFlags: [])
+        app.typeKey(.return, modifierFlags: [])
+        let window = app.windows[file.lastPathComponent]
+        XCTAssertTrue(window.waitForExistence(timeout: 5))
+        window.buttons["Configure Cell"].firstMatch.click()
+        let whole = window.textFields["cell-result-variable"]
+        XCTAssertTrue(whole.waitForExistence(timeout: 5))
+        XCTAssertEqual(whole.value as? String, "response")
+        let name = window.textFields["binding-name-0"]
+        XCTAssertEqual(name.value as? String, "account")
+        name.click()
+        name.typeKey("a", modifierFlags: .command)
+        name.typeText("accountName")
+        let expression = window.textViews["binding-expression-0"]
+        expression.click()
+        expression.typeKey("a", modifierFlags: .command)
+        expression.typeText("data.actor.account.name")
+        window.radioButtons["Text"].firstMatch.click()
+        let text = window.textViews["cell-configuration-text"]
+        XCTAssertTrue(text.waitForExistence(timeout: 5))
+        XCTAssertTrue((text.value as? String)?.contains("var: response") == true)
+        XCTAssertTrue((text.value as? String)?.contains("name: accountName") == true)
+        XCTAssertTrue((text.value as? String)?.contains("expression: data.actor.account.name") == true)
+        text.click()
+        text.typeKey("a", modifierFlags: .command)
+        text.typeText("var: fullResponse\nbindings:\n  - name: actor\n    expression: data.actor")
+        window.radioButtons["Settings"].firstMatch.click()
+        XCTAssertEqual(whole.value as? String, "fullResponse")
+        XCTAssertEqual(name.value as? String, "actor")
+        XCTAssertEqual(expression.value as? String, "data.actor")
+        window.buttons["remove-binding-0"].click()
+        XCTAssertFalse(name.exists)
+        XCTAssertEqual(whole.value as? String, "fullResponse")
+        window.buttons["add-result-binding"].click()
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.click()
+        name.typeText("currentUser")
+        expression.click()
+        expression.typeText("data.actor.user")
+        window.radioButtons["Text"].firstMatch.click()
+        XCTAssertTrue((text.value as? String)?.contains("var: fullResponse") == true)
+        XCTAssertTrue((text.value as? String)?.contains("name: currentUser") == true)
+        XCTAssertTrue((text.value as? String)?.contains("expression: data.actor.user") == true)
+    }
+
+    @MainActor
+    func testDocumentBindingsUseStructuredSettingsAndRoundTripThroughText() throws {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("document-bindings-\(UUID().uuidString).nrmd")
+        try """
+            ---
+            author: Binding example
+            bindings:
+              - name: service
+                expression: '"Checkout"'
+            ---
+
+            # Notes
+            """.write(to: file, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: file) }
+        let app = XCUIApplication()
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES"]
+        app.launch()
+        app.typeKey("o", modifierFlags: .command)
+        app.typeKey("g", modifierFlags: [.command, .shift])
+        app.typeText(file.path)
+        app.typeKey(.return, modifierFlags: [])
+        app.typeKey(.return, modifierFlags: [])
+        let window = app.windows[file.lastPathComponent]
+        XCTAssertTrue(window.waitForExistence(timeout: 5))
+        window.buttons["Configure Cell"].firstMatch.click()
+        let name = window.textFields["binding-name-0"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        XCTAssertEqual(name.value as? String, "service")
+        XCTAssertFalse(window.textFields["cell-result-variable"].exists)
+        let expression = window.textViews["binding-expression-0"]
+        XCTAssertEqual(expression.value as? String, "\"Checkout\"")
+        name.click()
+        name.typeKey("a", modifierFlags: .command)
+        name.typeText("serviceName")
+        expression.click()
+        expression.typeKey("a", modifierFlags: .command)
+        expression.typeText("\"Payments\"")
+        window.radioButtons["Text"].firstMatch.click()
+        let text = window.textViews["cell-configuration-text"]
+        XCTAssertTrue(text.waitForExistence(timeout: 5))
+        XCTAssertTrue((text.value as? String)?.contains("bindings:") == true)
+        XCTAssertTrue((text.value as? String)?.contains("name: serviceName") == true)
+        XCTAssertTrue((text.value as? String)?.contains("Payments") == true)
+        XCTAssertFalse((text.value as? String)?.contains("var:") == true)
+        text.click()
+        text.typeKey("a", modifierFlags: .command)
+        text.typeText("author: Binding example\nbindings:\n  - name: appName\n    expression: '\"Inventory\"'")
+        window.radioButtons["Settings"].firstMatch.click()
+        XCTAssertEqual(name.value as? String, "appName")
+        XCTAssertEqual(expression.value as? String, "\"Inventory\"")
+        window.buttons["remove-binding-0"].click()
+        XCTAssertFalse(name.exists)
+        window.buttons["add-result-binding"].click()
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.click()
+        name.typeText("threshold")
+        expression.click()
+        expression.typeText("12")
+        window.buttons["Close"].firstMatch.click()
+        app.typeKey("s", modifierFlags: .command)
+        let saved = NSPredicate { _, _ in
+            guard let source = try? String(contentsOf: file, encoding: .utf8) else { return false }
+            return source.hasPrefix("---\n") && source.contains("name: threshold")
+                && source.contains("author: Binding example") && source.contains("# Notes")
+                && !source.contains("var:")
+        }
+        expectation(for: saved, evaluatedWith: nil)
+        waitForExpectations(timeout: 5)
+    }
+
+    @MainActor
     func testQueryBuilderOffersAnAccountPicker() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-ApplePersistenceIgnoreState", "YES"]

@@ -283,8 +283,8 @@ enum NrqlCompletion {
         case .none:
             break
         case .formatKey:
-            let keys = graphql ? ["title", "var", "api-key", "chart"]
-                : ["api-key", "accounts", "author", "description", "var", "title", "chart", "height", "attributes"]
+            let keys = graphql ? ["title", "var", "bindings", "api-key", "chart"]
+                : ["api-key", "accounts", "author", "description", "bindings", "var", "title", "chart", "height", "attributes"]
             candidates = keys.map {
                 Item(name: $0, kind: .formatKey, detail: nil, insertText: "\($0): ")
             }

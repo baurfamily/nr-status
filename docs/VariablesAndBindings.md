@@ -2,27 +2,34 @@
 
 [Documentation](README.md) · [Lua scripting](LuaScripting.md)
 
-There are three distinct kinds of variables:
+Keep document data, result bindings, and GraphQL request variables distinct:
 
 | Kind | Defined in | Read as |
 |---|---|---|
-| Document data | `var name = expression` inside `config` | `config.name` |
+| Document data | A `bindings` array in frontmatter | `config.name` |
 | Cell result binding | `var: name` inside `cell_config` | `results.name` |
+| GraphQL extraction | A `bindings` array in `cell_config` | `results.name` |
 | GraphQL request variable | JSON in a `variables` fence | `$name` in the GraphQL operation |
 
 ## Document variables
 
 ````text
-```config
-var appName = "Checkout"
-var services = { "Checkout", "Payments" }
-var heading = config.appName .. " overview"
-```
+---
+bindings:
+  - name: appName
+    expression: '"Checkout"'
+  - name: services
+    expression: '{ "Checkout", "Payments" }'
+  - name: heading
+    expression: config.appName .. " overview"
+---
 ````
 
-Expressions use Lua syntax and are evaluated in order. Values may be strings,
-numbers, booleans, or tables. Names must be unique; `accounts` and `api_key`
-are reserved.
+Each entry has a Lua-identifier `name` and a nonempty Lua `expression`.
+Expressions are evaluated in array order and can read earlier `config` fields.
+Values may be strings, numbers, booleans, or tables. Names must be unique;
+`accounts` and `api_key` are reserved. Keep Lua string quotes inside YAML quotes:
+`expression: '"Checkout"'` evaluates to the string `Checkout`.
 
 `config.accounts` is the effective document account list (1-based), and
 `config.api_key` is the effective saved key **name**, never its secret. Both
@@ -50,7 +57,8 @@ The old `name:` key is not a result binding.
 
 Only exported bindings appear in `results`. `results[1]` is the first
 exported binding, **not the first workbook cell**. GraphQL can export several
-bindings in declaration order. Prefer named references: they are easier to
+bindings: the whole-response `var` first, then `bindings` array order.
+Prefer named references: they are easier to
 maintain and required for widget dependencies.
 
 ## NRQL and Markdown interpolation
@@ -107,13 +115,21 @@ interpolated JSON actually used by the last request.
 
 GraphQL supports both complete-response and extracted bindings:
 
-```text
+```yaml
 var: response
-var: entity = data.actor.entitySearch.results.entities[1]
-var: tagCount = #data.actor.entitySearch.results.entities[1].tags
+bindings:
+  - name: entity
+    expression: data.actor.entitySearch.results.entities[1]
+  - name: tagCount
+    expression: "#data.actor.entitySearch.results.entities[1].tags"
 ```
 
-These are `cell_config` lines. Expressions resolve `data`, `errors`, and
+`var` names the complete response; it cannot contain an extraction expression
+or a list. The optional `bindings` array contains named Lua expressions.
+Each extraction requires a Lua-identifier `name` and nonempty `expression`.
+Names must not collide with each other or the whole-response variable.
+Quote expressions starting with `#` so YAML does not treat them as comments.
+Expressions resolve `data`, `errors`, and
 `extensions` against the current response. `config` and other cells' `results`
 are also available. Expressions are independent: do not reference a sibling
 binding as though it had already been exported.
@@ -122,6 +138,10 @@ Later cells read `results.entity.name` or `results.tagCount`. Duplicate names,
 missing paths, or extraction errors prevent successful export; if any extraction
 fails, none of that run's bindings are made available to consumers. The
 response remains visible for diagnosis.
+
+Document configuration uses the same `bindings` record format, but its values
+live under `config`, not `results`. Unlike GraphQL extractions, document bindings
+can reference earlier bindings in the same array through `config.name`.
 
 ## Running connected cells
 

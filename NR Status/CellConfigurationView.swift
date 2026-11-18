@@ -53,14 +53,14 @@ struct CellConfigurationView: View {
             }
             .pickerStyle(.segmented)
             if showsText {
-                Text(isDocument ? "```config" : "```cell_config")
+                Text(isDocument ? "---" : "```cell_config")
                     .font(.caption.monospaced()).foregroundStyle(.secondary)
                 ConfigurationTextEditor(
                     text: $cell.configurationText, identifier: "cell-configuration-text", completionScope: bindingScope
                 )
                     .frame(minHeight: 180)
-                    .help("Press Escape to complete Lua expressions after '='.")
-                Text("```").font(.caption.monospaced()).foregroundStyle(.secondary)
+                    .help("Press Escape to complete binding expressions.")
+                Text(isDocument ? "---" : "```").font(.caption.monospaced()).foregroundStyle(.secondary)
             } else {
                 settings
             }
@@ -96,24 +96,14 @@ struct CellConfigurationView: View {
             } else {
                 labeledField("Title", text: value("title"), identifier: "cell-configuration-title")
             }
-            if isDocument || cell.kind == .nerdgraph {
-                Text(isDocument ? "Variables (name = Lua expression)" : "Bindings (name or name = Lua expression)")
-                    .font(.caption).foregroundStyle(.secondary)
-                ConfigurationTextEditor(text: Binding(
-                    get: { NrqlCellSource.values("var", in: cell.configurationText).joined(separator: "\n") },
-                    set: {
-                        cell.configurationText = NrqlCellSource.updating(
-                            "var", values: $0.components(separatedBy: "\n"),
-                            in: cell.configurationText, includeEmptyValues: true
-                        )
-                    }
-                ), identifier: "cell-configuration-bindings", completionScope: bindingScope)
-                .frame(height: 80)
-                .help("Press Escape to complete expressions using config, results, and the current GraphQL response.")
-                Text("Press Esc to complete expressions.")
-                    .font(.caption).foregroundStyle(.secondary)
+            if isDocument {
+                bindingSettings
             } else {
-                labeledField("Variable binding", text: value("var"), placeholder: "Result variable")
+                labeledField(
+                    cell.kind == .nerdgraph ? "Whole response variable" : "Variable binding",
+                    text: value("var"), placeholder: "Result variable", identifier: "cell-result-variable"
+                )
+                if cell.kind == .nerdgraph { bindingSettings }
             }
             if isDocument {
                 labeledField("API Key name", text: value("api-key"), placeholder: "Default if empty")
@@ -133,6 +123,72 @@ struct CellConfigurationView: View {
                     chartSettings
                 }
             }
+        }
+    }
+
+    private var bindings: [LuaRuntime.Variable] {
+        LuaRuntime.Variable.editableBindings(in: cell.configurationText)
+    }
+
+    private var bindingSettings: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Bindings").font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Button("Add Binding", systemImage: "plus") {
+                    setBindings(bindings + [.init(name: "", expression: "")])
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .accessibilityIdentifier("add-result-binding")
+            }
+            ForEach(Array(bindings.indices), id: \.self) { index in
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        TextField("Name", text: bindingValue(index, expression: false))
+                            .accessibilityIdentifier("binding-name-\(index)")
+                        Button("Remove Binding", systemImage: "minus.circle") {
+                            var bindings = self.bindings
+                            bindings.remove(at: index)
+                            setBindings(bindings)
+                        }
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.borderless)
+                        .accessibilityIdentifier("remove-binding-\(index)")
+                    }
+                    ConfigurationTextEditor(
+                        text: bindingValue(index, expression: true),
+                        identifier: "binding-expression-\(index)", completionScope: bindingScope,
+                        isExpression: true
+                    )
+                    .frame(height: 50)
+                    .help(isDocument
+                          ? "Lua expression; use config.name to read earlier bindings. Press Escape for completion."
+                          : "Lua expression, for example data.actor.account.name. Press Escape for completion.")
+                }
+            }
+        }
+    }
+
+    private func bindingValue(_ index: Int, expression: Bool) -> Binding<String> {
+        Binding(get: {
+            guard bindings.indices.contains(index) else { return "" }
+            return expression ? bindings[index].expression ?? "" : bindings[index].name
+        }, set: { value in
+            var bindings = self.bindings
+            guard bindings.indices.contains(index) else { return }
+            let previous = bindings[index]
+            bindings[index] = .init(
+                name: expression ? previous.name : value,
+                expression: expression ? value : previous.expression
+            )
+            setBindings(bindings)
+        })
+    }
+
+    private func setBindings(_ bindings: [LuaRuntime.Variable]) {
+        if let text = try? LuaRuntime.Variable.updatingBindings(bindings, in: cell.configurationText) {
+            cell.configurationText = text
         }
     }
 

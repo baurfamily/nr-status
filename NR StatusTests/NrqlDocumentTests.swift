@@ -118,13 +118,15 @@ struct CellConfigurationTests {
 
     @Test func configTravelsWithCodeAndVariablesAndEditsRoundTrip() throws {
         var document = NRQL_EditorDocument(text: """
-            ```config
+            ---
             author: Ada
-            ```
+            ---
 
             ```cell_config
             title: Entities
-            var: entities = data.actor.entities
+            bindings:
+              - name: 'entities'
+                expression: 'data.actor.entities'
             future: preserved
             ```
 
@@ -321,7 +323,9 @@ struct NerdgraphCellTests {
         let cell = NrqlCell(text: """
             ```cell_config
             chart: bindings
-            var: name = data.name
+            bindings:
+              - name: 'name'
+                expression: 'data.name'
             ```
             ```graphql
             { actor { user { name } } }
@@ -413,11 +417,42 @@ struct NerdgraphCellTests {
         #expect(cell.text == saved)
     }
 
+    @Test func bindingTheJSONRootSetsVarWithoutReplacingExtractions() throws {
+        var cell = NrqlCell(text: """
+            ```cell_config
+            bindings:
+              - name: account
+                expression: data.actor.account
+            ```
+            ```graphql
+            { actor { user { name } } }
+            ```
+            """)
+        let code = cell.editorText
+        try cell.addResultBinding(name: "response", expression: nil)
+        #expect(try NrqlCellSource.resultName(in: cell.configurationText) == "response")
+        #expect(try NerdgraphCellSource(stored: cell.text).resultBindings() == [
+            .init(name: "response", expression: nil),
+            .init(name: "account", expression: "data.actor.account")
+        ])
+        #expect(cell.editorText == code)
+        let saved = cell.text
+        #expect(throws: NrqlConnection.ConfigurationError.self) {
+            try cell.addResultBinding(name: "anotherResponse", expression: nil)
+        }
+        #expect(throws: NrqlConnection.ConfigurationError.self) {
+            try cell.addResultBinding(name: "empty", expression: "")
+        }
+        #expect(cell.text == saved)
+    }
+
     @Test func inspectorSummarizesRowsAndIncludesDocumentAndPendingBindings() throws {
         let document = NRQL_EditorDocument(text: """
-            ```config
-            var service = "Checkout"
-            ```
+            ---
+            bindings:
+              - name: service
+                expression: '"Checkout"'
+            ---
 
             ```cell_config
             var: traffic
@@ -427,7 +462,9 @@ struct NerdgraphCellTests {
             ```
 
             ```cell_config
-            var: user = data.actor.user
+            bindings:
+              - name: 'user'
+                expression: 'data.actor.user'
             ```
             ```graphql
             { actor { user { name } } }
@@ -452,9 +489,11 @@ struct NerdgraphCellTests {
 
     @Test func inspectorNavigationRevealsAndFocusesCellsWithoutEditingTheirSource() {
         var document = NRQL_EditorDocument(text: """
-            ```config
-            var service = "Checkout"
-            ```
+            ---
+            bindings:
+              - name: service
+                expression: '"Checkout"'
+            ---
 
             ```cell_config
             query: hide
@@ -540,9 +579,12 @@ struct NerdgraphCellTests {
     @Test func parsesMultipleWholeResponseAndExtractedBindings() throws {
         let source = NerdgraphCellSource(stored: """
             ```cell_config
-            var: response
-            var: entity = data.actor.entitySearch.results.entities[1]
-            var: count = #data.actor.entitySearch.results.entities
+            var: 'response'
+            bindings:
+              - name: 'entity'
+                expression: 'data.actor.entitySearch.results.entities[1]'
+              - name: 'count'
+                expression: '#data.actor.entitySearch.results.entities'
             ```
             ```graphql
             { actor { user { name } } }
@@ -557,7 +599,7 @@ struct NerdgraphCellTests {
         #expect(NrqlDependencies.referencedNames(by: query).isEmpty)
         #expect(NrqlDependencies.dependencies(of: reader, in: [query, reader]).map(\.id) == [query.id])
         #expect(throws: NrqlConnection.ConfigurationError.self) {
-            try NerdgraphCellSource(stored: "```cell_config\nvar: entity\nvar: entity = data.actor\n```\n```graphql\n{}\n```").resultBindings()
+            try NerdgraphCellSource(stored: "```cell_config\nvar: 'entity'\nbindings:\n  - name: 'entity'\n    expression: 'data.actor'\n```\n```graphql\n{}\n```").resultBindings()
         }
     }
 
@@ -685,7 +727,7 @@ struct NerdgraphCellTests {
 
 struct NrqlDocumentCellTests {
     @Test func documentConfigurationRoundTripsAndIsNotRunnable() throws {
-        let text = "```config\napi-key: Production\naccounts: 12, 34\n```\n\n# Notes\n\n```nrql\nSELECT 1\n```\n"
+        let text = "---\napi-key: Production\naccounts: 12, 34\n---\n\n# Notes\n\n```nrql\nSELECT 1\n```\n"
         let document = NRQL_EditorDocument(text: text)
         #expect(document.cells.map(\.kind) == [.config, .markdown, .nrql])
         #expect(!document.cells[0].isRunnable)
@@ -694,15 +736,9 @@ struct NrqlDocumentCellTests {
         #expect(try document.connection.get() == NrqlConnection(apiKeyName: "Production", accountIds: [12, 34]))
     }
 
-    @Test func rejectsMisplacedRepeatedOrUnclosedConfiguration() {
-        for text in [
-            "# Title\n\n```config\napi-key: Work\n```",
-            "```config\napi-key: Work\n```\n\n```config\naccounts: 12\n```",
-            "```config\napi-key: Work\n"
-        ] {
-            #expect(throws: NrqlConnection.ConfigurationError.self) {
-                try NRQL_EditorDocument(text: text).connection.get()
-            }
+    @Test func rejectsUnclosedConfiguration() {
+        #expect(throws: NrqlConnection.ConfigurationError.self) {
+            try NRQL_EditorDocument(text: "---\napi-key: Work\n").connection.get()
         }
     }
 
@@ -780,23 +816,23 @@ struct NrqlDocumentCellTests {
     }
 
     @Test func toolbarChangesDoNotOverwriteMalformedConfig() {
-        var document = NRQL_EditorDocument(text: "```config\napi-key:\n```")
+        var document = NRQL_EditorDocument(text: "---\napi-key:\n---")
         let originalText = document.text
         #expect(throws: NrqlConnection.ConfigurationError.self) { try document.setDefaultApiKey("Work") }
         #expect(document.text == originalText)
     }
 
     @Test func toolbarChangesPreserveDocumentMetadataIncludingPendingEdits() throws {
-        var document = NRQL_EditorDocument(text: "```config\nauthor: Before\naccounts: 12\n```")
+        var document = NRQL_EditorDocument(text: "---\nauthor: Before\naccounts: 12\n---")
         document.cells[0].query.text = """
-            ```config
+            ---
             author: Ada
-            description: Error rates: per application
+            description: 'Error rates: per application'
             owner-team: Observability
             custom-notes:
-            // Keep this note.
+            # Keep this note.
             accounts: 12
-            ```
+            ---
             """
         try document.setDefaultApiKey("Production")
         try document.setDefaultAccountIds([34, 56])
@@ -804,13 +840,11 @@ struct NrqlDocumentCellTests {
         try document.setDefaultApiKey(nil)
         try document.setDefaultAccountIds(nil)
 
-        #expect(document.cells[0].editorText == """
-            author: Ada
-            description: Error rates: per application
-            owner-team: Observability
-            custom-notes:
-            // Keep this note.
-            """)
+        #expect(NrqlCellSource.value("author", in: document.cells[0].editorText) == "Ada")
+        #expect(NrqlCellSource.value("description", in: document.cells[0].editorText) == "Error rates: per application")
+        #expect(NrqlCellSource.value("owner-team", in: document.cells[0].editorText) == "Observability")
+        #expect(document.cells[0].editorText.contains("# Keep this note."))
+        #expect(document.text.hasPrefix("---\n"))
         #expect(try document.connection.get() == NrqlConnection())
         let reopened = NRQL_EditorDocument(text: document.text)
         #expect(reopened.cells[0].editorText == document.cells[0].editorText)
@@ -832,8 +866,8 @@ struct NrqlDocumentCellTests {
     }
 
     @Test func executionReadsPendingConfigEditsBeforeDocumentDebounce() throws {
-        let document = NRQL_EditorDocument(text: "```config\napi-key: Old\naccounts: 1\n```")
-        document.cells[0].query.text = "```config\napi-key: New\naccounts: 2\n```"
+        let document = NRQL_EditorDocument(text: "---\napi-key: Old\naccounts: 1\n---")
+        document.cells[0].query.text = "---\napi-key: New\naccounts: 2\n---"
         #expect(try document.connection.get() == NrqlConnection(apiKeyName: "New", accountIds: [2]))
     }
 
@@ -884,12 +918,12 @@ struct NrqlConnectionTests {
         "/***\napi-key: Work\n***/\n/***\naccounts: 123\n***/"
     ])
     func documentSettingsRejectCommentWrappers(_ body: String) {
-        let document = NRQL_EditorDocument(text: "```config\n\(body)\n```")
+        let document = NRQL_EditorDocument(text: "---\n\(body)\n---")
         #expect(throws: NrqlConnection.ConfigurationError.self) { try document.connection.get() }
     }
 
     @Test func parsesRoutingAlongsideChartSettingsAndInheritsEachField() throws {
-        let body = "title: Errors: per day\napi-key: Staging\naccounts: 7, 8, 7\nchart: line"
+        let body = "title: 'Errors: per day'\napi-key: Staging\naccounts: 7, 8, 7\nchart: line"
         let connection = try NrqlConnection.parse(body)
         #expect(connection == NrqlConnection(apiKeyName: "Staging", accountIds: [7, 8]))
         let defaults = NrqlConnection(apiKeyName: "Production", accountIds: [1, 2])
@@ -909,9 +943,9 @@ struct NrqlConnectionTests {
         #expect(throws: (any Error).self) { try NrqlConnection.parse(body) }
     }
 
-    @Test func documentConfigAllowsMetadataAndIgnoresLineCommentSettings() throws {
+    @Test func documentConfigAllowsMetadataAndIgnoresYAMLComments() throws {
         let config = try NrqlConnection.parseDocumentConfig(
-            "author: Ada\ndescription: Report: per day\nowner-team: Observability\ncustom:\n// api-key: Ignored\napi-key: Work\n// accounts: 999\naccounts: 123"
+            "author: Ada\ndescription: 'Report: per day'\nowner-team: Observability\ncustom:\n# api-key: Ignored\napi-key: Work\n# accounts: 999\naccounts: 123"
         )
         #expect(config == NrqlConnection(apiKeyName: "Work", accountIds: [123]))
         #expect(try NrqlConnection.parseDocumentConfig("account: 123") == NrqlConnection())
@@ -938,7 +972,7 @@ struct NrqlQueryTests {
     }
 
     @Test func formatTitleOverridesCommentTitle() {
-        let query = NrqlQuery(from: "```cell_config\ntitle: Errors: last day\n```\n```nrql\n// Comment title\nSELECT 1\n```")
+        let query = NrqlQuery(from: "```cell_config\ntitle: 'Errors: last day'\n```\n```nrql\n// Comment title\nSELECT 1\n```")
 
         #expect(query.title == "Errors: last day")
         #expect(NrqlQuery(from: "// Comment title\nSELECT 1").title == "Comment title")
@@ -1054,9 +1088,9 @@ struct NrqlExportTests {
 
     @Test func exportsResolvedQueriesAndVariablesFromAvailableDependencies() throws {
         let document = NRQL_EditorDocument(text: """
-            ```config
+            ---
             accounts: 42
-            ```
+            ---
 
             ```cell_config
             var: app
@@ -1260,9 +1294,9 @@ struct NrqlInterpolationTests {
 struct NrqlClearResultsTests {
     @Test func clearsResultsAndErrorsWithoutChangingTheDocument() throws {
         var document = NRQL_EditorDocument(text: """
-            ```config
+            ---
             accounts: 12
-            ```
+            ---
 
             # Notes
 
@@ -1355,9 +1389,11 @@ struct NrqlScriptCellTests {
         defer { defaults.removePersistentDomain(forName: suite) }
         defaults.set(try JSONEncoder().encode(NerdgraphProfiles.Settings()), forKey: "nerdgraphProfiles")
         let document = NRQL_EditorDocument(text: """
-            ```config
-            var appName = "Foo"
-            ```
+            ---
+            bindings:
+              - name: appName
+                expression: '"Foo"'
+            ---
 
             ```lua
             return { rows = { { name = config.appName } } }
@@ -1367,7 +1403,7 @@ struct NrqlScriptCellTests {
         await query.getData(defaults: try document.connection.get(), profiles: NerdgraphProfiles(defaults: defaults))
         #expect(query.errorMessage == nil)
         #expect(query.resultContainer?.data.first?.stringFields["name"] == "Foo")
-        document.cells[0].query.text = "```config\nvar appName = \"Bar\"\n```"
+        document.cells[0].query.text = "---\nbindings:\n  - name: appName\n    expression: '\"Bar\"'\n---"
         #expect(document.staleCellIds(profiles: .init()) == [document.cells[1].id])
     }
 
@@ -1382,7 +1418,7 @@ struct NrqlScriptCellTests {
             forKey: "nerdgraphProfiles"
         )
         let profiles = NerdgraphProfiles(defaults: defaults)
-        let prefix = explicitConfig ? "```config\naccounts: 23, 11\n```\n\n" : ""
+        let prefix = explicitConfig ? "---\naccounts: 23, 11\n---\n\n" : ""
         let document = NRQL_EditorDocument(text: prefix + """
             ```lua
             return { rows = { { account = config.accounts[1], key = config.api_key } } }
@@ -1520,9 +1556,12 @@ struct NrqlCellActionTests {
     @Test func duplicatesNerdgraphBindingsWithoutChangingExpressionsOrVariables() throws {
         var document = NRQL_EditorDocument(text: """
             ```cell_config
-            var: response
-            var: entity = data.actor.entities[1]
-            var: count = #data.actor.entities
+            var: 'response'
+            bindings:
+              - name: 'entity'
+                expression: 'data.actor.entities[1]'
+              - name: 'count'
+                expression: '#data.actor.entities'
             ```
             ```graphql
             query($id: Int!) { actor { user { name } } }
@@ -1542,7 +1581,7 @@ struct NrqlCellActionTests {
     }
 
     @Test func duplicatesMarkdownAndPendingCodeButNotDocumentDefaults() {
-        var document = NRQL_EditorDocument(text: "```config\nauthor: Ada\n```\n\n# Notes\n\n```lua\n-- Title\nreturn 1\n```")
+        var document = NRQL_EditorDocument(text: "---\nauthor: Ada\n---\n\n# Notes\n\n```lua\n-- Title\nreturn 1\n```")
         #expect(!document.canPerform(.duplicate, on: document.cells[0].id))
         document.perform(.duplicate, on: document.cells[0].id)
         #expect(document.cells.count == 3)
@@ -1635,9 +1674,11 @@ struct NrqlCellActionTests {
 struct MarkdownParserTests {
     @MainActor @Test func markdownInterpolatesConfigAndResultsWithoutChangingSource() throws {
         let document = NRQL_EditorDocument(text: """
-            ```config
-            var appName = "Foo"
-            ```
+            ---
+            bindings:
+              - name: appName
+                expression: '"Foo"'
+            ---
 
             # {{ config.appName }}
 
@@ -1774,10 +1815,10 @@ struct NrqlConnectionStaleTests {
     @Test(arguments: [true, false])
     func documentChangesOnlyInvalidateInheritedFieldsAndTheirReaders(changingKey: Bool) throws {
         var document = NRQL_EditorDocument(text: """
-            ```config
+            ---
             api-key: Production
             accounts: 10
-            ```
+            ---
 
             ```cell_config
             var: source
@@ -1846,9 +1887,9 @@ struct NrqlConnectionStaleTests {
     @Test(arguments: [true, false])
     func pendingEditorChangesInvalidateCachedResults(editingDocumentConfig: Bool) throws {
         let document = NRQL_EditorDocument(text: """
-            ```config
+            ---
             api-key: Production
-            ```
+            ---
 
             ```cell_config
             var: source
@@ -1864,7 +1905,7 @@ struct NrqlConnectionStaleTests {
         try cacheResults(in: document, profiles: profiles)
         let text = document.text
         if editingDocumentConfig {
-            document.cells[0].query.text = "```config\napi-key: Staging\n```"
+            document.cells[0].query.text = "---\napi-key: Staging\n---"
         } else {
             document.cells[1].query.text = "```cell_config\nvar: source\naccounts: 30\n```\n```nrql\nSELECT 1\n```"
         }

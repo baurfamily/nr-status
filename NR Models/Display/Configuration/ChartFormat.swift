@@ -55,18 +55,17 @@ struct ChartFormat: Equatable, Hashable {
 
     static func parseMetadata(_ body: String) -> ChartFormat {
         var format = ChartFormat()
-        for line in body.split(whereSeparator: \.isNewline) {
-            // only the first colon separates key from value, so titles can contain colons
-            guard let colon = line.firstIndex(of: ":") else { continue }
-            let key = line[..<colon].trimmingCharacters(in: .whitespaces).lowercased()
-            let rawValue = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
+        guard let yaml = try? ConfigurationYAML(body) else { return format }
+        for field in yaml.fields {
+            let key = field.key
+            let rawValue = (try? yaml.value(key)) ?? ""
             let value = rawValue.lowercased()
 
             switch key {
             case "title":
                 format.title = rawValue.isEmpty ? nil : rawValue
             case "var":
-                format.name = rawValue.isEmpty ? nil : rawValue
+                format.name = (try? yaml.scalarValue("var")).flatMap { $0.isEmpty ? nil : $0 }
             case "chart":
                 format.hidesChart = value == "none"
                 format.showsJSON = value == "json"

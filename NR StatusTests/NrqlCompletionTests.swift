@@ -108,6 +108,13 @@ struct NerdgraphCompletionTests {
         #expect(keys.items.map(\.name) == ["var"])
         #expect(keys.items.first?.insertText == "var: ")
         #expect(keys.range == NSRange(location: text.utf16.count - 2, length: 2))
+        for graphql in [true, false] {
+            let bindings = await NrqlCompletion.items(
+                text: "bin", location: 3, metadata: NrqlCompletionTests.StubMetadata(),
+                configuration: true, graphql: graphql
+            )
+            #expect(bindings.items.map(\.insertText) == ["bindings: "])
+        }
         let value = "title: Details\napi-key: Production U"
         let names = await NrqlCompletion.items(
             text: value, location: value.utf16.count, metadata: NrqlCompletionTests.StubMetadata(),

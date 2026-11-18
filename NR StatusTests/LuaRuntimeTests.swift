@@ -40,9 +40,13 @@ struct LuaRuntimeTests {
 
     @Test func documentVariablesAreConfigFieldsOnly() throws {
         let config = try NrqlConnection.parseDocumentConfig("""
-            var appName = "Foo"
-            var: title = config.appName .. " report"
-            var filter = { enabled = true, ids = {42, 17} }
+            bindings:
+              - name: appName
+                expression: '"Foo"'
+              - name: title
+                expression: config.appName .. " report"
+              - name: filter
+                expression: '{ enabled = true, ids = {42, 17} }'
             """)
         let value = try LuaRuntime.run(
             "return { name = config.appName, title = config.title, id = config.filter.ids[1], enabled = config.filter.enabled }",
@@ -60,11 +64,39 @@ struct LuaRuntimeTests {
         }
     }
 
-    @Test(arguments: ["var:", "var accounts = {}", "var api_key = {}", "var bad-name = 1", "var appName =", "var appName = 1\nvar appName = 2"])
-    func rejectsInvalidDocumentDeclarations(_ declaration: String) {
-        #expect(throws: NrqlConnection.ConfigurationError.self) {
-            try NrqlConnection.parseDocumentConfig(declaration)
+    @Test(arguments: [
+        "bindings:",
+        "bindings: [appName]",
+        "bindings: {appName: 1}",
+        "bindings: [{name: accounts, expression: '{}'}]",
+        "bindings: [{name: api_key, expression: '{}'}]",
+        "bindings: [{name: bad-name, expression: 1}]",
+        "bindings: [{name: return, expression: 1}]",
+        "bindings: [{name: appName}]",
+        "bindings: [{name: appName, expression: ''}]",
+        "bindings: [{name: appName, expression: 1, extra: 2}]",
+        "bindings: [{name: appName, expression: 1}, {name: appName, expression: 2}]",
+        "var: appName = 1"
+    ])
+    func rejectsInvalidDocumentBindings(_ configuration: String) {
+        #expect(throws: (any Error).self) {
+            try NrqlConnection.parseDocumentConfig(configuration)
         }
+    }
+
+    @Test func documentBindingsCanBeEmptyAndUseTheSameRecordsAsGraphQL() throws {
+        #expect(try NrqlConnection.parseDocumentConfig("bindings: []").variables.isEmpty)
+        let configuration = """
+            bindings:
+              - name: threshold
+                expression: 10
+              - name: doubled
+                expression: config.threshold * 2
+            """
+        let documentBindings = try NrqlConnection.parseDocumentConfig(configuration).variables
+        let cell = NerdgraphCellSource(stored: "```cell_config\n\(configuration)\n```\n```graphql\n{}\n```")
+        #expect(try cell.resultBindings() == documentBindings)
+        #expect(try LuaRuntime.run("return config.doubled", config: .init(variables: documentBindings)).value.intValue == 20)
     }
 
     @Test func sandboxRemovesIOAndLoad() throws {

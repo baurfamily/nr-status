@@ -46,18 +46,22 @@ struct LuaCompletionTests {
                 "entities": .array([.object(["name": .string("Checkout")])])
             ])])])
         )
-        for prefix in ["name = ", "var: name = "] {
+        for prefix in ["    expression: ", "    expression: '", "    expression: \""] {
             let text = prefix + "data.actor.entities[1].na"
             let found = LuaCompletion.bindingItems(text: text, location: text.utf16.count, scope: scope)
             #expect(found.items.map(\.name) == ["name"])
             #expect((text as NSString).substring(with: found.range) == "na")
         }
-        let text = "response\nentity = da"
+        let text = "bindings:\n  - name: entity\n    expression: da"
         #expect(LuaCompletion.bindingItems(text: text, location: text.utf16.count, scope: scope).items.map(\.name) == ["data"])
         #expect(LuaCompletion.bindingItems(text: "name", location: 4, scope: scope).items.isEmpty)
-        let prior = "entity = results.pre"
+        let prior = "    expression: results.pre"
         #expect(LuaCompletion.bindingItems(text: prior, location: prior.utf16.count, scope: scope).items.map(\.name) == ["previous"])
         #expect(!names("da|").contains("data"))
+        let document = "    expression: config.app"
+        #expect(LuaCompletion.bindingItems(
+            text: document, location: document.utf16.count, scope: .init(variables: ["appName"])
+        ).items.map(\.name) == ["appName"])
     }
 
     @Test func offersResultNamesAfterResults() {

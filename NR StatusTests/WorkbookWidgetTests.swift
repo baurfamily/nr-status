@@ -6,9 +6,13 @@ struct WorkbookWidgetTests {
     @Test func responseFieldsNamedResultsAreNotWidgetDependencies() throws {
         let document = NRQL_EditorDocument(text: """
             ```cell_config
-            var: entities = data.actor.entitySearch.results.entities
-            var: first = data.actor.entitySearch . results["entities"][1]
-            var: count = #data.actor.entitySearch.results[1]
+            bindings:
+              - name: 'entities'
+                expression: 'data.actor.entitySearch.results.entities'
+              - name: 'first'
+                expression: 'data.actor.entitySearch . results["entities"][1]'
+              - name: 'count'
+                expression: '#data.actor.entitySearch.results[1]'
             ```
             ```graphql
             { actor { entitySearch(query: "type = 'APPLICATION'") { results { entities { guid } } } } }
@@ -87,9 +91,9 @@ struct WorkbookWidgetTests {
     @Test func oldPublicationsRemainRecoverableWithoutASourceBookmark() throws {
         let id = UUID()
         let text = """
-            ```config
+            ---
             accounts: 42
-            ```
+            ---
 
             ```cell_config
             var: base
@@ -209,9 +213,9 @@ struct WorkbookWidgetTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let registry = WidgetRegistry(directory: directory)
         var document = NRQL_EditorDocument(text: """
-            ```config
+            ---
             description: Bulk publishing
-            ```
+            ---
 
             ```cell_config
             title: Count
@@ -483,11 +487,13 @@ struct WorkbookWidgetTests {
     @MainActor @Test func runsOnlyTransitiveDependenciesAndExpandsMarkdown() async throws {
         let id = UUID()
         let text = """
-            ```config
+            ---
             api-key: Test
             accounts: 7
-            var multiplier = 2
-            ```
+            bindings:
+              - name: multiplier
+                expression: 2
+            ---
 
             ```cell_config
             var: unused

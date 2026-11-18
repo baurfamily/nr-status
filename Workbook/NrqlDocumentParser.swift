@@ -16,7 +16,7 @@ enum NrqlDocumentParser {
         var text: String
     }
 
-    /// Splits text into cells: each ```nrql, ```lua, ```graphql or ```config fence is a cell, and
+    /// Splits text into cells: leading YAML frontmatter and each ```nrql, ```lua or ```graphql fence is a cell, and
     /// whatever lies between them is one Markdown cell (blank lines included).
     /// A ```cell_config fence belongs to the following code or Markdown cell; an adjacent
     /// ```variables fence belongs to the preceding GraphQL cell.
@@ -27,6 +27,14 @@ enum NrqlDocumentParser {
         var inCode = false
         var inProseFence = false
         var attachingToPrevious = false
+
+        var lines = text.components(separatedBy: "\n")
+        if let first = lines.firstIndex(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }),
+           NrqlCellKind.isFrontmatterDelimiter(lines[first]) {
+            let close = lines.indices.first { $0 > first && NrqlCellKind.isFrontmatterEnd(lines[$0]) }
+            blocks.append(lines[first..<(close.map { $0 + 1 } ?? lines.endIndex)].joined(separator: "\n"))
+            lines = close.map { Array(lines[($0 + 1)...]) } ?? []
+        }
 
         func flush() {
             let block = current.joined(separator: "\n").trimmingCharacters(in: .newlines)
@@ -41,7 +49,7 @@ enum NrqlDocumentParser {
             attachingToPrevious = false
         }
 
-        for line in text.components(separatedBy: "\n") {
+        for line in lines {
             if inCode {
                 current.append(line)
                 if NrqlCellKind.isClosingFence(line) {

@@ -64,7 +64,7 @@ The Lua result uses the same table/chart pipeline as NRQL. Binding it as
 | `#results` | Number of currently available exported bindings. |
 | `config.accounts[1]` | First effective document account ID. |
 | `config.api_key` | Saved API key **name**, never the secret key; may be `nil`. |
-| `config.appName` | Document variable declared with, for example, `var appName = "Shop"`. |
+| `config.appName` | Document binding named `appName` in the frontmatter `bindings` array. |
 
 Only named, successfully loaded results enter `results`. Unnamed NRQL/Lua cells
 do not occupy numeric slots; a GraphQL cell can contribute several bindings.
@@ -184,8 +184,10 @@ value:
 
 ````markdown
 ```cell_config
-var: response
-var: entities = data.actor.entitySearch.results.entities
+var: 'response'
+bindings:
+  - name: 'entities'
+    expression: 'data.actor.entitySearch.results.entities'
 ```
 ```graphql
 {
@@ -258,7 +260,7 @@ average across the original events.
 
 `config` reflects effective **document** settings, including inherited defaults,
 not per-cell routing overrides. Its account list is empty when none is set.
-Document variable expressions are evaluated in declaration order, can read
+Document `bindings` expressions are evaluated in array order, can read
 earlier `config` fields, and must produce non-nil JSON-compatible values. They
 are not bare globals and are evaluated before `results` is installed.
 Changes to `config` during a run do not change document settings.

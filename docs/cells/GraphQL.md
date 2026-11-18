@@ -10,8 +10,10 @@ default to `{}`. Together they are one cell.
 ```cell_config
 title: Account details
 api-key: Production
-var: response
-var: accountName = data.actor.account.name
+var: 'response'
+bindings:
+  - name: 'accountName'
+    expression: 'data.actor.account.name'
 chart: bindings
 ```
 ```graphql
@@ -36,11 +38,16 @@ query AccountDetails($accountId: Int!) {
 | `title` | Cell heading |
 | `api-key` / `api_key` | Saved key name override |
 | `var: name` | Bind the complete response, including `data`, `errors`, and `extensions` |
-| `var: name = expression` | Bind a Lua extraction expression evaluated against this response |
+| `bindings` | An array of `{ name, expression }` mappings for Lua extractions |
 | `chart` | Default/`json`, `bindings`, or `none` |
 | `query: hide` | Collapse code on open and omit it from HTML/PDF exports |
 
-Multiple `var:` lines are allowed. Extraction expressions can read `data`,
+`var` is optional and names the complete response; it is not a list or an
+expression. Use `bindings` for individual extracted values, with one `name` and
+one nonempty Lua `expression` per entry. You can use either option or both.
+Extraction names must be Lua identifiers and unique across `var` and the array.
+Quote expressions starting with `#`, such as `expression: "#data.actor.entities"`.
+Expressions can read `data`,
 `errors`, `extensions`, document `config`, and other cells' `results`.
 Use Lua's **1-based** indexes, even though the JSON viewer labels arrays from
 zero. Later cells read `results.response.data...` or `results.accountName`.

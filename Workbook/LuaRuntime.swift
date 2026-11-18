@@ -32,18 +32,30 @@ struct LuaRuntime {
                 && !keywords.contains(name)
         }
 
-        static func parse(_ text: String, requiresExpression: Bool = false) throws -> Variable {
-            let parts = text.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
-            let name = parts.first?.trimmingCharacters(in: .whitespaces) ?? ""
-            let isIdentifier = Self.isIdentifier(name)
-            guard !name.isEmpty, !requiresExpression || isIdentifier else {
-                throw NrqlConnection.ConfigurationError(message: "Invalid variable name '\(name)'.")
-            }
-            let expression = parts.count == 2 ? parts[1].trimmingCharacters(in: .whitespaces) : nil
-            guard expression != "", !requiresExpression || expression != nil else {
-                throw NrqlConnection.ConfigurationError(message: "Variable '\(name)' requires an expression after '='.")
+        static func parse(_ record: [String: String]) throws -> Variable {
+            let label = record["name"].flatMap { $0.isEmpty ? nil : " '\($0)'" } ?? ""
+            guard Set(record.keys) == ["name", "expression"],
+                  let name = record["name"]?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  isIdentifier(name),
+                  let expression = record["expression"]?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !expression.isEmpty else {
+                throw NrqlConnection.ConfigurationError(
+                    message: "Binding\(label) requires a valid 'name' and a nonempty Lua 'expression'."
+                )
             }
             return Variable(name: name, expression: expression)
+        }
+
+        static func editableBindings(in metadata: String) -> [Variable] {
+            ((try? ConfigurationYAML(metadata).mappings("bindings")) ?? []).map {
+                .init(name: $0["name"] ?? "", expression: $0["expression"] ?? "")
+            }
+        }
+
+        static func updatingBindings(_ bindings: [Variable], in metadata: String) throws -> String {
+            try ConfigurationYAML(metadata).updating("bindings", mappings: bindings.map {
+                [("name", $0.name), ("expression", $0.expression ?? "")]
+            })
         }
     }
 

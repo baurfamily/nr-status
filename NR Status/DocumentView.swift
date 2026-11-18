@@ -465,7 +465,7 @@ struct CellView: View {
             if isFocused { followGraphqlDocumentation() }
         }
         .onChange(of: cell.isCollapsed) {
-            if cell.kind == .config { showsChartSettings = !cell.isCollapsed }
+            if cell.kind == .config && cell.isCollapsed { showsChartSettings = false }
         }
         .overlay(
             RoundedRectangle(cornerRadius: 8)
@@ -498,6 +498,8 @@ struct CellView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
+            } else if cell.kind == .config && !cell.isCollapsed {
+                DocumentConfigurationSummaryView(text: cell.configurationText)
             } else if isRenderedMarkdown {
                 renderedMarkdown
             } else if cell.kind != .config && (!cell.isCollapsed || cell.kind == .markdown) {
@@ -731,6 +733,7 @@ struct CellView: View {
     private var header: some View {
         HStack {
             if cell.kind == .config {
+                collapseButton
                 Text("Document Config").font(.headline)
                 Spacer()
                 configurationButton

@@ -1,14 +1,16 @@
-```config
+---
 author: Me
 description: A few examples of ways to use NR Markdown notebooks
-var: main_app = "TaT (production)"
-```
+bindings:
+  - name: main_app
+    expression: '"TaT (production)"'
+---
 
 ```cell_config
 title: Busiest app, last week
 var: top_app
 chart: billboard
-attributes: style(circular)
+attributes: [style(circular)]
 height: 8
 ```
 ```nrql
@@ -40,7 +42,7 @@ LIMIT 4
 title: Metrics for the busiest app
 var: busiest_metrics
 chart: line
-attributes: donut, lines, smoothed
+attributes: [donut, lines, smoothed]
 ```
 ```nrql
 FROM Metric
@@ -62,7 +64,7 @@ The current period needs at least two distinct time buckets. The chart uses unsm
 title: Metrics for the busiest app with regression
 query: hide
 chart: line
-attributes: lines, smoothed
+attributes: [lines, smoothed]
 ```
 ```lua
 local source = assert(results.busiest_metrics, "Run the metrics query first")
@@ -162,15 +164,20 @@ emit({
 
 ## Running Nerdgraph queries
 
-We can run arbitrary Nerdgraph queries with a light GraphQL editor. Binding of results can be done generically with a `var: var_name` keyword or can be done with a short lua `key = value` accessor. 
+We can run arbitrary Nerdgraph queries with a light GraphQL editor. Use `var` to name the complete response and a `bindings` array to extract individual values with Lua expressions.
 
 ```cell_config
 title: Entity Search
-var: entity_search
-var: entities = data.actor.entitySearch.results.entities
-var: account_name = data.actor.account.name
-var: key = data.actor.entitySearch.results.entities[1].tags[1].key
-var: tags = data.actor.entitySearch.results.entities[1].tags[6]
+var: 'entity_search'
+bindings:
+  - name: 'entities'
+    expression: 'data.actor.entitySearch.results.entities'
+  - name: 'account_name'
+    expression: 'data.actor.account.name'
+  - name: 'key'
+    expression: 'data.actor.entitySearch.results.entities[1].tags[1].key'
+  - name: 'tags'
+    expression: 'data.actor.entitySearch.results.entities[1].tags[6]'
 chart: bindings
 ```
 ```graphql

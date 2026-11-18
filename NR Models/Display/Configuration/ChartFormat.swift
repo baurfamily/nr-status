@@ -28,6 +28,7 @@ struct ChartFormat: Equatable, Hashable {
     var hidesQuery = false
     var showsJSON = false
     var showsBindings = false
+    var showsConsole = false
     var attributes: Set<String>?
 
     /// The attribute names each chart type understands; `apply` is the source of truth for what they do.
@@ -70,6 +71,7 @@ struct ChartFormat: Equatable, Hashable {
                 format.hidesChart = value == "none"
                 format.showsJSON = value == "json"
                 format.showsBindings = value == "bindings"
+                format.showsConsole = value == "console"
                 format.type = ChartType(rawValue: value)
             case "query":
                 format.hidesQuery = value == "hide"

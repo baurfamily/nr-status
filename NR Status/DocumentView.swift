@@ -955,7 +955,11 @@ struct CellResultView: View {
     }
 
     @ViewBuilder private var content: some View {
-        if let json = query.displayedJSON {
+        if let output = query.displayedConsole {
+            ConsoleOutputView(lines: output)
+                .padding(8)
+                .background(.quaternary.opacity(0.5))
+        } else if let json = query.displayedJSON {
             switch json {
             case .success(let value):
                 JSONResultView(value: value, onAddBinding: onAddBinding)
@@ -998,6 +1002,11 @@ struct CellResultView: View {
                     .foregroundStyle(.red)
                     .textSelection(.enabled)
             }
+        case .consoleLoaded:
+            Text(query.format?.hidesChart == true
+                 ? "Console output hidden"
+                 : "No result data. Choose Console to view print output.")
+                .font(.caption).foregroundStyle(.secondary)
         case .failed:
             EmptyView()
         }

@@ -84,6 +84,9 @@ struct WorkbookWidgetView: View {
             } else if let output = entry.output {
                 if let markdown = output.markdown {
                     MarkdownView(text: markdown)
+                } else if let console = output.console {
+                    Text(output.title).font(.headline).lineLimit(1)
+                    ConsoleOutputView(lines: console)
                 } else if let results = output.resultContainer {
                     Text(output.title).font(.headline).lineLimit(1)
                     ConfigurableChartView(resultsContainer: results, format: output.configuration.map(ChartFormat.parseMetadata))
@@ -103,7 +106,7 @@ struct WorkbookWidgetView: View {
                 Image(systemName: entry.isConfigured ? "exclamationmark.triangle" : "doc.richtext")
                 Text(entry.isConfigured ? "Unable to load widget" : "Choose a published widget")
                     .font(.headline)
-                Text(entry.error ?? "Publish a chart or Markdown cell in NR Status, then choose it in Edit Widget.")
+                Text(entry.error ?? "Publish a chart, console, or Markdown cell in NR Status, then choose it in Edit Widget.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer(minLength: 0)
@@ -124,7 +127,7 @@ struct WorkbookWidget: Widget {
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Workbook")
-        .description("A chart or Markdown cell published from an NR Markdown workbook.")
+        .description("A chart, console, or Markdown cell published from an NR Markdown workbook.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }

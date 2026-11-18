@@ -1024,6 +1024,31 @@ struct NrqlQueryTests {
 
 @MainActor
 struct NrqlExportTests {
+    @Test func exportsConsoleAsEscapedTextInsteadOfReturnedData() async throws {
+        let document = NRQL_EditorDocument(text: """
+            ```cell_config
+            title: Console report
+            chart: console
+            query: hide
+            ```
+            ```lua
+            print("Status <ready> & waiting")
+            print("Next line")
+            return { rows = { { HIDDEN_DATA = 42 } } }
+            ```
+            """)
+        await document.cells[0].query.getData()
+        #expect(document.cells[0].query.errorMessage == nil)
+        let html = NrqlExport.html(for: document)
+        #expect(html.contains("<pre class=\"console\">Status &lt;ready&gt; &amp; waiting\nNext line</pre>"))
+        #expect(!html.contains("<table>") && !html.contains("data:image/png"))
+        #expect(!html.contains("HIDDEN_DATA") && !html.contains("print("))
+        let pdf = try #require(NrqlExport.pdf(for: document))
+        let text = try #require(PDFDocument(data: pdf)?.string)
+        #expect(text.contains("Status <ready> & waiting") && text.contains("Next line"))
+        #expect(!text.contains("HIDDEN_DATA") && !text.contains("print("))
+    }
+
     @Test func exportsConfiguredChartHeightAndFitsTallChartsOnPdfPages() throws {
         let document = NRQL_EditorDocument(text: """
             ```cell_config
@@ -1382,6 +1407,77 @@ struct NrqlClearResultsTests {
 
 struct NrqlScriptCellTests {
     private let script = "```cell_config\nvar: x\n```\n```lua\n-- Compare\n\nemit({ rows = { { facet = 'A', count = results.a.rows[1].count } } })\n```"
+
+    @Test func consoleRunsPrintOnlyScriptsAndReplacesOrClearsOutput() async {
+        let query = NrqlQuery(from: """
+            ```cell_config
+            chart: console
+            ```
+            ```lua
+            print("First")
+            print("Count", 3)
+            print("")
+            print("Nested\\nline")
+            ```
+            """)
+        await query.getData()
+        #expect(query.errorMessage == nil && query.hasResult)
+        #expect(query.loadedAt != nil && query.resultContainer == nil)
+        #expect(query.displayedConsole == ["First", "Count\t3", "", "Nested\nline"])
+        #expect(query.namedResults.isEmpty && query.displayedJSON == nil)
+        query.text = query.text.replacingOccurrences(of: "First", with: "Updated")
+        await query.getData()
+        #expect(query.displayedConsole?.first == "Updated")
+        #expect(query.printedOutput?.count == 4)
+        await query.clearResults()
+        #expect(query.printedOutput == nil && query.displayedConsole == nil)
+        #expect(!query.hasResult && query.loadedAt == nil)
+    }
+
+    @Test(arguments: ["billboard", "json", "none", "console"])
+    func printDoesNotChangeReturnedBindingsOrOtherDisplayModes(_ chart: String) async throws {
+        let query = NrqlQuery(from: """
+            ```cell_config
+            var: report
+            chart: \(chart)
+            ```
+            ```lua
+            print("Diagnostic", 7)
+            emit({ rows = { { count = 7 } } })
+            return { rows = { { count = 9 } } }
+            ```
+            """)
+        await query.getData()
+        #expect(query.errorMessage == nil && query.hasResult)
+        #expect(query.resultContainer?.data.first?.numberFields["count"] == 7)
+        #expect(query.printedOutput == ["Diagnostic\t7"])
+        #expect(query.displayedConsole == (chart == "console" ? ["Diagnostic\t7"] : nil))
+        #expect(try LuaRuntime.run("return results.report.rows[1].count", results: query.namedResults).value.intValue == 7)
+    }
+
+    @Test func consoleRetainsOutputBeforeAnErrorAndHandlesNoOutput() async {
+        let query = NrqlQuery(from: "```cell_config\nchart: console\n```\n```lua\nprint('Before'); error('Stopped')\n```")
+        await query.getData()
+        #expect(query.errorMessage?.contains("Stopped") == true)
+        #expect(query.displayedConsole == ["Before"])
+        #expect(!query.hasResult && query.namedResults.isEmpty)
+        query.text = "```cell_config\nchart: console\n```\n```lua\n-- No output\n```"
+        await query.getData()
+        #expect(query.errorMessage == nil && query.hasResult)
+        #expect(query.displayedConsole == [])
+        query.text = "```lua\nprint('No chart data')\n```"
+        await query.getData()
+        #expect(query.errorMessage != nil && !query.hasResult)
+        #expect(query.displayedConsole == nil)
+    }
+
+    @Test(arguments: ["nrql", "graphql"])
+    func consoleRejectsNonLuaCellsBeforeSendingAQuery(_ fence: String) async {
+        let query = NrqlQuery(from: "```cell_config\nchart: console\n```\n```\(fence)\n{}\n```")
+        await query.getData()
+        #expect(query.errorMessage == "Console display is only available for Lua cells.")
+        #expect(query.executedNrql == nil && !query.hasResult)
+    }
 
     @Test func documentVariablesAreExecutedAndTrackedForStaleness() async throws {
         let suite = "NR Status document globals test \(UUID().uuidString)"

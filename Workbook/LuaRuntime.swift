@@ -95,15 +95,16 @@ struct LuaRuntime {
 
     static func run(
         _ script: String, results: [PriorResult] = [], config: NrqlConnection = NrqlConnection(),
-        response: JSONValue? = nil
+        response: JSONValue? = nil, onOutput: (([String]) -> Void)? = nil
     ) throws -> Outcome {
         runLock.lock()
         defer { runLock.unlock() }
-        return try runLocked(script, results: results, config: config, response: response)
+        return try runLocked(script, results: results, config: config, response: response, onOutput: onOutput)
     }
 
     private static func runLocked(
-        _ script: String, results: [PriorResult], config: NrqlConnection, response: JSONValue?
+        _ script: String, results: [PriorResult], config: NrqlConnection, response: JSONValue?,
+        onOutput: (([String]) -> Void)?
     ) throws -> Outcome {
         let engine = try LuaEngine(
             configuration: LuaEngineConfiguration(sandboxed: true, vmMemoryLimit: memoryLimit)
@@ -116,6 +117,7 @@ struct LuaRuntime {
             var output: [String] = []
         }
         let collected = Collected()
+        defer { onOutput?(collected.output) }
 
         let resultsTable = LuaValue.table([
             "list": .array(results.map(\.value)),

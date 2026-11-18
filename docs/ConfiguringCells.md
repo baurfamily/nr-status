@@ -32,7 +32,7 @@ configure a cell before running it.
 | Bindings (GraphQL) | Add/remove extractions with separate Name and Lua expression fields |
 | Account IDs | Override NRQL routing for this cell |
 | Hide query on open and export | Start code collapsed; exclude code from HTML/PDF |
-| Display | Automatic chart, explicit chart type, JSON, Hidden, or GraphQL Bindings |
+| Display | Automatic chart, explicit chart type, JSON, Hidden, Lua Console, or GraphQL Bindings |
 | Chart height (lines) | Positive whole display lines; leave blank for Auto |
 
 **Settings** and **Text** edit the same YAML `cell_config`; changes are saved in

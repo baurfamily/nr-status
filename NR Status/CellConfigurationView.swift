@@ -119,7 +119,7 @@ struct CellConfigurationView: View {
                 .accessibilityIdentifier("cell-query-visibility")
                 .help("Sets the opening and export visibility without changing the current expand/collapse state.")
                 displaySelector
-                if cell.kind != .nerdgraph && chart != "json" && chart != "none" {
+                if cell.kind != .nerdgraph && !["json", "none", "console"].contains(chart) {
                     chartSettings
                 }
             }
@@ -211,6 +211,9 @@ struct CellConfigurationView: View {
                     }
                 }
                 displayOption("JSON", value: "json")
+                if cell.kind == .lua {
+                    displayOption("Console", value: "console")
+                }
                 if cell.kind == .nerdgraph {
                     displayOption("Bindings", value: "bindings")
                 }
@@ -343,6 +346,9 @@ struct CellConfigurationView: View {
                 _ = try NrqlConnection.parseDocumentConfig(cell.configurationText)
             } else {
                 _ = try NrqlConnection.parse(cell.configurationText)
+                if chart == "console" && cell.kind != .lua {
+                    return "Console display is only available for Lua cells."
+                }
                 if cell.kind == .nerdgraph { _ = try NerdgraphCellSource(stored: cell.text).resultBindings() }
                 let height = NrqlCellSource.value("height", in: cell.configurationText)
                 if !height.isEmpty && height.lowercased() != "auto" && format.heightInLines == nil {

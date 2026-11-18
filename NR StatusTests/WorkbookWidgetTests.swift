@@ -432,6 +432,29 @@ struct WorkbookWidgetTests {
         }
     }
 
+    @MainActor @Test func consoleWidgetsRunPrintOnlyScriptsAndCachePlainText() async throws {
+        let id = UUID()
+        let widget = publication("""
+            ```cell_config
+            chart: console
+            widget-id: \(id)
+            ```
+            ```lua
+            print("Status", "Ready")
+            print("<plain text>")
+            ```
+            """, target: id)
+        let output = try await run(widget, withProfile: false)
+        #expect(output.console == ["Status\tReady", "<plain text>"])
+        #expect(output.chart == nil && output.markdown == nil)
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let registry = WidgetRegistry(directory: directory)
+        try registry.save(widget)
+        try registry.cache(output, for: widget)
+        #expect(try registry.cachedOutput(for: widget)?.console == output.console)
+    }
+
     @MainActor @Test func sharedRegistryPersistsPublishedWorkbooks() async throws {
         let id = UUID()
         var widget = publication("```cell_config\nwidget-id: \(id)\n```\n# Ready", target: id)

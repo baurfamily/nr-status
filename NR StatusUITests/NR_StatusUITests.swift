@@ -353,6 +353,52 @@ final class NR_StatusUITests: XCTestCase {
     }
 
     @MainActor
+    func testLuaConsoleDisplaysPrintOutputAndCanBeSelectedInSettings() throws {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("lua-console-\(UUID().uuidString).nrmd")
+        try """
+            ```cell_config
+            title: Console report
+            chart: console
+            ```
+            ```lua
+            print("Service", "Checkout")
+            print("Count: 42")
+            ```
+            """.write(to: file, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: file) }
+        let app = XCUIApplication()
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES"]
+        app.launch()
+        app.typeKey("o", modifierFlags: .command)
+        app.typeKey("g", modifierFlags: [.command, .shift])
+        app.typeText(file.path)
+        app.typeKey(.return, modifierFlags: [])
+        app.typeKey(.return, modifierFlags: [])
+        let window = app.windows[file.lastPathComponent]
+        XCTAssertTrue(window.waitForExistence(timeout: 5))
+        window.buttons["Run"].firstMatch.click()
+        let console = window.descendants(matching: .any)["lua-console-output"].firstMatch
+        XCTAssertTrue(console.waitForExistence(timeout: 5))
+        XCTAssertEqual(console.value as? String, "Service\tCheckout\nCount: 42", console.debugDescription)
+        window.buttons["Configure Cell"].firstMatch.click()
+        XCTAssertFalse(window.textFields["cell-chart-height"].exists)
+        let display = window.descendants(matching: .any)["cell-display-selector"].firstMatch
+        display.click()
+        app.menuItems["JSON"].click()
+        XCTAssertFalse(console.exists)
+        display.click()
+        app.menuItems["Console"].click()
+        XCTAssertTrue(console.waitForExistence(timeout: 5))
+        XCTAssertEqual(console.value as? String, "Service\tCheckout\nCount: 42", console.debugDescription)
+        window.buttons["Close"].firstMatch.click()
+        window.buttons["Clear Results"].click()
+        XCTAssertFalse(console.exists)
+        window.buttons["Run"].firstMatch.click()
+        XCTAssertTrue(console.waitForExistence(timeout: 5))
+        XCTAssertEqual(console.value as? String, "Service\tCheckout\nCount: 42", console.debugDescription)
+    }
+
+    @MainActor
     func testQueryBuilderOffersAnAccountPicker() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-ApplePersistenceIgnoreState", "YES"]

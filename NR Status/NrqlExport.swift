@@ -74,6 +74,7 @@ enum NrqlExport {
             )
         }
         guard cell.query.format?.hidesChart != true, cell.query.format?.showsJSON != true,
+              cell.query.format?.showsConsole != true,
               let container = cell.query.resultContainer else { return nil }
         let config = ChartConfiguration(resultContainer: container)
         cell.query.format?.apply(to: config)
@@ -166,6 +167,7 @@ enum NrqlExport {
 
     private static func chartPNG(for cell: NrqlCell) -> Data? {
         guard cell.query.format?.hidesChart != true, cell.query.format?.showsJSON != true,
+              cell.query.format?.showsConsole != true,
               cell.query.resultContainer != nil else { return nil }
         let renderer = ImageRenderer(content: chartView(for: cell, width: 700))
         renderer.scale = 2
@@ -202,7 +204,9 @@ enum NrqlExport {
             if let message = cell.query.errorMessage {
                 section += "<p class=\"error\">\(escape(message))</p>\n"
             }
-            if let json = cell.query.displayedJSON {
+            if let output = cell.query.displayedConsole {
+                section += "<pre class=\"console\">\(escape(output.isEmpty ? "No output." : output.joined(separator: "\n")))</pre>\n"
+            } else if let json = cell.query.displayedJSON {
                 do {
                     section += "<pre>\(escape(try json.get().encodedText(pretty: true)))</pre>\n"
                 } catch {
@@ -347,7 +351,9 @@ enum NrqlExport {
                     Text(message).foregroundStyle(.red)
                 }
             }
-            if let json = cell.query.displayedJSON {
+            if let output = cell.query.displayedConsole {
+                ConsoleOutputView(lines: output)
+            } else if let json = cell.query.displayedJSON {
                 switch json.flatMap({ value in Result { try value.encodedText(pretty: true) } }) {
                 case .success(let text):
                     Text(text).font(.system(.body, design: .monospaced))
@@ -362,7 +368,8 @@ enum NrqlExport {
                 }
                 let room = 560 - CGFloat(queryLines) * 16
                 pdfTable(table, maxRows: max(Int(room / pdfRowHeight) - 3, 3))
-            } else if cell.query.resultContainer != nil, cell.query.format?.hidesChart != true {
+            } else if cell.query.resultContainer != nil, cell.query.format?.hidesChart != true,
+                      cell.query.format?.showsConsole != true {
                 chartView(for: cell, width: 532)
             } else if let errors = cell.query.jsonResult?.graphQLErrors {
                 ForEach(Array(errors.enumerated()), id: \.offset) { _, message in

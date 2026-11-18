@@ -32,5 +32,8 @@ leading `-- Comment` supplies the heading.
 
 Supply a result with `return value` or `emit(value)`; an emitted value takes
 precedence. For chartable data, return a table with `rows`, as above.
+For a printed report, choose **Display > Console** or set `chart: console` and
+call `print(...)`. Print-only scripts need no return value. See
+[Console output](../LuaScripting.md#console-output) for behavior and examples.
 See the [Lua guide](../LuaScripting.md) for actual result shapes, helpers,
 transformations, and runtime limits.

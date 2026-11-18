@@ -2,13 +2,13 @@
 
 [Documentation](README.md)
 
-Publish a chart or Markdown cell from a workbook, then select that publication
+Publish a chart, Lua console, or Markdown cell from a workbook, then select that publication
 in a macOS **Workbook** widget.
 
 ## Publish one cell
 
 1. Save your workbook so the publication can record its source location.
-2. Open the chart or Markdown cell's menu and choose **Publish as Widget…**.
+2. Open the cell's menu and choose **Publish as Widget…**.
 3. Give it a name and confirm. Save the workbook again to retain its widget identity.
 4. Open macOS **Edit Widgets**, add a **Workbook** widget, then use **Edit Widget**
    to choose the publication.
@@ -30,7 +30,7 @@ The **Document Config** cell's menu also offers:
 
 | Action | Scope |
 |---|---|
-| Publish All Widgets… | Publish all eligible chart/Markdown cells or update existing publications; preserves custom names |
+| Publish All Widgets… | Publish all eligible chart/console/Markdown cells or update existing publications; preserves custom names |
 | Update All Widgets | Update only cells already published from this workbook |
 | Unpublish All Widgets… | Remove this workbook's publications after confirmation |
 
@@ -56,6 +56,7 @@ successful output and mark it stale.
 Small/medium widgets simplify axes and legends to fit. Large widgets retain
 nonredundant legends when they fit in two lines. Tables show a static grid and
 a remaining-row count; billboards fit their tiles to the available area.
+Lua consoles show plain monospaced text, clipped to the widget's available space.
 
 ## Open or recover the source
 

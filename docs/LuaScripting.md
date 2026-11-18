@@ -1,6 +1,6 @@
 # Lua scripting
 
-Lua cells transform query results into new tables and charts. Use NRQL or GraphQL
+Lua cells transform query results into tables, charts, or printed reports. Use NRQL or GraphQL
 cells to fetch data, then read their bindings through `results` in Lua. Lua cells
 cannot run queries or make network requests themselves.
 
@@ -158,11 +158,11 @@ emit({ rows = {
 
 `emit(value)` selects the cell's one result; it does not append another chart.
 The last `emit` wins, and an emitted value takes precedence over `return`.
-Calling `emit()` selects `nil`, which is not a valid cell result.
+Calling `emit()` selects `nil`, which is not a valid data/chart result.
 
 * `return { rows = {} }` produces an empty result.
-* A scalar, a missing return value, or a list containing non-row values fails
-  result conversion. To display a scalar, wrap it:
+* A scalar or a list containing non-row values fails result conversion.
+  A missing return value also fails unless using Console. To chart a scalar, wrap it:
   `return { rows = { { total = 42 } } }`.
 * `nrql` and `facets` are optional output metadata. `nrql` defaults to `""`.
   Output `columns` is ignored: fields are inferred from the rows and sorted
@@ -230,12 +230,36 @@ GraphQL extraction expressions, **not** in ordinary Lua cells. Use
 works as a Lua cell result if it already has a supported row-list shape;
 otherwise transform it as above.
 
+## Console output
+
+Use **Display > Console** in a Lua cell's Settings, or set `chart: console`,
+to show `print()` output instead of a chart:
+
+````text
+```cell_config
+title: Service report
+chart: console
+```
+```lua
+print("Service", "Checkout")
+print(string.format("Healthy: %.1f%%", 98.5))
+```
+````
+
+No `return` or `emit` is required. Each `print` adds a line; multiple arguments
+are separated by tabs. Output is plain, selectable, monospaced text, not Markdown.
+It appears after execution, replaces the previous run's output, and is removed
+by **Clear Results**. Text printed before an error remains visible.
+
+Console output is included in HTML/PDF exports and published widgets.
+If you also return or emit data, use the normal row-list shape: `var` still binds
+that data, not the printed text. Print-only cells export no result binding.
+
 ## Helpers and configuration
 
 The app supplies `emit` and `print`, plus the `results` and `config` tables.
-`print(...)` captures tab-separated text inside the runtime, but the cell runner
-does not display or store that output. It is not a visible console; use a table
-result for diagnostics or `assert`/`error` for actionable failure messages.
+`print(...)` is visible in Console mode; other display modes keep their existing
+chart/JSON output. Use `assert`/`error` for actionable failure messages.
 
 There are no built-in `query`, `names`, `column` or `values` helpers. Use standard
 Lua or define local helpers in each script. For example:

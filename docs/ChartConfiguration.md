@@ -23,7 +23,7 @@ SELECT count(*) FROM Transaction TIMESERIES
 | Key | Values / behavior |
 |---|---|
 | `title` | Heading independent of the result variable name |
-| `chart` | `line`, `bar`, `pie`, `plot`, `billboard`, `table`, `json`, or `none`; GraphQL also supports `bindings` to show data that has been saved in variables from results. |
+| `chart` | `line`, `bar`, `pie`, `plot`, `billboard`, `table`, `json`, or `none`; Lua also supports `console`, GraphQL also supports `bindings` |
 | `attributes` | A YAML list of chart-specific tokens, or a scalar separated by spaces/commas |
 | `height` | Positive whole display lines, **15 points per line**; omit or use `auto` for automatic sizing |
 | `query` | `hide` starts code collapsed and excludes it from HTML/PDF exports; omit or use `show` to include code |
@@ -77,6 +77,9 @@ attributes: gauge, max(100), style(circular)
   row array only; bindings still expose the full result envelope.
 - `chart: bindings` is for GraphQL: expressions and their extracted values,
   exported as a table in HTML/PDF.
+- `chart: console` is for Lua: selectable, monospaced `print()` output.
+  No return value is required; any returned data still uses the normal row
+  format. Console fits its text; chart `height` and `attributes` do not apply.
 
 Errors remain visible when result data is hidden.
 

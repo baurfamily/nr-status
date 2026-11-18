@@ -397,6 +397,7 @@ struct NrqlCompletionTests {
         #expect(await complete("  na").isEmpty)
         #expect(await complete("chart: p") == ["pie", "plot"])
         #expect(await complete("chart: j") == ["json"])
+        #expect(await complete("chart: con") == ["console"])
         #expect(await complete("chart: pie\nattributes: ") == ["donut", "separated"])
         #expect(await complete("chart: plot\nattributes: x-") == ["x-log"])
         #expect(await complete("title: Fo").isEmpty)

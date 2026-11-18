@@ -55,6 +55,7 @@ struct WorkbookWidgetOutput: Codable, Sendable {
     var markdown: String?
     var chart: JSONValue?
     var configuration: String?
+    var console: [String]?
 
     var resultContainer: NrdbResultContainer? {
         guard let chart else { return nil }

@@ -3,7 +3,7 @@ import Foundation
 enum WorkbookWidgetRunner {
     static func plan(target: NrqlCell, in cells: [NrqlCell]) throws -> [NrqlCell] {
         guard target.canPublishWidget else {
-            throw NrqlConnection.ConfigurationError(message: "Publish a chart or Markdown cell.")
+            throw NrqlConnection.ConfigurationError(message: "Publish a chart, console, or Markdown cell.")
         }
         var visiting = Set<UUID>()
         var finished = Set<UUID>()
@@ -64,6 +64,8 @@ enum WorkbookWidgetRunner {
         var output = WorkbookWidgetOutput(title: widget.name, updatedAt: Date())
         if target.kind == .markdown {
             output.markdown = try document.markdownText(for: target, profiles: profiles.load())
+        } else if let console = target.query.displayedConsole {
+            output.console = console
         } else {
             guard let container = target.query.resultContainer else {
                 throw NrqlConnection.ConfigurationError(message: "The published cell returned no chart data.")

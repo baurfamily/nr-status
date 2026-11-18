@@ -291,7 +291,7 @@ enum NrqlCompletion {
         case .formatValue(let key, let type):
             var values: [String] = []
             if key == "chart" {
-                values = graphql ? ["json", "none"] : ChartType.allCases.map(\.rawValue) + ["json", "none"]
+                values = graphql ? ["json", "none"] : ChartType.allCases.map(\.rawValue) + ["json", "console", "none"]
             } else if key == "height" && !graphql {
                 values = ["auto", "20"]
             } else if key == "attributes" {

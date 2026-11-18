@@ -18,6 +18,7 @@ import CryptoKit
         case running
         case loaded(NrdbResultContainer)
         case jsonLoaded(JSONValue)
+        case consoleLoaded
         case failed(String)
     }
     
@@ -63,6 +64,7 @@ import CryptoKit
     private(set) var loadedBindings: [LuaRuntime.PriorResult]?
     private(set) var bindingResults: [BindingResult] = []
     private(set) var failedBindingResponse: JSONValue?
+    private(set) var printedOutput: [String]?
     
     // the query as last sent, with `{{ }}` expressions replaced; nil before a run
     private(set) var executedNrql: String?
@@ -107,6 +109,7 @@ import CryptoKit
 
     var hasResult: Bool {
         if case .jsonLoaded = state { return true }
+        if case .consoleLoaded = state { return true }
         return resultContainer != nil
     }
 
@@ -129,6 +132,10 @@ import CryptoKit
         if let jsonResult { return .success(jsonResult) }
         guard format?.showsJSON == true, let container = resultContainer else { return nil }
         return Result { try JSONValue(luaValue: LuaResultBridge.rowsValue(from: container)) }
+    }
+
+    var displayedConsole: [String]? {
+        isScript && format?.showsConsole == true ? printedOutput : nil
     }
 
     var variables: String {
@@ -203,6 +210,7 @@ import CryptoKit
         let nrql = nrql
         let source = NrqlCellSource(stored: text)
         let graphQL = kind == .nerdgraph ? NerdgraphCellSource(stored: text) : nil
+        let console = format?.showsConsole == true
         let options = Result {
             try NrqlConnection.parse(source.configuration ?? "")
         }
@@ -213,14 +221,17 @@ import CryptoKit
         
         do {
             let options = try options.get()
+            guard !console || script != nil else {
+                throw NrqlConnection.ConfigurationError(message: "Console display is only available for Lua cells.")
+            }
             let consumesConfig = readsDocumentConfig
             let documentConfig = script != nil || consumesConfig
                 ? try defaults.effectiveConfiguration(profiles: profiles.load()) : NrqlConnection()
             let configSnapshot = consumesConfig ? documentConfig : nil
             if let script {
-                let outcome = await Self.runScript(script, results: results, config: documentConfig)
+                let outcome = await Self.runScript(script, results: results, config: documentConfig, console: console)
                 guard !Task.isCancelled, executionID == id else { return }
-                setState(outcome, documentConfig: configSnapshot)
+                setState(outcome.state, documentConfig: configSnapshot, printedOutput: outcome.output)
                 return
             }
             if let graphQL {
@@ -311,14 +322,18 @@ import CryptoKit
     
     /// Runs Lua off the main actor; the script's `emit` or `return` value becomes this cell's result.
     private static func runScript(
-        _ script: String, results: [LuaRuntime.PriorResult], config: NrqlConnection
-    ) async -> State {
+        _ script: String, results: [LuaRuntime.PriorResult], config: NrqlConnection, console: Bool
+    ) async -> (state: State, output: [String]) {
         await Task.detached {
+            var output: [String] = []
             do {
-                let outcome = try LuaRuntime.run(script, results: results, config: config)
-                return State.loaded(try LuaResultBridge.container(from: outcome.value))
+                let outcome = try LuaRuntime.run(script, results: results, config: config, onOutput: { output = $0 })
+                if console, case .nil = outcome.value {
+                    return (State.consoleLoaded, output)
+                }
+                return (State.loaded(try LuaResultBridge.container(from: outcome.value)), output)
             } catch {
-                return State.failed(error.localizedDescription)
+                return (State.failed(error.localizedDescription), output)
             }
         }.value
     }
@@ -344,12 +359,14 @@ import CryptoKit
     
     @MainActor func setState(
         _ newState: State, connection: NrqlConnection.Snapshot? = nil, documentConfig: NrqlConnection? = nil,
-        bindings: [LuaRuntime.PriorResult]? = nil, bindingResults: [BindingResult] = [], response: JSONValue? = nil
+        bindings: [LuaRuntime.PriorResult]? = nil, bindingResults: [BindingResult] = [], response: JSONValue? = nil,
+        printedOutput: [String]? = nil
     ) {
         self.bindingResults = bindingResults
         failedBindingResponse = response
+        self.printedOutput = printedOutput
         switch newState {
-        case .loaded, .jsonLoaded:
+        case .loaded, .jsonLoaded, .consoleLoaded:
             loadedAt = Date()
             loadedConnection = connection
             loadedDocumentConfig = documentConfig

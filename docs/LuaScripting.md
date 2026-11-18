@@ -1,114 +1,337 @@
-# Phase 7: Lua scripting — design note
+# Lua scripting
 
-Status: draft, for discussion. Nothing implemented yet.
+Lua cells transform query results into new tables and charts. Use NRQL or GraphQL
+cells to fetch data, then read their bindings through `results` in Lua. Lua cells
+cannot run queries or make network requests themselves.
 
-## Goals
+This guide covers the scripting environment and data shapes. See
+[File format](FileFormat.md) for fences,
+[Variables and bindings](VariablesAndBindings.md) for configuration and naming,
+[Chart configuration](ChartConfiguration.md) for presentation, and
+[Using the app](UsingTheApp.md) for execution controls. Cell-specific references:
+[Lua](cells/Lua.md), [NRQL](cells/NRQL.md), [GraphQL](cells/GraphQL.md), and
+[Markdown](cells/Markdown.md).
 
-1. Build queries from earlier results ("take the top 5 apps from cell 1 and query each one").
-2. Loops / repetition without copy-pasting cells.
-3. Derived data (joins, ratios, filtering) that NRQL can't express, still charted through the existing pipeline.
+## Bind a query, then transform its result
 
-Non-goals: general-purpose scripting, file/network access, replacing NRQL as the default mode.
+Put `var: name` in the query's `cell_config` fence to expose its result as
+`results.name`. `title` is independent of the binding name.
 
-## Where the current code constrains us
-
-- A document is a list of `NrqlCell`s, each owning an `NrqlQuery` (`text`, `nrql`, `format`, `state`). `NrqlDocumentParser` splits the file into cells: each ` ```nrql ` or ` ```lua ` fenced block is a code cell (blank lines allowed inside), and any text between them is one Markdown cell. A cell's `kind` (`NrqlCellKind`) is stored on the cell; the editor shows the text without its fence lines.
-- Results are `NrdbResultContainer` → `NrdbResults.Datum`. Charts, tables and export all consume that type, so a script that emits a result set should produce one too.
-- Cells run independently today (`runAllQueries` fires them all). Scripts introduce ordering.
-
-## Proposed syntax
-
-NRQL stays the default. Lua appears in two places only.
-
-**1. Interpolation in a query: `{{ expr }}`**
-
+````markdown
+```cell_config
+title: Response time by minute
+var: latency
 ```
-// Slowest apps
-FROM Transaction SELECT average(duration) WHERE appName IN ({{ names(results.top_apps) }}) FACET appName
+```nrql
+FROM Transaction
+SELECT average(duration) AS seconds
+SINCE 30 minutes ago
+TIMESERIES 1 minute
 ```
-
-Evaluated before the query is sent; the value is converted to a string (tables of strings become `'a', 'b'` for `IN`). The NRQL text shown in the editor is unchanged; the expanded text is shown in the result header.
-
-**2. Script cells: a ` ```lua ` fenced block**
 
 ```cell_config
-var: top_apps
+title: Response time in milliseconds
+var: latency_ms
+chart: line
 ```
 ```lua
-local r = query("FROM Transaction SELECT count(*) FACET appName LIMIT 5")
-emit(r)
+local source = assert(results.latency, "Run the latency query first")
+local rows = {}
+for _, row in ipairs(source.rows) do
+  if type(row.seconds) == "number" then
+    rows[#rows + 1] = {
+      beginTimeSeconds = row.beginTimeSeconds,
+      endTimeSeconds = row.endTimeSeconds,
+      milliseconds = row.seconds * 1000,
+    }
+  end
+end
+return { rows = rows }
 ```
+````
 
-Chart settings go in a `cell_config` fence immediately before the script or query fence. Configuration is hidden by default and editable in the cell sidebar, either as settings or raw text. Script cells render as code plus their emitted result (or `chart: none` to hide it). Text outside any fence is a Markdown cell, edited as plain text and rendered when focus moves to another cell.
+The Lua result uses the same table/chart pipeline as NRQL. Binding it as
+`latency_ms` lets subsequent cells read `results.latency_ms.rows`.
+`chart: none` hides a result without preventing it from being bound.
 
-Use `query: hide` in `cell_config` to start a query or script collapsed when the file opens and omit its code from HTML/PDF exports. Its heading and results remain visible. `query: show` (or omitting the option) shows and exports the code. This setting does not track or change the live expand/collapse state; manually expanding a hidden query still leaves its code out of exports.
+## Reading results
 
-### Result variables
-
-Use `var: top_apps` in a `cell_config` fence to bind the cell's result, regardless
-of whether it contains NRQL, Lua, or GraphQL. GraphQL supports multiple `var:`
-lines, optionally with extraction expressions. `title` controls the displayed heading independently.
-`results` is a table keyed by both the configured variable and 1-based result
-index: `results.top_apps`, `results[1]`. The old `name` config key is not recognized.
-
-## Lua API (small and explicit)
-
-| Function | Purpose |
+| Expression | Meaning |
 |---|---|
-| `results.<name>` / `results[i]` | Read-only result of an earlier cell. |
-| `config.accounts` / `config.api_key` | Snapshot of the effective document account list (1-based) and saved API key name, including inherited defaults. Available in scripts and interpolation; never includes the secret key. |
-| `config.appName` | Data declared by `var appName = "Foo"` in the document config. Declarations are evaluated in order and are not bare globals. |
-| `query(nrql)` | Run an NRQL string, return a result table. Async on the Swift side; Lua sees a blocking call (coroutine-based). |
-| `emit(result)` | Make this cell's result the given table; it flows through the chart pipeline. |
-| `names(result)`, `column(result, field)`, `values(...)` | Helpers for building `IN (...)` lists etc. |
+| `results.latency` | A successfully loaded result bound as `latency`. |
+| `results["top apps"]` | Bracket access for a binding whose name is not a Lua identifier. |
+| `results[1]` | The first currently available exported binding, not cell number 1. |
+| `#results` | Number of currently available exported bindings. |
+| `config.accounts[1]` | First effective document account ID. |
+| `config.api_key` | Saved API key **name**, never the secret key; may be `nil`. |
+| `config.appName` | Document variable declared with, for example, `var appName = "Shop"`. |
 
-Result table shape (mirrors `Datum`):
+Only named, successfully loaded results enter `results`. Unnamed NRQL/Lua cells
+do not occupy numeric slots; a GraphQL cell can contribute several bindings.
+Numeric indices follow document order and binding order within each cell, and
+can change as results become available. Prefer names.
+
+A missing binding is `nil`; indexing it further raises a Lua error. Check both
+the binding and row existence when empty results are possible:
 
 ```lua
-{ nrql = "...", columns = {"appName", "count"},
-  rows = { {appName = "x", count = 3}, ... },
-  facets = {...}, timeseries = true/false }
+local source = assert(results.latency, "Missing latency result")
+local first = source.rows[1]
+return { rows = { { firstSeconds = first and first.seconds or 0 } } }
 ```
 
-## Embedding
+`results` prevents ordinary assignment to its top-level entries
+(`results.latency = ...` errors). It is not a deeply immutable table: nested
+tables can be changed within a run. Build new rows when deriving data rather
+than relying on mutations or on named and numeric access sharing table identity.
+Changes do not update the source cell's stored result.
 
-Candidate: `tomsci/LuaSwift` (SPM, wraps C Lua, actively maintained, supports pushing/pulling Swift values and calling into Swift). Alternative: `ChrisGVE/LuaSwift`. Both vendor C Lua, so there is no system dependency. Decision to confirm by a spike (see below).
+### Execution and dependencies
 
-Sandbox: open only `base` (minus `dofile`, `loadfile`, `require`), `string`, `table`, `math`, `utf8`, `coroutine`. No `io`, `os`, `debug`, `package`. Instruction-count hook (e.g. 10M) and a wall-clock timeout so a runaway loop can't hang the app; memory limit via a custom allocator if the wrapper allows it. Each run uses a fresh `lua_State`.
+Running a cell first runs its detected dependencies if their results are missing
+or stale; Run All executes cells in dependency order. Detection scans Lua code
+and interpolation expressions for literal references such as `results.latency`
+or `results["latency"]`. Computed keys such as `results[key]` and numeric indices
+do **not** establish those dependencies; run their sources explicitly.
 
-## Execution model
+Despite the usual source-before-consumer layout, `results` contains available
+bindings from across the document, not only cells above the current cell.
+References to cells below can be scheduled too. Avoid cycles: there is no
+dedicated cycle error, and a missing result can instead surface during execution.
 
-- Build a dependency graph per document: a cell depends on any `results.<name>`/`results[i]` it references and on queries it requests. Static detection by scanning for `results` accesses is good enough; scripts that compute the key dynamically fall back to "depends on all earlier cells".
-- Run order is a topological sort. Run All runs it in dependency order, parallelising independent cells. Running one cell runs its stale dependencies first (opt-out: use last result if present).
-- Cycles and references to later cells are errors shown on the cell.
-- Cell results are cached by input hash (expanded NRQL / script text + dependency result hashes), so re-runs only redo what changed. `NrqlQuery.id` already hashes the text and can be extended.
-- `query()` inside a script must go through the same NerdGraph client and honour cancellation.
+## NRQL and Lua result shape
 
-## Charting synthetic data
+An NRQL result, or the stored result of a Lua cell, has this structure:
 
-`emit` builds an `NrdbResultContainer` from the Lua table (infer `isTimeseries` from `beginTimeSeconds`, facets from the `facets` list). It is then charted exactly like a query result, including export (PDF/HTML). The same `cell_config` keys apply to scripts and queries.
+```lua
+{
+  nrql = "FROM Transaction SELECT count(*) FACET appName",
+  columns = { "count" },
+  rows = {
+    { facet = "Shop", count = 120 },
+    { facet = "API", count = 80 },
+  },
+  facets = { "appName" },
+}
+```
 
-## UI and editor support
+* `rows` is a 1-based list of field tables.
+* `columns` lists decoded data-field names; special row fields such as `facet`
+  and time bounds are separate. Use the actual keys, not SELECT expressions you
+  assume will be returned. Aliases make scripts easier to maintain.
+* `facets`, when present, lists facet **attribute names**. A row's `facet`
+  contains its value: a string for one facet, or a list of strings for multiple
+  facets.
+* Time-series rows carry `beginTimeSeconds` and `endTimeSeconds`. Event rows may
+  carry `timestamp`. All three are Unix times in **seconds** in Lua.
+* Comparison rows carry `comparison = "current"` or `"previous"`. Preserve it
+  when preserving comparison semantics; filter previous rows and omit the field
+  when producing a current-only result.
+* Ordinary fields can be numbers, strings, numeric lists, string lists, or
+  string-keyed numeric tables (for example percentile values). Use bracket
+  syntax for punctuation: `row["average.duration"]` or
+  `row["percentile.duration"]["95"]`.
 
-- Script cells use the same `CodeEditor` with Lua highlighting. Completion offers keywords, the globals and standard library a script can use, local names, and `results.<name>` followed by the fields of any result that has run. The same completion works inside `{{ }}` in a query.
-- Errors (syntax, runtime, timeout) show in the cell's result area with the Lua line number.
-- Loops: a script can `emit` multiple results; each gets its own chart under the cell (v2 — v1 allows one emit per cell).
+This is the app's decoded result, not the complete raw NerdGraph response.
+Unsupported field types are not retained by the result decoder.
 
-## Decisions
+### Returning or emitting a result
 
-1. v1 has both `{{ }}` interpolation and fenced script cells.
-2. Running a cell runs any dependency that has no result yet. A small yellow warning triangle on the cell warns that running it will run other cells (and says how many).
-3. No `query()` in scripts for now; scripts only use results of other cells. (The `query()` step below is deferred.)
-4. A script cell supplies its result with a `return` statement or by calling the registered `emit(value)` function (`emit` wins). That result is available to other cells as `results.<name>` and is charted in the script cell itself.
-5. Library: `ChrisGVE/LuaSwift` (built-in sandbox, instruction limit, VM memory cap and cancellation). Compared with `tomsci/LuaSwift` and `SwiftyLua`; fall back to tomsci if ChrisGVE causes problems. The spike (`LuaRuntime.swift`) builds and passes its tests.
+A Lua cell must supply either a result table with `rows`, or a bare list of row
+tables:
 
-## Implementation steps (each its own commit)
+```lua
+return {
+  { facet = "Successful", count = 95 },
+  { facet = "Failed", count = 5 },
+}
+```
 
-1. **Spike:** add the package, run `return 1 + 1`, confirm sandboxing and the instruction hook work; pick the library.
-2. **LuaRuntime:** sandboxed state, timeout, value bridge (Swift ⇄ Lua tables), tests.
-3. **Result bridge:** `NrdbResultContainer` → Lua table and back (`emit`), with tests for faceted/timeseries shapes.
-4. **Interpolation:** `{{ }}` expansion in `NrqlQuery` before run; errors surfaced.
-5. **Script cells:** parser round-trip for fenced blocks, cell kind, Lua highlighting, UI.
-6. **Dependency graph + ordered Run All**, caching.
-7. **`query()` from scripts**, cancellation, rate limiting.
-8. **Export and docs:** include script cells in text/HTML/PDF export; update `EditorImprovements.md`.
+The equivalent explicit form is:
+
+```lua
+emit({ rows = {
+  { facet = "Successful", count = 95 },
+  { facet = "Failed", count = 5 },
+} })
+```
+
+`emit(value)` selects the cell's one result; it does not append another chart.
+The last `emit` wins, and an emitted value takes precedence over `return`.
+Calling `emit()` selects `nil`, which is not a valid cell result.
+
+* `return { rows = {} }` produces an empty result.
+* A scalar, a missing return value, or a list containing non-row values fails
+  result conversion. To display a scalar, wrap it:
+  `return { rows = { { total = 42 } } }`.
+* `nrql` and `facets` are optional output metadata. `nrql` defaults to `""`.
+  Output `columns` is ignored: fields are inferred from the rows and sorted
+  within each row for stable ordering.
+* There is no `timeseries` flag. Preserve both time-bound fields for time-series
+  output, and use `facet` on rows for faceted output. Keep structural fields
+  consistent across rows; result classification uses the first row.
+* Numbers, strings, homogeneous numeric/string lists and numeric dictionaries
+  survive the chart-result decoder. Arbitrary nested objects, booleans and
+  nulls are not general-purpose chart fields. Convert them to supported values.
+  Avoid non-finite numbers and sparse/mixed-key lists.
+
+## Reading GraphQL bindings
+
+GraphQL bindings retain JSON structure, not the NRQL `rows` wrapper. A plain
+`var: response` binds the whole response, including `data`, `errors` and
+`extensions` when present. An extraction binding exposes only its selected
+value:
+
+````markdown
+```cell_config
+var: response
+var: entities = data.actor.entitySearch.results.entities
+```
+```graphql
+{
+  actor {
+    entitySearch(query: "domain = 'APM' AND type = 'APPLICATION'") {
+      results { entities { name guid tags { key values } } }
+    }
+  }
+}
+```
+
+```cell_config
+chart: table
+```
+```lua
+local entities = assert(results.entities, "Run the entity search first")
+local rows = {}
+for _, entity in ipairs(entities) do
+  rows[#rows + 1] = {
+    name = entity.name,
+    guid = entity.guid,
+    tagCount = #(entity.tags or {}),
+  }
+end
+return { rows = rows }
+```
+````
+
+Here `results.entities[1].name` and
+`results.response.data.actor.entitySearch.results.entities[1].name` access the
+same response path. JSON objects become keyed Lua tables, arrays become 1-based
+lists, and JSON null becomes `nil`; account for missing/null fields, especially
+when iterating lists. A null array element can create a hole, and `ipairs` stops
+at the first `nil`. Numbers are bridged through Lua's numeric representation, so
+do not rely on exact large-integer preservation.
+
+The globals `data`, `errors` and `extensions` are available while evaluating
+GraphQL extraction expressions, **not** in ordinary Lua cells. Use
+`results.response.data` there instead. Returning a GraphQL object directly only
+works as a Lua cell result if it already has a supported row-list shape;
+otherwise transform it as above.
+
+## Helpers and configuration
+
+The app supplies `emit` and `print`, plus the `results` and `config` tables.
+`print(...)` captures tab-separated text inside the runtime, but the cell runner
+does not display or store that output. It is not a visible console; use a table
+result for diagnostics or `assert`/`error` for actionable failure messages.
+
+There are no built-in `query`, `names`, `column` or `values` helpers. Use standard
+Lua or define local helpers in each script. For example:
+
+```lua
+local function column(result, field)
+  local values = {}
+  for _, row in ipairs(result.rows) do
+    if row[field] ~= nil then values[#values + 1] = row[field] end
+  end
+  return values
+end
+
+local values = column(assert(results.latency), "seconds")
+local total = 0
+for _, value in ipairs(values) do total = total + value end
+return { rows = { { meanSeconds = #values > 0 and total / #values or 0 } } }
+```
+
+That example averages returned buckets equally; it is not a transaction-weighted
+average across the original events.
+
+`config` reflects effective **document** settings, including inherited defaults,
+not per-cell routing overrides. Its account list is empty when none is set.
+Document variable expressions are evaluated in declaration order, can read
+earlier `config` fields, and must produce non-nil JSON-compatible values. They
+are not bare globals and are evaluated before `results` is installed.
+Changes to `config` during a run do not change document settings.
+
+Each script run and each interpolation expression gets a fresh Lua VM. Globals,
+local helper functions and mutations do not persist to another cell or
+placeholder. Export reusable data as a cell binding, not as a global variable.
+
+## Interpolation is not a Lua cell
+
+`{{ expression }}` evaluates a Lua **expression**, not a block of statements.
+It can read the same `results` and `config` values, but its output follows the
+destination's rules rather than the Lua cell's result-table rules.
+
+| Destination | Accepted output and insertion |
+|---|---|
+| NRQL text | String, number or boolean, inserted as text. |
+| Markdown text | The same textual substitution; no automatic Markdown escaping. |
+| GraphQL `variables` JSON, outside a JSON string | JSON-compatible value, encoded as a typed JSON value, including lists/objects. |
+| GraphQL `variables` JSON, inside a JSON string | String, number or boolean, inserted as escaped JSON string content. |
+
+GraphQL operation text itself is not interpolated. Put dynamic inputs in its
+`variables` fence, whose expanded value must be a JSON object.
+
+For example, an NRQL cell can use:
+
+```nrql
+FROM Transaction SELECT count(*)
+WHERE appName = '{{ config.appName }}'
+LIMIT {{ math.min(100, 20) }}
+```
+
+NRQL interpolation does **not** quote or escape values. The quotes above belong
+to the query; a value containing a quote needs appropriate NRQL escaping.
+Lua's `string.format("%q", value)` produces a Lua literal, not a general NRQL
+escaping helper. Tables are not automatically expanded into `IN (...)` lists;
+construct any such textual list explicitly with appropriate escaping.
+
+GraphQL variables can instead preserve types:
+
+```json
+{
+  "accountId": {{ config.accounts[1] }},
+  "label": "Report for {{ config.appName }}"
+}
+```
+
+A `nil` placeholder is an error, not empty text or JSON null. Accessing a missing
+intermediate table can fail before that check. Each placeholder is evaluated
+independently. The delimiter scanner is textual and ends at the next `}}`;
+avoid expressions containing that sequence (including adjacent closing braces
+in table constructors).
+
+## Supported libraries and limits
+
+The sandbox provides ordinary Lua control flow and base functions such as
+`assert`, `error`, `ipairs`, `pairs`, `pcall`, `tonumber`, `tostring` and `type`.
+Standard `string`, `table`, `math`, `utf8` and `coroutine` libraries are available.
+There is no app-provided JSON encoder, HTTP client, or query function.
+
+File/process access is restricted: `io` and `debug` are removed, as are `load`,
+`loadstring`, `loadfile` and `dofile`. `os` is **not** entirely removed:
+time/date helpers remain, but functions for executing commands, exiting,
+changing files, reading environment variables and changing locale are disabled.
+`package`/`require` remain restricted to preloaded modules; filesystem module
+search and dynamic library loading are disabled. You cannot load arbitrary Lua
+files or native extensions.
+
+Each VM has a 10,000,000-instruction limit and a 64,000,000-byte Lua VM memory
+cap. These are execution safeguards, not a wall-clock timeout or a total app
+memory guarantee. Runtime calls are serialized. Syntax errors, runtime errors,
+resource-limit failures and invalid output shapes appear as cell failures;
+do not rely on cancellation immediately interrupting a running script.
+
+For a longer worked transformation, see the current-period regression example
+in [BusiestApp.nrmd](examples/BusiestApp.nrmd).

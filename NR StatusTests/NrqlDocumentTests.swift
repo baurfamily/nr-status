@@ -326,6 +326,8 @@ struct NerdgraphCellTests {
             bindings:
               - name: 'name'
                 expression: 'data.name'
+              - name: environment
+                value: Production
             ```
             ```graphql
             { actor { user { name } } }
@@ -336,17 +338,23 @@ struct NerdgraphCellTests {
             "errors": .array([.object(["message": .string("Partial GraphQL error")])])
         ])
         let row = BindingResult(name: "name", expression: "data.name", value: .string("Checkout"))
+        let literal = BindingResult(name: "environment", value: .string("Production"), literalValue: "Production")
         cell.query.setState(
-            .jsonLoaded(value), bindings: [.init(name: "name", value: .string("Checkout"))], bindingResults: [row]
+            .jsonLoaded(value), bindings: [
+                .init(name: "name", value: .string("Checkout")), .init(name: "environment", value: .string("Production"))
+            ], bindingResults: [row, literal]
         )
         #expect(cell.query.format?.showsBindings == true)
         #expect(cell.query.displayedJSON == nil)
-        #expect(cell.query.inspectedBindings == [row])
-        #expect(NrqlExport.tableData(for: cell)?.rows == [["name", "data.name", "\"Checkout\""]])
+        #expect(cell.query.inspectedBindings == [row, literal])
+        #expect(NrqlExport.tableData(for: cell)?.rows == [
+            ["name", "data.name", "\"Checkout\""], ["environment", "value: Production", "\"Production\""]
+        ])
         var document = NRQL_EditorDocument(text: "")
         document.cells = [cell]
         let html = NrqlExport.html(for: document)
         #expect(html.contains("<td>data.name</td>") && html.contains("Checkout"))
+        #expect(html.contains("value: Production"))
         #expect(html.contains("Partial GraphQL error"))
         let pdfData = try #require(NrqlExport.pdf(for: document))
         let pdf = try #require(PDFDocument(data: pdfData))
@@ -423,6 +431,8 @@ struct NerdgraphCellTests {
             bindings:
               - name: account
                 expression: data.actor.account
+              - name: label
+                value: Production
             ```
             ```graphql
             { actor { user { name } } }
@@ -433,9 +443,13 @@ struct NerdgraphCellTests {
         #expect(try NrqlCellSource.resultName(in: cell.configurationText) == "response")
         #expect(try NerdgraphCellSource(stored: cell.text).resultBindings() == [
             .init(name: "response", expression: nil),
-            .init(name: "account", expression: "data.actor.account")
+            .init(name: "account", expression: "data.actor.account"),
+            .init(name: "label", value: "Production")
         ])
         #expect(cell.editorText == code)
+        cell.query.setState(.jsonLoaded(.object(["data": .object([:])])))
+        #expect(cell.query.namedResults.map(\.name) == ["response", "label"])
+        #expect(cell.query.namedResults.last?.value.stringValue == "Production")
         let saved = cell.text
         #expect(throws: NrqlConnection.ConfigurationError.self) {
             try cell.addResultBinding(name: "anotherResponse", expression: nil)
@@ -1658,6 +1672,8 @@ struct NrqlCellActionTests {
                 expression: 'data.actor.entities[1]'
               - name: 'count'
                 expression: '#data.actor.entities'
+              - name: label
+                value: results.not_a_dependency
             ```
             ```graphql
             query($id: Int!) { actor { user { name } } }
@@ -1670,8 +1686,10 @@ struct NrqlCellActionTests {
         document.perform(.duplicate, on: original.id)
         let copy = document.cells[1]
         let bindings = try NerdgraphCellSource(stored: copy.text).resultBindings()
-        #expect(bindings.map(\.name) == ["response_copy", "entity_copy", "count_copy"])
-        #expect(bindings.map(\.expression) == [nil, "data.actor.entities[1]", "#data.actor.entities"])
+        #expect(bindings.map(\.name) == ["response_copy", "entity_copy", "count_copy", "label_copy"])
+        #expect(bindings.map(\.expression) == [nil, "data.actor.entities[1]", "#data.actor.entities", nil])
+        #expect(bindings.last?.value == "results.not_a_dependency")
+        #expect(NrqlDependencies.references(in: copy.query.expressionCode).names.isEmpty)
         #expect(copy.editorText == original.editorText)
         #expect(copy.query.variables == original.query.variables)
     }

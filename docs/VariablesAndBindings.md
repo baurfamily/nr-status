@@ -8,8 +8,11 @@ Keep document data, result bindings, and GraphQL request variables distinct:
 |---|---|---|
 | Document data | A `bindings` array in frontmatter | `config.name` |
 | Cell result binding | `var: name` inside `cell_config` | `results.name` |
-| GraphQL extraction | A `bindings` array in `cell_config` | `results.name` |
+| GraphQL binding | A `bindings` array in `cell_config` | `results.name` |
 | GraphQL request variable | JSON in a `variables` fence | `$name` in the GraphQL operation |
+
+Open [Bindings.nrmd](examples/Bindings.nrmd) for a runnable walkthrough using
+real NerdGraph queries and your configured New Relic access.
 
 ## Document variables
 
@@ -17,7 +20,7 @@ Keep document data, result bindings, and GraphQL request variables distinct:
 ---
 bindings:
   - name: appName
-    expression: '"Checkout"'
+    value: Checkout
   - name: services
     expression: '{ "Checkout", "Payments" }'
   - name: heading
@@ -25,11 +28,19 @@ bindings:
 ---
 ````
 
-Each entry has a Lua-identifier `name` and a nonempty Lua `expression`.
-Expressions are evaluated in array order and can read earlier `config` fields.
-Values may be strings, numbers, booleans, or tables. Names must be unique;
-`accounts` and `api_key` are reserved. Keep Lua string quotes inside YAML quotes:
-`expression: '"Checkout"'` evaluates to the string `Checkout`.
+Each entry has a Lua-identifier `name` and exactly one source:
+
+| Key | Meaning |
+|---|---|
+| `value` | Literal string; no Lua evaluation or extra Lua quoting |
+| `expression` | Nonempty Lua expression producing a string, number, boolean, or table |
+
+`value: Checkout` stores `"Checkout"`; even `value: 42` stores the string `"42"`.
+Empty/null YAML values become empty strings; use `value: "null"` for that text.
+Normal YAML quoting still applies to special characters and multiline strings.
+
+Bindings are installed in array order; expressions can read earlier `config`
+fields. Names must be unique; `accounts` and `api_key` are reserved.
 
 `config.accounts` is the effective document account list (1-based), and
 `config.api_key` is the effective saved key **name**, never its secret. Both
@@ -122,11 +133,14 @@ bindings:
     expression: data.actor.entitySearch.results.entities[1]
   - name: tagCount
     expression: "#data.actor.entitySearch.results.entities[1].tags"
+  - name: environment
+    value: Production
 ```
 
 `var` names the complete response; it cannot contain an extraction expression
-or a list. The optional `bindings` array contains named Lua expressions.
-Each extraction requires a Lua-identifier `name` and nonempty `expression`.
+or a list. The optional `bindings` array contains named Lua expressions or
+literal strings. Each entry requires a Lua-identifier `name` and exactly one
+of `expression` or `value`, using the same rules as document bindings.
 Names must not collide with each other or the whole-response variable.
 Quote expressions starting with `#` so YAML does not treat them as comments.
 Expressions resolve `data`, `errors`, and
@@ -139,6 +153,7 @@ missing paths, or extraction errors prevent successful export; if any extraction
 fails, none of that run's bindings are made available to consumers. The
 response remains visible for diagnosis.
 
+Literal `value` text is not scanned for dependencies or evaluated as Lua.
 Document configuration uses the same `bindings` record format, but its values
 live under `config`, not `results`. Unlike GraphQL extractions, document bindings
 can reference earlier bindings in the same array through `config.name`.

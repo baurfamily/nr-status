@@ -390,27 +390,33 @@ struct NerdgraphClientTests {
                 expression: 'data.actor.entitySearch.results.entities[1]'
               - name: 'tagCount'
                 expression: '#data.actor.entitySearch.results.entities[1].tags'
+              - name: label
+                value: results.missing .. config.accounts[1]
             ```
             ```graphql
             { actor { entitySearch(query: "name = 'Foo'") { results { entities { name tags { key } } } } } }
             ```
 
             ```lua
-            return { rows = { { name = results.entity.name, count = results.tagCount } } }
+            return { rows = { { name = results.entity.name, count = results.tagCount, label = results.label } } }
             ```
             """)
         let query = document.cells[0].query
         await query.getData(profiles: profiles, session: session)
         #expect(query.errorMessage == nil)
-        #expect(document.priorResults.map(\.name) == ["response", "entity", "tagCount"])
-        #expect(query.inspectedBindings.map(\.name) == ["response", "entity", "tagCount"])
-        #expect(query.inspectedBindings.last?.value == .number(2))
+        #expect(document.priorResults.map(\.name) == ["response", "entity", "tagCount", "label"])
+        #expect(query.inspectedBindings.map(\.name) == ["response", "entity", "tagCount", "label"])
+        #expect(query.inspectedBindings[2].value == .number(2))
+        #expect(query.inspectedBindings.last?.literalValue == "results.missing .. config.accounts[1]")
+        #expect(NrqlDependencies.references(in: query.expressionCode).names.isEmpty)
+        #expect(!query.readsDocumentConfig)
         #expect(try LuaRuntime.run(
             "return response == nil and entity == nil and tagCount == nil", results: document.priorResults
         ).value.boolValue == true)
         await document.cells[1].query.getData(results: document.priorResults, profiles: profiles)
         #expect(document.cells[1].query.resultContainer?.data.first?.numberFields["count"] == 2)
         #expect(document.cells[1].query.resultContainer?.data.first?.stringFields["name"] == "Foo")
+        #expect(document.cells[1].query.resultContainer?.data.first?.stringFields["label"] == "results.missing .. config.accounts[1]")
         let original = query.text
         query.text = query.text.replacingOccurrences(of: "#data.actor.entitySearch.results.entities[1].tags",
                                                      with: "7")
@@ -450,7 +456,7 @@ struct NerdgraphClientTests {
         await query.getData(profiles: profiles, session: session)
         #expect(query.errorMessage == nil && query.hasResult)
         #expect(query.failedBindingResponse == nil)
-        #expect(query.namedResults.map(\.name) == ["response", "entity", "tagCount"])
+        #expect(query.namedResults.map(\.name) == ["response", "entity", "tagCount", "label"])
         query.clearResults()
         #expect(query.loadedBindings == nil)
         #expect(query.bindingResults.isEmpty && query.jsonResult == nil)

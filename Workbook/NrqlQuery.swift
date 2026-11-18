@@ -82,7 +82,11 @@ import CryptoKit
         if let value = jsonResult {
             if let loadedBindings { return loadedBindings }
             let bindings = (try? NerdgraphCellSource(stored: text).resultBindings()) ?? []
-            return bindings.filter { $0.expression == nil }.map { .init(name: $0.name, value: value.luaValue) }
+            return bindings.compactMap { binding in
+                if let literal = binding.value { return .init(name: binding.name, value: .string(literal)) }
+                guard binding.isWholeResponse else { return nil }
+                return .init(name: binding.name, value: value.luaValue)
+            }
         }
         guard let name, let container = resultContainer else { return [] }
         return [.init(name: name, value: LuaResultBridge.luaValue(from: container))]
@@ -263,6 +267,9 @@ import CryptoKit
                 }
                 let inspected = await Task.detached {
                     bindings.map { binding -> BindingResult in
+                        if let literal = binding.value {
+                            return BindingResult(name: binding.name, value: .string(literal), literalValue: literal)
+                        }
                         guard let expression = binding.expression else {
                             return BindingResult(name: binding.name, value: value)
                         }

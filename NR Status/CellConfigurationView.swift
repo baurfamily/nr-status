@@ -136,16 +136,17 @@ struct CellConfigurationView: View {
                 Text("Bindings").font(.caption).foregroundStyle(.secondary)
                 Spacer()
                 Button("Add Binding", systemImage: "plus") {
-                    setBindings(bindings + [.init(name: "", expression: "")])
+                    setBindings(bindings + [isDocument ? .init(name: "", value: "") : .init(name: "", expression: "")])
                 }
                 .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)
                 .accessibilityIdentifier("add-result-binding")
             }
             ForEach(Array(bindings.indices), id: \.self) { index in
+                let isExpression = bindings[index].value == nil
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        TextField("Name", text: bindingValue(index, expression: false))
+                        TextField("Name", text: bindingValue(index, name: true))
                             .accessibilityIdentifier("binding-name-\(index)")
                         Button("Remove Binding", systemImage: "minus.circle") {
                             var bindings = self.bindings
@@ -156,31 +157,55 @@ struct CellConfigurationView: View {
                         .buttonStyle(.borderless)
                         .accessibilityIdentifier("remove-binding-\(index)")
                     }
+                    Picker("Source", selection: bindingIsExpression(index)) {
+                        Text("Value").tag(false)
+                        Text("Expression").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    .accessibilityIdentifier("binding-source-\(index)")
                     ConfigurationTextEditor(
-                        text: bindingValue(index, expression: true),
-                        identifier: "binding-expression-\(index)", completionScope: bindingScope,
-                        isExpression: true
+                        text: bindingValue(index),
+                        identifier: isExpression ? "binding-expression-\(index)" : "binding-value-\(index)",
+                        completionScope: isExpression ? bindingScope : nil,
+                        isExpression: isExpression
                     )
                     .frame(height: 50)
-                    .help(isDocument
-                          ? "Lua expression; use config.name to read earlier bindings. Press Escape for completion."
+                    .help(!isExpression ? "Literal string; not evaluated as Lua."
+                          : isDocument ? "Lua expression; use config.name to read earlier bindings. Press Escape for completion."
                           : "Lua expression, for example data.actor.account.name. Press Escape for completion.")
                 }
             }
         }
     }
 
-    private func bindingValue(_ index: Int, expression: Bool) -> Binding<String> {
+    private func bindingValue(_ index: Int, name: Bool = false) -> Binding<String> {
         Binding(get: {
             guard bindings.indices.contains(index) else { return "" }
-            return expression ? bindings[index].expression ?? "" : bindings[index].name
+            let binding = bindings[index]
+            return name ? binding.name : binding.value ?? binding.expression ?? ""
         }, set: { value in
             var bindings = self.bindings
             guard bindings.indices.contains(index) else { return }
             let previous = bindings[index]
             bindings[index] = .init(
-                name: expression ? previous.name : value,
-                expression: expression ? value : previous.expression
+                name: name ? value : previous.name,
+                expression: name || previous.value != nil ? previous.expression : value,
+                value: !name && previous.value != nil ? value : previous.value
+            )
+            setBindings(bindings)
+        })
+    }
+
+    private func bindingIsExpression(_ index: Int) -> Binding<Bool> {
+        Binding(get: {
+            bindings.indices.contains(index) && bindings[index].value == nil
+        }, set: { isExpression in
+            var bindings = self.bindings
+            guard bindings.indices.contains(index) else { return }
+            let previous = bindings[index]
+            let content = previous.value ?? previous.expression ?? ""
+            bindings[index] = .init(
+                name: previous.name, expression: isExpression ? content : nil, value: isExpression ? nil : content
             )
             setBindings(bindings)
         })

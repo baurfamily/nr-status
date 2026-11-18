@@ -39,7 +39,7 @@ api-key: Production
 accounts: [123456]
 bindings:
   - name: appName
-    expression: '"Checkout"'
+    value: Checkout
 ---
 
 # {{ config.appName }}
@@ -71,7 +71,8 @@ Configuration uses **YAML mappings**: quoted strings, `#` comments, multiline
 strings, and lists are supported. Quote values containing `: ` or ` #`, including
 Lua expressions using the length operator. Do not repeat YAML keys.
 Document variables and GraphQL extractions use a `bindings` array of
-`{ name, expression }` records. Cell `var` is one whole-result name.
+`{ name, value }` (literal strings) or `{ name, expression }` (Lua) records.
+Use exactly one source per record. Cell `var` is one whole-result name.
 
 ```yaml
 description: |
@@ -79,7 +80,7 @@ description: |
 accounts: [123456, 789012]
 bindings:
   - name: appName
-    expression: '"Checkout"'
+    value: Checkout
   - name: heading
     expression: config.appName .. " health"
 ```

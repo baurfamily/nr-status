@@ -16,8 +16,10 @@ Expand **Document Config** with its disclosure button to see a rendered summary
 of the saved values. Collapsing it hides the summary; the gear opens the editing
 sidebar independently.
 
-Under **Bindings**, add rows with separate **Name** and Lua expression fields,
-just like GraphQL extractions. These edit the frontmatter `bindings` array;
+Under **Bindings**, add a **Name**, then choose **Value** for a literal string
+or **Expression** for Lua, just like GraphQL bindings.
+New document bindings default to Value; new GraphQL bindings default to Expression.
+These edit the frontmatter `bindings` array;
 read their values as `config.name`. See [variables and bindings](VariablesAndBindings.md).
 
 ## Cell settings
@@ -29,7 +31,7 @@ configure a cell before running it.
 |---|---|
 | Title | Set the heading independently of any binding |
 | Variable binding / Whole response variable | Name the complete NRQL/Lua result or GraphQL response |
-| Bindings (GraphQL) | Add/remove extractions with separate Name and Lua expression fields |
+| Bindings (GraphQL) | Add/remove named values; choose literal Value or Lua Expression |
 | Account IDs | Override NRQL routing for this cell |
 | Hide query on open and export | Start code collapsed; exclude code from HTML/PDF |
 | Display | Automatic chart, explicit chart type, JSON, Hidden, Lua Console, or GraphQL Bindings |
@@ -39,7 +41,7 @@ configure a cell before running it.
 the workbook. Text mode shows the body—you do not need to type fence markers.
 YAML quoting, comments, lists, and multiline strings work there. Settings writes
 properly quoted YAML and preserves unrelated fields.
-In GraphQL Settings, **Add Binding** creates an extraction row; its minus button
+In GraphQL Settings, **Add Binding** creates a binding row; its minus button
 removes it. These rows edit the `bindings` array without changing the whole
 response variable.
 Use it for advanced options such as a cell's `api-key: SavedName` override or an

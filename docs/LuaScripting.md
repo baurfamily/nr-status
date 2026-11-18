@@ -284,9 +284,10 @@ average across the original events.
 
 `config` reflects effective **document** settings, including inherited defaults,
 not per-cell routing overrides. Its account list is empty when none is set.
-Document `bindings` expressions are evaluated in array order, can read
-earlier `config` fields, and must produce non-nil JSON-compatible values. They
-are not bare globals and are evaluated before `results` is installed.
+Document `bindings` are installed in array order. A `value` is a literal string;
+an `expression` evaluates Lua, can read earlier `config` fields, and must produce
+a non-nil JSON-compatible value. Bindings are not bare globals and are installed
+before `results` is available.
 Changes to `config` during a run do not change document settings.
 
 Each script run and each interpolation expression gets a fresh Lua VM. Globals,

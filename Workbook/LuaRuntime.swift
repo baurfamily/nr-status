@@ -26,6 +26,15 @@ struct LuaRuntime {
     struct Variable: Equatable, Sendable {
         let name: String
         let expression: String?
+        let value: String?
+
+        init(name: String, expression: String? = nil, value: String? = nil) {
+            self.name = name
+            self.expression = expression
+            self.value = value
+        }
+
+        var isWholeResponse: Bool { expression == nil && value == nil }
 
         static func isIdentifier(_ name: String) -> Bool {
             name.range(of: #"^[A-Za-z_][A-Za-z0-9_]*\z"#, options: .regularExpression) != nil
@@ -34,27 +43,34 @@ struct LuaRuntime {
 
         static func parse(_ record: [String: String]) throws -> Variable {
             let label = record["name"].flatMap { $0.isEmpty ? nil : " '\($0)'" } ?? ""
-            guard Set(record.keys) == ["name", "expression"],
+            guard Set(record.keys) == ["name", "expression"] || Set(record.keys) == ["name", "value"],
                   let name = record["name"]?.trimmingCharacters(in: .whitespacesAndNewlines),
                   isIdentifier(name),
-                  let expression = record["expression"]?.trimmingCharacters(in: .whitespacesAndNewlines),
-                  !expression.isEmpty else {
+                  record["value"] != nil || record["expression"]?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false else {
                 throw NrqlConnection.ConfigurationError(
-                    message: "Binding\(label) requires a valid 'name' and a nonempty Lua 'expression'."
+                    message: "Binding\(label) requires a valid 'name' and exactly one of 'value' (literal text) or 'expression' (nonempty Lua)."
                 )
             }
-            return Variable(name: name, expression: expression)
+            return Variable(
+                name: name, expression: record["expression"]?.trimmingCharacters(in: .whitespacesAndNewlines),
+                value: record["value"]
+            )
         }
 
         static func editableBindings(in metadata: String) -> [Variable] {
-            ((try? ConfigurationYAML(metadata).mappings("bindings")) ?? []).map {
-                .init(name: $0["name"] ?? "", expression: $0["expression"] ?? "")
+            ((try? ConfigurationYAML(metadata).mappings("bindings")) ?? []).map { record in
+                let hasSource = record["expression"] != nil || record["value"] != nil
+                return .init(name: record["name"] ?? "", expression: hasSource ? record["expression"] : "", value: record["value"])
             }
         }
 
         static func updatingBindings(_ bindings: [Variable], in metadata: String) throws -> String {
             try ConfigurationYAML(metadata).updating("bindings", mappings: bindings.map {
-                [("name", $0.name), ("expression", $0.expression ?? "")]
+                var fields = [("name", $0.name)]
+                if let value = $0.value { fields.append(("value", value)) }
+                if let expression = $0.expression { fields.append(("expression", expression)) }
+                if fields.count == 1 { fields.append(("expression", "")) }
+                return fields
             })
         }
     }
@@ -136,11 +152,15 @@ struct LuaRuntime {
         try engine.run(configPrelude)
 
         for variable in config.variables {
-            guard let expression = variable.expression else {
-                throw NrqlConnection.ConfigurationError(message: "Variable '\(variable.name)' requires an expression.")
-            }
             do {
-                let value = try engine.evaluate("return (\(expression))")
+                let value: LuaValue
+                if let literal = variable.value {
+                    value = .string(literal)
+                } else if let expression = variable.expression {
+                    value = try engine.evaluate("return (\(expression))")
+                } else {
+                    throw NrqlConnection.ConfigurationError(message: "The binding requires a value or expression.")
+                }
                 if case .nil = value {
                     throw NrqlConnection.ConfigurationError(message: "The expression has no value.")
                 }

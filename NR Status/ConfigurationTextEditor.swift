@@ -33,6 +33,7 @@ struct ConfigurationTextEditor: NSViewRepresentable {
         context.coordinator.completionScope = completionScope
         context.coordinator.isExpression = isExpression
         guard let textView = scrollView.documentView as? NSTextView else { return }
+        textView.setAccessibilityIdentifier(identifier)
         if textView.string != text {
             textView.string = text
         }

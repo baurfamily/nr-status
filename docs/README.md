@@ -26,6 +26,7 @@
 ## Examples and maintenance
 
 - [Chart samples](examples/ChartSamples.nrmd): every chart type, with fixed offline data.
+- [Bindings walkthrough](examples/Bindings.nrmd): real NerdGraph queries, literal and extracted bindings, and connected Lua reports.
 - [Busiest app](examples/BusiestApp.nrmd): a connected-query example requiring New Relic access.
 - [Screenshot capture guide](Screenshots.md).
 - [Development and widget troubleshooting](Development.md).

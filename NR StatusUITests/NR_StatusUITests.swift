@@ -290,7 +290,7 @@ final class NR_StatusUITests: XCTestCase {
             author: Binding example
             bindings:
               - name: service
-                expression: '"Checkout"'
+                value: Checkout
             ---
 
             # Notes
@@ -311,11 +311,18 @@ final class NR_StatusUITests: XCTestCase {
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         XCTAssertEqual(name.value as? String, "service")
         XCTAssertFalse(window.textFields["cell-result-variable"].exists)
-        let expression = window.textViews["binding-expression-0"]
-        XCTAssertEqual(expression.value as? String, "\"Checkout\"")
+        let literal = window.textViews["binding-value-0"]
+        XCTAssertEqual(literal.value as? String, "Checkout")
         name.click()
         name.typeKey("a", modifierFlags: .command)
         name.typeText("serviceName")
+        literal.click()
+        literal.typeKey("a", modifierFlags: .command)
+        literal.typeText("Payments")
+        window.radioButtons["Expression"].firstMatch.click()
+        let expression = window.textViews["binding-expression-0"]
+        XCTAssertTrue(expression.waitForExistence(timeout: 5))
+        XCTAssertEqual(expression.value as? String, "Payments")
         expression.click()
         expression.typeKey("a", modifierFlags: .command)
         expression.typeText("\"Payments\"")
@@ -325,27 +332,34 @@ final class NR_StatusUITests: XCTestCase {
         XCTAssertTrue((text.value as? String)?.contains("bindings:") == true)
         XCTAssertTrue((text.value as? String)?.contains("name: serviceName") == true)
         XCTAssertTrue((text.value as? String)?.contains("Payments") == true)
+        XCTAssertFalse((text.value as? String)?.contains("value:") == true)
         XCTAssertFalse((text.value as? String)?.contains("var:") == true)
         text.click()
         text.typeKey("a", modifierFlags: .command)
-        text.typeText("author: Binding example\nbindings:\n  - name: appName\n    expression: '\"Inventory\"'")
+        text.typeText("author: Binding example\nbindings:\n  - name: appName\n    value: Inventory")
         window.radioButtons["Settings"].firstMatch.click()
         XCTAssertEqual(name.value as? String, "appName")
-        XCTAssertEqual(expression.value as? String, "\"Inventory\"")
+        XCTAssertEqual(literal.value as? String, "Inventory")
+        XCTAssertFalse(expression.exists)
+        window.radioButtons["Expression"].firstMatch.click()
+        XCTAssertEqual(expression.value as? String, "Inventory")
+        window.radioButtons["Value"].firstMatch.click()
+        XCTAssertEqual(literal.value as? String, "Inventory")
         window.buttons["remove-binding-0"].click()
         XCTAssertFalse(name.exists)
         window.buttons["add-result-binding"].click()
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         name.click()
         name.typeText("threshold")
-        expression.click()
-        expression.typeText("12")
+        literal.click()
+        literal.typeText("12")
         window.buttons["Close"].firstMatch.click()
         app.typeKey("s", modifierFlags: .command)
         let saved = NSPredicate { _, _ in
             guard let source = try? String(contentsOf: file, encoding: .utf8) else { return false }
             return source.hasPrefix("---\n") && source.contains("name: threshold")
                 && source.contains("author: Binding example") && source.contains("# Notes")
+                && source.contains("value:") && !source.contains("expression:")
                 && !source.contains("var:")
         }
         expectation(for: saved, evaluatedWith: nil)

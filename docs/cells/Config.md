@@ -13,7 +13,7 @@ api-key: Production
 accounts: [123456, 789012]
 bindings:
   - name: appName
-    expression: '"Checkout"'
+    value: Checkout
   - name: heading
     expression: config.appName .. " health"
 ---
@@ -23,7 +23,7 @@ bindings:
 |---|---|
 | `api-key` | Saved API key **name**, never the secret; `api_key` is an alias |
 | `accounts` | Nonempty YAML list of account IDs used by NRQL; a CSV scalar also works |
-| `bindings` | An array of `{ name, expression }` mappings; values are exposed as `config.name` |
+| `bindings` | An array of `{ name, value }` or `{ name, expression }` mappings; exposed as `config.name` |
 | `author`, `description` | Optional descriptive metadata; no execution effect |
 
 Omit connection fields to inherit Settings. Other key/value metadata is
@@ -33,11 +33,14 @@ Duplicate connection fields, invalid/empty account lists, unknown saved keys,
 and malformed YAML produce errors rather than silently selecting
 another connection.
 
-Bindings are evaluated in array order. Each entry requires a Lua-identifier
-`name` and a nonempty Lua `expression`. Names must be unique and cannot replace
-`accounts` or `api_key`. Refer to earlier bindings through `config`, not as bare
-Lua globals. Keep Lua string quotes inside YAML quotes, as in
-`expression: '"Checkout"'`.
+Bindings are installed in array order. Each entry requires a Lua-identifier
+`name` and exactly one of `value` or `expression`:
+
+- `value` stores literal text directly, without evaluating Lua.
+- `expression` evaluates nonempty Lua source and can read earlier `config` fields.
+
+Names must be unique and cannot replace `accounts` or `api_key`.
+Refer to earlier bindings through `config`, not as bare Lua globals.
 
 Document configuration does not use `var`; that key names a cell's whole result.
 

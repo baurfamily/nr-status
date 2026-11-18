@@ -65,6 +65,10 @@ struct LuaRuntimeTests {
     }
 
     @Test(arguments: [
+        "bindings: [{name: appName, value: Foo, expression: 1}]",
+        "bindings: [{name: appName, value: [Foo]}]",
+        "bindings: [{name: accounts, value: Foo}]",
+        "bindings: [{name: bad-name, value: Foo}]",
         "bindings:",
         "bindings: [appName]",
         "bindings: {appName: 1}",
@@ -81,6 +85,31 @@ struct LuaRuntimeTests {
     func rejectsInvalidDocumentBindings(_ configuration: String) {
         #expect(throws: (any Error).self) {
             try NrqlConnection.parseDocumentConfig(configuration)
+        }
+    }
+
+    @Test(arguments: ["Checkout", "", "42", "true", "config.accounts[1]", "'quoted' \"text\"\\path\n  next line\n"])
+    func literalBindingsPreserveStringsWithoutEvaluatingLua(_ literal: String) throws {
+        let body = try LuaRuntime.Variable.updatingBindings([
+            .init(name: "label", value: literal),
+            .init(name: "heading", expression: "config.label .. '!'")
+        ], in: "")
+        let config = try NrqlConnection.parseDocumentConfig(body)
+        #expect(config.variables[0].value == literal)
+        #expect(config.variables[0].expression == nil && !config.variables[0].isWholeResponse)
+        let output = try LuaRuntime.run(
+            "return { label = config.label, heading = config.heading, kind = type(config.label) }", config: config
+        ).value
+        #expect(output.tableValue?["label"]?.stringValue == literal)
+        #expect(output.tableValue?["heading"]?.stringValue == literal + "!")
+        #expect(output.tableValue?["kind"]?.stringValue == "string")
+    }
+
+    @Test func literalYAMLScalarsBecomeStrings() throws {
+        for (scalar, expected) in [("42", "42"), ("true", "true"), ("null", ""), ("\"null\"", "null"), ("\"\"", "")] {
+            let config = try NrqlConnection.parseDocumentConfig("bindings: [{name: label, value: \(scalar)}]")
+            #expect(try LuaRuntime.run("return config.label", config: config).value.stringValue == expected)
+            #expect(try LuaRuntime.run("return type(config.label)", config: config).value.stringValue == "string")
         }
     }
 

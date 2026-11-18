@@ -43,7 +43,7 @@ struct NrqlConnection: Equatable, Sendable {
         }
         if strict {
             guard !yaml.fields.contains(where: { $0.key == "var" }) else {
-                throw ConfigurationError(message: "Use 'bindings' with name/expression entries in document configuration, not 'var'.")
+                throw ConfigurationError(message: "Use 'bindings' with name/value or name/expression entries in document configuration, not 'var'.")
             }
             var seen = Set<String>()
             for record in try yaml.mappings("bindings") {

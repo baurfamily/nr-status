@@ -38,14 +38,14 @@ query AccountDetails($accountId: Int!) {
 | `title` | Cell heading |
 | `api-key` / `api_key` | Saved key name override |
 | `var: name` | Bind the complete response, including `data`, `errors`, and `extensions` |
-| `bindings` | An array of `{ name, expression }` mappings for Lua extractions |
+| `bindings` | An array of `{ name, expression }` Lua extractions or `{ name, value }` literal strings |
 | `chart` | Default/`json`, `bindings`, or `none` |
 | `query: hide` | Collapse code on open and omit it from HTML/PDF exports |
 
 `var` is optional and names the complete response; it is not a list or an
-expression. Use `bindings` for individual extracted values, with one `name` and
-one nonempty Lua `expression` per entry. You can use either option or both.
-Extraction names must be Lua identifiers and unique across `var` and the array.
+expression. Each `bindings` entry has a `name` and exactly one of `expression`
+(nonempty Lua) or `value` (literal text). You can use `var`, `bindings`, or both.
+Binding names must be Lua identifiers and unique across `var` and the array.
 Quote expressions starting with `#`, such as `expression: "#data.actor.entities"`.
 Expressions can read `data`,
 `errors`, `extensions`, document `config`, and other cells' `results`.
@@ -61,7 +61,7 @@ GraphQL query text is sent literally: `{{ }}` works **only in JSON variables**.
 Unquoted placeholders insert typed JSON values; quoted placeholders insert
 escaped string content. See the [binding reference](../VariablesAndBindings.md#graphql-input-variables).
 
-JSON is the default output. Bindings mode lists each expression and its value;
+JSON is the default output. Bindings mode lists each source and its value;
 Hidden suppresses the result data, not errors. Partial data and GraphQL errors
 remain inspectable. If any binding extraction fails, no bindings from that run
 are exported to other cells, although the response and per-binding diagnostics

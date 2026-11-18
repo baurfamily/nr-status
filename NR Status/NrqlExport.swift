@@ -69,8 +69,8 @@ enum NrqlExport {
     static func tableData(for cell: NrqlCell) -> TableData? {
         if cell.kind == .nerdgraph, cell.query.format?.showsBindings == true, cell.query.jsonResult != nil {
             return TableData(
-                headers: ["Variable", "Expression", "Value"],
-                rows: cell.query.inspectedBindings.map { [$0.name, $0.expression ?? "(whole response)", $0.summary] }
+                headers: ["Variable", "Source", "Value"],
+                rows: cell.query.inspectedBindings.map { [$0.name, $0.sourceDescription, $0.summary] }
             )
         }
         guard cell.query.format?.hidesChart != true, cell.query.format?.showsJSON != true,

@@ -126,6 +126,8 @@ struct ConfigurationYAMLTests {
         "bindings: [{name: entity, expression: ''}]",
         "bindings: [{name: bad-name, expression: data}]",
         "bindings: [{name: entity, path: data}]",
+        "bindings: [{name: entity, value: text, expression: data}]",
+        "var: response\nbindings: [{name: response, value: text}]",
         "var: response\nbindings: [{name: response, expression: data}]",
         "bindings: [{name: entity, expression: data}, {name: entity, expression: errors}]"
     ])
@@ -196,7 +198,7 @@ struct ConfigurationYAMLTests {
 
     @Test func sampleWorkbooksUseStrictYAMLAndOfflineChartsStillRun() async throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-        for filename in ["BusiestApp.nrmd", "ChartSamples.nrmd"] {
+        for filename in ["BusiestApp.nrmd", "ChartSamples.nrmd", "Bindings.nrmd"] {
             let url = root.appendingPathComponent("docs/examples/\(filename)")
             let document = NRQL_EditorDocument(text: try String(contentsOf: url, encoding: .utf8))
             #expect(document.text.hasPrefix("---\n"))

@@ -3,7 +3,7 @@ author: Me
 description: A few examples of ways to use NR Markdown notebooks
 bindings:
   - name: main_app
-    expression: '"TaT (production)"'
+    value: TaT (production)
 ---
 
 ```cell_config

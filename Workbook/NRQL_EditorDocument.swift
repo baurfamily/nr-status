@@ -85,7 +85,7 @@ struct NrqlCell: Identifiable {
             throw NrqlConnection.ConfigurationError(message: "A binding named '\(name)' already exists.")
         }
         guard let expression else {
-            guard !bindings.contains(where: { $0.expression == nil }) else {
+            guard !bindings.contains(where: \.isWholeResponse) else {
                 throw NrqlConnection.ConfigurationError(
                     message: "This cell already has a whole-response variable. Change its name in Settings."
                 )
@@ -315,7 +315,7 @@ struct NRQL_EditorDocument: FileDocument {
                 }
                 if copy.kind == .nerdgraph {
                     let extractions = NerdgraphCellSource(stored: original.query.text).extractionBindings.map {
-                        LuaRuntime.Variable(name: copyName($0.name), expression: $0.expression)
+                        LuaRuntime.Variable(name: copyName($0.name), expression: $0.expression, value: $0.value)
                     }
                     configuration = (try? NerdgraphCellSource.updatingExtractions(extractions, in: configuration))
                         ?? configuration

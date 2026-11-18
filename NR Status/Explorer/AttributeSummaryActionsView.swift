@@ -10,8 +10,11 @@ import SwiftUI
 struct AttributeSummaryActionsView : View {
     let attribute: Attribute
     @Binding var query: QueryBuilder
+    @Environment(\.queryBuilderConfig) private var queryBuilderConfig
 
     @State var summary: AttributeSummary?
+
+    private var config: NerdgraphConfig { queryBuilderConfig ?? .current }
     
     func makeBinding(for key: String) -> Binding<Bool> {
         return Binding(
@@ -121,10 +124,11 @@ struct AttributeSummaryActionsView : View {
             }
         }
         .padding(.vertical)
-        .task {
-            Task {
-                self.summary = await AttributeSummary.generate(from: attribute)
-            }
+        .task(id: config) {
+            summary = nil
+            let summary = await AttributeSummary.generate(from: attribute, config: config)
+            guard !Task.isCancelled else { return }
+            self.summary = summary
         }
     }
 }

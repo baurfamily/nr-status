@@ -96,9 +96,11 @@ final class NrqlLanguageService: LanguageService {
                 text: source, location: next, configuration: language == .config
             ))
                 || (text == "." && LuaCompletion.interpolationStart(in: source, at: next) != nil)
+                || (language == .nrql && NrqlValueCompletion.analyse(text: source, location: next) != nil)
         }
         guard retrigger else { return }
         try await Task.sleep(for: .milliseconds(100))
+        guard currentText == source else { return }
         let action = lock.withLock { completionAction }
         await MainActor.run { action?() }
     }
@@ -180,7 +182,7 @@ final class NrqlLanguageService: LanguageService {
                 )
             }
         }
-        guard !items.isEmpty else { return .none }
+        guard !Task.isCancelled, !items.isEmpty else { return .none }
 
         return Completions(
             isIncomplete: false,
@@ -194,7 +196,7 @@ final class NrqlLanguageService: LanguageService {
                             Text(item.detail ?? item.kind.label).foregroundStyle(.secondary).font(.caption)
                         }
                     },
-                    documentationView: Text(item.detail ?? "\(item.kind.label.capitalized): \(item.name)"),
+                    documentationView: Text(item.documentationText),
                     selected: index == 0,
                     sortText: String(format: "%06d", index),
                     filterText: item.name,

@@ -8,14 +8,34 @@
 import SwiftUI
 import CodeEditorView
 
+extension EnvironmentValues {
+    @Entry var queryBuilderConfig: NerdgraphConfig? = nil
+}
+
 struct QueryBuilderView : View {
     @State var query = NrqlQuery(from: "SELECT COUNT(*) FROM Transaction FACET name")
     @State var queryBuilder: QueryBuilder = .init(event: "")
     @State private var selectedEvent: String?
+    @State private var selectedAccountID: Int?
+    @State private var defaultConfig = NerdgraphConfig.current
+    @AppStorage("nerdgraphProfiles", store: NerdgraphConfig.sharedDefaults) private var profileSettingsData = Data()
     
     @State var chartConfiguration: ChartConfiguration = ChartConfiguration(resultContainer: NrdbResultContainer.empty)
 
     @Environment(\.colorScheme) private var colorScheme: ColorScheme
+
+    private struct Request: Hashable {
+        let nrql: String
+        let config: NerdgraphConfig
+    }
+
+    private var config: NerdgraphConfig {
+        var config = defaultConfig
+        if let selectedAccountID { config.accountIds = String(selectedAccountID) }
+        return config
+    }
+
+    private var request: Request { Request(nrql: queryBuilder.nrql, config: config) }
     
     var body: some View {
         NavigationSplitView {
@@ -30,6 +50,7 @@ struct QueryBuilderView : View {
                             }
                     }
                     .id(selectedEvent)
+                    .id(config)
                 } else {
                     Text("Select an event").foregroundStyle(.secondary)
                 }
@@ -54,6 +75,16 @@ struct QueryBuilderView : View {
                     }
                 }
                 .toolbar {
+                    ToolbarItem {
+                        Picker("Account", selection: $selectedAccountID) {
+                            Text("Default (all preferred accounts)").tag(Int?.none)
+                            ForEach(defaultConfig.accountIdList, id: \.self) { id in
+                                Text(String(id)).tag(Optional(id))
+                            }
+                        }
+                        .accessibilityIdentifier("query-builder-account-picker")
+                        .help("Choose an account for event discovery, attribute details, and chart queries. Manage preferred accounts in Settings.")
+                    }
                     ToolbarItemGroup {
                         TimePicker(query: $queryBuilder)
                             .fixedSize()
@@ -61,16 +92,31 @@ struct QueryBuilderView : View {
                 }
         }
         .navigationSplitViewStyle(.balanced)
+        .environment(\.queryBuilderConfig, config)
         .focusedSceneValue(\.query, $query)
-        .onChange(of: $queryBuilder.wrappedValue) {
-            let newQuery = NrqlQuery(from: queryBuilder.nrql)
-            query = newQuery
-            Task {
-                await newQuery.getData()
-                // the builder may have changed again while this was running
-                guard query === newQuery, let results = newQuery.resultContainer else { return }
-                chartConfiguration.updateResults(results)
+        .onChange(of: profileSettingsData) {
+            defaultConfig = .current
+            if let selectedAccountID, !defaultConfig.accountIdList.contains(selectedAccountID) {
+                self.selectedAccountID = nil
             }
+        }
+        .onChange(of: config) {
+            chartConfiguration.updateResults(.empty)
+        }
+        .onChange(of: selectedEvent) {
+            if selectedEvent == nil { queryBuilder.event = "" }
+        }
+        .task(id: request) {
+            let request = request
+            let newQuery = NrqlQuery(from: request.nrql)
+            query = newQuery
+            guard !queryBuilder.event.isEmpty else {
+                chartConfiguration.updateResults(.empty)
+                return
+            }
+            await newQuery.getData(defaults: NrqlConnection(accountIds: request.config.accountIdList))
+            guard !Task.isCancelled, query === newQuery, let results = newQuery.resultContainer else { return }
+            chartConfiguration.updateResults(results)
         }
     }
 }

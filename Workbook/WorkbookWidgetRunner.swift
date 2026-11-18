@@ -15,18 +15,15 @@ enum WorkbookWidgetRunner {
                 throw NrqlConnection.ConfigurationError(message: "Widget dependency cycle at '\(cell.query.title)'.")
             }
             // Positional and computed references cannot identify a minimal dependency graph.
-            let expressions = cell.query.expressionCode
-            let withoutNamedReferences = expressions
-                .replacingOccurrences(of: #"\bresults\s*\[\s*["'][^"']+["']\s*\]"#, with: "", options: .regularExpression)
-                .replacingOccurrences(of: #"\bresults\s*\.\s*[A-Za-z_][A-Za-z0-9_]*"#, with: "", options: .regularExpression)
-            if withoutNamedReferences.range(of: #"\bresults\b"#, options: .regularExpression) != nil {
+            let references = NrqlDependencies.references(in: cell.query.expressionCode)
+            if references.hasUnnamed {
                 throw NrqlConnection.ConfigurationError(message: "Widget dependencies must use results.name or results[\"name\"].")
             }
             if cell.kind == .nerdgraph,
                cell.query.nrql.range(of: #"(?m)^\s*(mutation|subscription)\b"#, options: .regularExpression) != nil {
                 throw NrqlConnection.ConfigurationError(message: "Widgets can only run read-only Nerdgraph queries.")
             }
-            for name in NrqlDependencies.referencedNames(by: cell).sorted() {
+            for name in references.names.sorted() {
                 let sources = cells.filter { $0.query.resultNames.contains(name) }
                 guard sources.count == 1, let source = sources.first else {
                     throw NrqlConnection.ConfigurationError(

@@ -115,11 +115,11 @@ struct CellConfigurationView: View {
             } else {
                 labeledField("Variable binding", text: value("var"), placeholder: "Result variable")
             }
-            if isDocument || cell.kind != .lua {
+            if isDocument {
                 labeledField("API Key name", text: value("api-key"), placeholder: "Default if empty")
-                if cell.kind != .nerdgraph {
-                    labeledField("Account IDs", text: value("accounts"), placeholder: "Comma separated; default if empty")
-                }
+            }
+            if isDocument || (cell.kind != .lua && cell.kind != .nerdgraph) {
+                labeledField("Account IDs", text: value("accounts"), placeholder: "Comma separated; default if empty")
             }
             if !isDocument {
                 Toggle("Hide query on open and export", isOn: Binding(

@@ -9,9 +9,12 @@ import SwiftUI
 
 struct EventExplorer : View {
     @Binding var selection: String?
+    @Environment(\.queryBuilderConfig) private var queryBuilderConfig
     
     @State var events: [String] = []
     @State var eventFilter: String = ""
+
+    private var config: NerdgraphConfig { queryBuilderConfig ?? .current }
     
     var filteredEvents: [String] {
         guard !eventFilter.isEmpty else { return events }
@@ -24,9 +27,12 @@ struct EventExplorer : View {
             Text(event)
         }
         .navigationTitle("Events")
-        .task {
-            if let results = try? await Queries().getNrqlData(query: "SHOW EVENT TYPES since 1 day ago") {
+        .task(id: config) {
+            events = []
+            if let results = try? await Queries(config: config).getNrqlData(query: "SHOW EVENT TYPES since 1 day ago") {
+                guard !Task.isCancelled else { return }
                 events = results.data.map { $0.stringFields["eventType"] ?? "" }
+                if let selection, !events.contains(selection) { self.selection = nil }
             }
         }.searchable(text: $eventFilter, placement: .sidebar)
     }

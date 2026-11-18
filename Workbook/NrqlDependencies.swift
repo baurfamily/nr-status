@@ -8,21 +8,39 @@ import Foundation
 /// Which cells read which other cells' results, found by scanning the `{{ }}`
 /// expressions of a query, or the whole of a script, for `results.<name>`.
 enum NrqlDependencies {
-    private static let references = [
-        try! NSRegularExpression(pattern: #"\bresults\s*\.\s*([A-Za-z_][A-Za-z0-9_]*)"#),
-        try! NSRegularExpression(pattern: #"\bresults\s*\[\s*["']([^"']+)["']\s*\]"#),
+    private static let resultsIdentifier = try! NSRegularExpression(pattern: #"\bresults\b"#)
+    private static let namedReferences = [
+        try! NSRegularExpression(pattern: #"results\s*\.\s*([A-Za-z_][A-Za-z0-9_]*)"#),
+        try! NSRegularExpression(pattern: #"results\s*\[\s*["']([^"']+)["']\s*\]"#),
     ]
 
-    static func referencedNames(by cell: NrqlCell) -> Set<String> {
-        let code = cell.query.expressionCode
+    static func references(in code: String) -> (names: Set<String>, hasUnnamed: Bool) {
         let range = NSRange(code.startIndex..., in: code)
         var names = Set<String>()
-        for pattern in references {
-            for match in pattern.matches(in: code, range: range) {
-                if let nameRange = Range(match.range(at: 1), in: code) { names.insert(String(code[nameRange])) }
+        var hasUnnamed = false
+        var consumedThrough = code.startIndex
+        for identifier in resultsIdentifier.matches(in: code, range: range) {
+            guard let identifierRange = Range(identifier.range, in: code),
+                  identifierRange.lowerBound >= consumedThrough else { continue }
+            let prefix = code[..<identifierRange.lowerBound].trimmingCharacters(in: .whitespacesAndNewlines)
+            // A response field named `results` is not the workbook's global results table.
+            if prefix.hasSuffix(":") || prefix.hasSuffix(".") && !prefix.hasSuffix("..") { continue }
+            let suffix = NSRange(identifierRange.lowerBound..<code.endIndex, in: code)
+            if let match = namedReferences.lazy.compactMap({
+                $0.firstMatch(in: code, options: .anchored, range: suffix)
+            }).first, let nameRange = Range(match.range(at: 1), in: code),
+               let matchRange = Range(match.range, in: code) {
+                names.insert(String(code[nameRange]))
+                consumedThrough = matchRange.upperBound
+            } else {
+                hasUnnamed = true
             }
         }
-        return names
+        return (names, hasUnnamed)
+    }
+
+    static func referencedNames(by cell: NrqlCell) -> Set<String> {
+        references(in: cell.query.expressionCode).names
     }
 
     /// The cells whose results `cell` reads.

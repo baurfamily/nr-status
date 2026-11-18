@@ -9,14 +9,15 @@ import Foundation
 protocol NrqlMetadataProviding: Sendable {
     func eventTypes() async -> [String]
     func attributes(event: String) async -> [Attribute]
+    func values(for lookup: NrqlValueCompletion.Lookup) async -> [String]
 }
 
 /// Works out what can be typed at a position in a query cell and offers matching names.
 /// The analysis is purely textual so it stays fast and testable; only the names
-/// themselves (event types and attributes) come from NRDB.
+/// themselves (event types, attributes, and string values) come from NRDB.
 enum NrqlCompletion {
     enum Kind: Int {
-        case formatKey, formatValue, eventType, attribute, function, keyword, variable, field
+        case formatKey, formatValue, eventType, attribute, function, keyword, variable, field, attributeValue
 
         var label: String {
             switch self {
@@ -28,6 +29,7 @@ enum NrqlCompletion {
             case .keyword: "keyword"
             case .variable: "variable"
             case .field: "field"
+            case .attributeValue: "value"
             }
         }
     }
@@ -37,6 +39,11 @@ enum NrqlCompletion {
         let kind: Kind
         let detail: String?
         let insertText: String
+        var documentation: String? = nil
+
+        var documentationText: String {
+            documentation ?? detail ?? "\(kind.label.capitalized): \(name)"
+        }
     }
 
     enum Context: Equatable {
@@ -46,6 +53,7 @@ enum NrqlCompletion {
         case events
         case attributes(event: String?, keywords: [String])
         case keywords([String])
+        case values(NrqlValueCompletion.Lookup, closeQuote: Bool)
     }
 
     struct Analysis: Equatable {
@@ -162,7 +170,9 @@ enum NrqlCompletion {
 
         if configuration { return result(.none) }
 
-        // no completions inside line comments, strings or quoted names
+        if let value = NrqlValueCompletion.analyse(text: text, location: cursor) { return value }
+
+        // Other strings and quoted names do not offer ordinary name completions.
         if lineBeforePrefix.contains("//") { return result(.none) }
         if lineBeforePrefix.filter({ $0 == "'" }).count % 2 == 1 { return result(.none) }
         if lineBeforePrefix.filter({ $0 == "`" }).count % 2 == 1 { return result(.none) }
@@ -236,6 +246,7 @@ enum NrqlCompletion {
     /// so the panel should stay up or come back after a separator is typed.
     static func offersAfterSeparator(text: String, location: Int, configuration: Bool = false) -> Bool {
         let analysis = analyse(text: text, location: location, configuration: configuration)
+        if case .values = analysis.context { return true }
         guard analysis.prefix.isEmpty else { return false }
 
         let ns = text as NSString
@@ -250,7 +261,7 @@ enum NrqlCompletion {
             if before.hasSuffix(",") || before.hasSuffix("(") { return true }
             let lastWord = before.split(whereSeparator: { $0.isWhitespace || $0 == "(" }).last?.uppercased()
             return ["SELECT", "WHERE", "FACET", "BY", "AND", "OR", "NOT"].contains(lastWord ?? "")
-        case .none, .formatKey, .keywords:
+        case .none, .formatKey, .keywords, .values:
             return false
         }
     }
@@ -309,6 +320,19 @@ enum NrqlCompletion {
             candidates += keywordItems(keywords)
         case .keywords(let words):
             candidates = keywordItems(words)
+        case .values(let lookup, let closeQuote):
+            candidates = await metadata.values(for: lookup).map {
+                Item(name: $0, kind: .attributeValue, detail: nil,
+                     insertText: NrqlValueCompletion.escaped($0) + (closeQuote ? "'" : ""),
+                     documentation: """
+                     \(lookup.event).\(lookup.attribute)
+
+                     \(lookup.timeWindow)
+
+                     Up to 100 unique values; cached for up to 5 minutes.
+                     Other WHERE conditions are not applied.
+                     """)
+            }
         }
 
         let lowered = analysis.prefix.lowercased()

@@ -3,6 +3,51 @@ import Testing
 @testable import NR_Status
 
 struct WorkbookWidgetTests {
+    @Test func responseFieldsNamedResultsAreNotWidgetDependencies() throws {
+        let document = NRQL_EditorDocument(text: """
+            ```cell_config
+            var: entities = data.actor.entitySearch.results.entities
+            var: first = data.actor.entitySearch . results["entities"][1]
+            var: count = #data.actor.entitySearch.results[1]
+            ```
+            ```graphql
+            { actor { entitySearch(query: "type = 'APPLICATION'") { results { entities { guid } } } } }
+            ```
+
+            ```cell_config
+            chart: billboard
+            ```
+            ```lua
+            return { rows = { { count = #results.entities } } }
+            ```
+            """)
+        let target = try #require(document.cells.last)
+        #expect(try WorkbookWidgetRunner.plan(target: target, in: document.cells).map(\.id) == document.cells.map(\.id))
+        #expect(NrqlDependencies.referencedNames(by: document.cells[0]).isEmpty)
+    }
+
+    @Test func nestedResultsFieldsStillRequireTheirRootWidgetDependency() throws {
+        let source = NrqlCell(text: "```cell_config\nvar: response\n```\n```graphql\n{ actor { user { name } } }\n```")
+        let target = NrqlCell(text: """
+            ```lua
+            local nested = results.response.data.actor.entitySearch.results[1]
+            return { rows = { { name = nested.name .. results["response"].data.actor.user.name } } }
+            ```
+            """)
+        #expect(NrqlDependencies.referencedNames(by: target) == ["response"])
+        #expect(try WorkbookWidgetRunner.plan(target: target, in: [source, target]).map(\.id) == [source.id, target.id])
+        #expect(throws: NrqlConnection.ConfigurationError.self) {
+            try WorkbookWidgetRunner.plan(target: target, in: [target])
+        }
+    }
+
+    @Test func widgetDependenciesCanBeNamedResults() throws {
+        let source = NrqlCell(text: "```cell_config\nvar: results\n```\n```lua\nreturn { rows = { { count = 42 } } }\n```")
+        let target = NrqlCell(text: "```lua\nreturn results[\"results\"]\n```")
+        #expect(NrqlDependencies.referencedNames(by: target) == ["results"])
+        #expect(try WorkbookWidgetRunner.plan(target: target, in: [source, target]).map(\.id) == [source.id, target.id])
+    }
+
     @Test func widgetLegendsFitAtMostTwoLinesAtTheAvailableWidth() {
         #expect(WidgetLegendPolicy.fits(labels: ["API", "Web"], width: 140))
         #expect(WidgetLegendPolicy.fits(labels: ["API", "Web"], width: 300))

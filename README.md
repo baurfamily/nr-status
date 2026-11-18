@@ -155,10 +155,35 @@ The chart updates while dragging; releasing saves the height to `cell_config`.
 Double-click the grip to reset to Auto.
 In the query builder, facet selections filter the chart, and **Filter Query to
 Selected Facets** can add a `WHERE` clause for a single facet.
+The **Account** picker scopes event discovery, attributes, attribute summaries,
+and chart queries to one of the default API key's preferred accounts. **Default
+(all preferred accounts)** keeps the existing combined-account behavior. The
+selection applies only to that Query Builder window and does not change Settings.
 
 With no `cell_config` fence, the first code line can supply the title via a
 `//` NRQL comment, `--` Lua comment, or `#` GraphQL comment. Any cell configuration,
 even an empty fence, disables that fallback; use `title:` instead.
+
+#### Editor keyboard preferences
+
+In **Settings > Editor**, **Return accepts autocomplete** is on by default and
+**Return runs query** is on by default. With a completion visible, Return accepts
+it when enabled; otherwise Return inserts a new line or runs the current cell
+according to the second setting. Tab always accepts a completion, Command-Return
+always runs the query, and Shift-Return always inserts a new line.
+
+#### Attribute-value autocomplete
+
+In an NRQL `WHERE` comparison, type an opening quote after `=`, `!=`, `<>`,
+`IN (`, or `NOT IN (` to suggest observed string values. Suggestions are filtered
+as you type and escape quotes and backslashes when inserted. Numeric values are
+not suggested; multi-event queries, subqueries, and computed attributes are skipped.
+
+Value lookups honor the query's completed `SINCE`/`UNTIL` clauses and timezone.
+Without a time range, they look back **one hour**. `UNTIL` alone uses the preceding
+hour; incomplete time clauses defer the lookup. Queries request at most 100 unique
+values with a five-second NRQL timeout. Results are cached for five minutes by
+connection, event, attribute, and time window, rather than queried on every keystroke.
 
 #### API keys and accounts
 
@@ -235,7 +260,10 @@ SELECT count(*) FROM TransactionError
 ````
 
 Each query independently overrides `api-key`, `accounts`, or both in its
-`cell_config` fence. Document settings are plain key/value lines inside the
+`cell_config` fence. Per-cell API-key overrides are an advanced, text-only option:
+add `api-key: Staging` (or `api_key: Staging`) in the cell configuration's **Text**
+editor. The API-key field remains visible in document-level **Settings**.
+Document settings are plain key/value lines inside the
 `config` fence; `//` lines are comments, not settings.
 Only `api-key` and `accounts` affect document connection settings. Other
 `key: value` metadata is accepted without affecting execution and is preserved

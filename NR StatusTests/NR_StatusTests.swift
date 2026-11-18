@@ -112,6 +112,94 @@ struct InspectorWindowExpansionTests {
     }
 }
 
+@MainActor
+struct EditorReturnKeyTests {
+    @Test func returnPreferencesHaveRequestedDefaultsAndIndependentBehavior() throws {
+        let suite = "NR Status Return preferences \(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        #expect(CompletionKeyRouter.returnAction(modifiers: [], completionVisible: true, defaults: defaults) == .acceptCompletion)
+        #expect(CompletionKeyRouter.returnAction(modifiers: [], completionVisible: false, defaults: defaults) == .runQuery)
+        for accepts in [false, true] {
+            for runs in [false, true] {
+                defaults.set(accepts, forKey: CompletionKeyRouter.returnAcceptsAutocompleteKey)
+                defaults.set(runs, forKey: CompletionKeyRouter.returnRunsQueryKey)
+                let fallback: CompletionKeyRouter.ReturnAction = runs ? .runQuery : .insertNewline
+                #expect(CompletionKeyRouter.returnAction(
+                    modifiers: [], completionVisible: true, defaults: defaults
+                ) == (accepts ? .acceptCompletion : fallback))
+                #expect(CompletionKeyRouter.returnAction(
+                    modifiers: [], completionVisible: false, defaults: defaults
+                ) == fallback)
+                for visible in [false, true] {
+                    #expect(CompletionKeyRouter.returnAction(
+                        modifiers: .command, completionVisible: visible, defaults: defaults
+                    ) == .runQuery)
+                    #expect(CompletionKeyRouter.returnAction(
+                        modifiers: .shift, completionVisible: visible, defaults: defaults
+                    ) == .insertNewline)
+                    #expect(CompletionKeyRouter.returnAction(
+                        modifiers: [.command, .shift], completionVisible: visible, defaults: defaults
+                    ) == .passThrough)
+                }
+            }
+        }
+    }
+
+    @Test func returnRunsOnlyTheEditorInItsOwnCellAndPreservesModifiedKeys() throws {
+        let suite = "NR Status Return routing \(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set(true, forKey: CompletionKeyRouter.returnRunsQueryKey)
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 240),
+            styleMask: [.borderless], backing: .buffered, defer: false
+        )
+        window.isReleasedWhenClosed = false
+        defer { window.close() }
+        let root = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 240))
+        window.contentView = root
+        var firstRuns = 0
+        var secondRuns = 0
+        let first = EditorFocusAnchor.AnchorView(frame: NSRect(x: 0, y: 0, width: 190, height: 240))
+        first.onRun = { firstRuns += 1 }
+        let container = NSView(frame: NSRect(x: 210, y: 0, width: 190, height: 240))
+        let second = EditorFocusAnchor.AnchorView(frame: container.bounds)
+        second.onRun = { secondRuns += 1 }
+        let editor = NSTextView(frame: container.bounds)
+        root.addSubview(first)
+        root.addSubview(container)
+        container.addSubview(second)
+        container.addSubview(editor)
+        window.orderBack(nil)
+        #expect(window.makeFirstResponder(editor))
+
+        func event(_ modifiers: NSEvent.ModifierFlags = [], keyCode: UInt16 = 36) throws -> NSEvent {
+            try #require(NSEvent.keyEvent(
+                with: .keyDown, location: .zero, modifierFlags: modifiers, timestamp: 0,
+                windowNumber: window.windowNumber, context: nil, characters: "\r", charactersIgnoringModifiers: "\r",
+                isARepeat: false, keyCode: keyCode
+            ))
+        }
+        try #require(window.firstResponder === editor)
+        #expect(CompletionKeyRouter.route(try event(), defaults: defaults) == nil)
+        #expect(firstRuns == 0)
+        #expect(secondRuns == 1)
+        #expect(CompletionKeyRouter.route(try event(.shift), defaults: defaults) != nil)
+        #expect(CompletionKeyRouter.route(try event([.command, .shift]), defaults: defaults) != nil)
+        #expect(secondRuns == 1)
+        defaults.set(false, forKey: CompletionKeyRouter.returnRunsQueryKey)
+        #expect(CompletionKeyRouter.route(try event(), defaults: defaults) != nil)
+        #expect(CompletionKeyRouter.route(try event(.command), defaults: defaults) == nil)
+        #expect(secondRuns == 2)
+        second.onRun = nil
+        defaults.set(true, forKey: CompletionKeyRouter.returnRunsQueryKey)
+        #expect(CompletionKeyRouter.route(try event(), defaults: defaults) != nil)
+        #expect(secondRuns == 2)
+    }
+}
+
 struct ConfigurationTextEditorTests {
     @MainActor @Test func nativeCompletionReplacesOnlyTheBindingExpressionPrefix() throws {
         let text = "var: user = data.act"
@@ -192,6 +280,43 @@ final class StubURLProtocol: URLProtocol {
 
 @Suite(.serialized)
 struct NerdgraphClientTests {
+    @Test func attributeSummariesUseSelectedAccountsAndCacheEachConnectionSeparately() async throws {
+        nonisolated(unsafe) var requestedAccounts: [[Int]] = []
+        StubURLProtocol.handler = { request in
+            let stream = try #require(request.httpBody.map { InputStream(data: $0) } ?? request.httpBodyStream)
+            stream.open()
+            defer { stream.close() }
+            let json = try #require(try JSONSerialization.jsonObject(with: stream) as? [String: Any])
+            let variables = try #require(json["variables"] as? [String: Any])
+            let ids = try #require(variables["accountIds"] as? [Int])
+            let id = try #require(ids.first)
+            requestedAccounts.append(ids)
+            return (200, Data("""
+                {"data":{"actor":{"nrql":{"nrql":"","results":[
+                    {"uniqueCount.name":\(id),"uniques.name":["account-\(id)"]}
+                ],"metadata":{}}}}}
+                """.utf8))
+        }
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [StubURLProtocol.self]
+        let session = URLSession(configuration: sessionConfig)
+        defer { session.invalidateAndCancel() }
+        let attribute = Attribute(event: "Transaction", type: "string", key: "name")
+        var config = NerdgraphConfig(host: "\(UUID().uuidString).example.com", apiKey: "test-key", accountIds: "12")
+        let first = await AttributeSummary.generate(from: attribute, config: config, session: session)
+        config.accountIds = "34"
+        let second = await AttributeSummary.generate(from: attribute, config: config, session: session)
+        config.accountIds = "12"
+        let cached = await AttributeSummary.generate(from: attribute, config: config, session: session)
+
+        #expect(first.cardinality == 12)
+        #expect(first.samples == ["account-12"])
+        #expect(second.cardinality == 34)
+        #expect(second.samples == ["account-34"])
+        #expect(cached.samples == first.samples)
+        #expect(requestedAccounts == [[12], [12], [34], [34]])
+    }
+
     @MainActor @Test(arguments: ["", "timeout: 10", "timeout: 120", "timeout: invalid"])
     func nrqlCellAppliesTimeout(configuration: String) async throws {
         let suite = "NR Status timeout test \(UUID().uuidString)"
@@ -595,6 +720,77 @@ struct NerdgraphClientTests {
         #expect(try await metadata.eventTypes(config: changed) == ["Event4"])
         #expect(try await metadata.eventTypes(config: original) == ["Event1"])
         #expect(requestCount == 4)
+    }
+
+    @Test func valueCompletionRequestsAndCachesAreScopedToConnectionAttributeAndTimeWindow() async throws {
+        nonisolated(unsafe) var requests: [(accounts: [Int], nrql: String)] = []
+        StubURLProtocol.handler = { request in
+            let stream = try #require(request.httpBody.map { InputStream(data: $0) } ?? request.httpBodyStream)
+            stream.open()
+            defer { stream.close() }
+            let json = try #require(try JSONSerialization.jsonObject(with: stream) as? [String: Any])
+            let variables = try #require(json["variables"] as? [String: Any])
+            requests.append((try #require(variables["accountIds"] as? [Int]), try #require(variables["nrql"] as? String)))
+            #expect((json["query"] as? String)?.contains("timeout: 5") == true)
+            return (200, Data("""
+                {"data":{"actor":{"nrql":{"nrql":"","metadata":{},"results":[
+                    {"completionValues":["value-\(requests.count)","value-\(requests.count)"]}
+                ]}}}}
+                """.utf8))
+        }
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [StubURLProtocol.self]
+        let session = URLSession(configuration: sessionConfig)
+        defer { session.invalidateAndCancel() }
+        let metadata = NrqlMetadata(session: session)
+        let lookup = NrqlValueCompletion.Lookup(event: "Transaction", attribute: "appName", timeWindow: "SINCE 1 hour ago")
+        let original = NerdgraphConfig(host: "a.example.com", apiKey: "key-a", accountIds: "1")
+        #expect(try await metadata.values(for: lookup, config: original) == ["value-1"])
+        #expect(try await metadata.values(for: lookup, config: original) == ["value-1"])
+        var changed = original
+        changed.apiKey = "key-b"
+        #expect(try await metadata.values(for: lookup, config: changed) == ["value-2"])
+        changed = original
+        changed.accountIds = "2"
+        #expect(try await metadata.values(for: lookup, config: changed) == ["value-3"])
+        changed = original
+        changed.host = "b.example.com"
+        #expect(try await metadata.values(for: lookup, config: changed) == ["value-4"])
+        let time = NrqlValueCompletion.Lookup(event: "Transaction", attribute: "appName", timeWindow: "SINCE 2 days ago UNTIL 1 day ago")
+        #expect(try await metadata.values(for: time, config: original) == ["value-5"])
+        let attribute = NrqlValueCompletion.Lookup(event: "Transaction", attribute: "host", timeWindow: lookup.timeWindow)
+        #expect(try await metadata.values(for: attribute, config: original) == ["value-6"])
+        let event = NrqlValueCompletion.Lookup(event: "Log", attribute: "appName", timeWindow: lookup.timeWindow)
+        #expect(try await metadata.values(for: event, config: original) == ["value-7"])
+        #expect(try await metadata.values(for: lookup, config: original) == ["value-1"])
+        #expect(requests.count == 7)
+        #expect(requests[0].accounts == [1])
+        #expect(requests[2].accounts == [2])
+        #expect(requests[0].nrql == "SELECT uniques(`appName`, 100) AS completionValues FROM `Transaction` SINCE 1 hour ago")
+        #expect(requests[4].nrql.hasSuffix(time.timeWindow))
+    }
+
+    @Test func concurrentValueLookupsShareARequestAndDoNotSuggestNumericValues() async throws {
+        nonisolated(unsafe) var requestCount = 0
+        StubURLProtocol.handler = { _ in
+            requestCount += 1
+            return (200, Data("""
+                {"data":{"actor":{"nrql":{"nrql":"","metadata":{},"results":[{"completionValues":[1,2,3]}]}}}}
+                """.utf8))
+        }
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [StubURLProtocol.self]
+        let session = URLSession(configuration: sessionConfig)
+        defer { session.invalidateAndCancel() }
+        let metadata = NrqlMetadata(session: session)
+        let lookup = NrqlValueCompletion.Lookup(event: "Transaction", attribute: "duration", timeWindow: "SINCE 1 hour ago")
+        let config = NerdgraphConfig(host: "a.example.com", apiKey: "key", accountIds: "1")
+        async let first = metadata.values(for: lookup, config: config)
+        async let second = metadata.values(for: lookup, config: config)
+        #expect(try await first.isEmpty)
+        #expect(try await second.isEmpty)
+        #expect(try await metadata.values(for: lookup, config: config).isEmpty)
+        #expect(requestCount == 1)
     }
 
     @Test func schemaCacheUsesEffectiveKeyAndHostAndReportsIntrospectionErrors() async throws {

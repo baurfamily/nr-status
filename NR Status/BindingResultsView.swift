@@ -16,13 +16,13 @@ struct BindingResultsView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(binding.namespace == "config" ? "config.\(binding.name)" : binding.name)
                                 .fontWeight(.medium).textSelection(.enabled)
-                            if let expression = binding.expression {
-                                Text(expression).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                            if binding.expression != nil || binding.literalValue != nil {
+                                Text(verbatim: binding.sourceDescription).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                             }
                         }
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .help(binding.expression ?? "The complete JSON response")
+                        .help(binding.sourceDescription)
                         .contextMenu {
                             Button("Copy Reference") {
                                 NSPasteboard.general.clearContents()

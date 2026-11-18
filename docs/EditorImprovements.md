@@ -1,5 +1,8 @@
 # Editor Improvements (branch: `editor-improvements`)
 
+> Historical planning notes, not a description of the current app or file
+> format. Start with the [documentation index](README.md) for current guides.
+
 ## Requirements summary
 
 ### Pre-note

@@ -108,6 +108,13 @@ struct NerdgraphCompletionTests {
         #expect(keys.items.map(\.name) == ["var"])
         #expect(keys.items.first?.insertText == "var: ")
         #expect(keys.range == NSRange(location: text.utf16.count - 2, length: 2))
+        for graphql in [true, false] {
+            let bindings = await NrqlCompletion.items(
+                text: "bin", location: 3, metadata: NrqlCompletionTests.StubMetadata(),
+                configuration: true, graphql: graphql
+            )
+            #expect(bindings.items.map(\.insertText) == ["bindings: "])
+        }
         let value = "title: Details\napi-key: Production U"
         let names = await NrqlCompletion.items(
             text: value, location: value.utf16.count, metadata: NrqlCompletionTests.StubMetadata(),
@@ -390,6 +397,7 @@ struct NrqlCompletionTests {
         #expect(await complete("  na").isEmpty)
         #expect(await complete("chart: p") == ["pie", "plot"])
         #expect(await complete("chart: j") == ["json"])
+        #expect(await complete("chart: con") == ["console"])
         #expect(await complete("chart: pie\nattributes: ") == ["donut", "separated"])
         #expect(await complete("chart: plot\nattributes: x-") == ["x-log"])
         #expect(await complete("title: Fo").isEmpty)

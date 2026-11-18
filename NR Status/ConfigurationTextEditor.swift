@@ -5,9 +5,10 @@ struct ConfigurationTextEditor: NSViewRepresentable {
     @Binding var text: String
     let identifier: String
     var completionScope: (() -> LuaCompletion.Scope)?
+    var isExpression = false
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(text: $text, completionScope: completionScope)
+        Coordinator(text: $text, completionScope: completionScope, isExpression: isExpression)
     }
 
     func makeNSView(context: Context) -> NSScrollView {
@@ -30,7 +31,9 @@ struct ConfigurationTextEditor: NSViewRepresentable {
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         context.coordinator.text = $text
         context.coordinator.completionScope = completionScope
+        context.coordinator.isExpression = isExpression
         guard let textView = scrollView.documentView as? NSTextView else { return }
+        textView.setAccessibilityIdentifier(identifier)
         if textView.string != text {
             textView.string = text
         }
@@ -39,10 +42,12 @@ struct ConfigurationTextEditor: NSViewRepresentable {
     class Coordinator: NSObject, NSTextViewDelegate {
         var text: Binding<String>
         var completionScope: (() -> LuaCompletion.Scope)?
+        var isExpression: Bool
 
-        init(text: Binding<String>, completionScope: (() -> LuaCompletion.Scope)?) {
+        init(text: Binding<String>, completionScope: (() -> LuaCompletion.Scope)?, isExpression: Bool = false) {
             self.text = text
             self.completionScope = completionScope
+            self.isExpression = isExpression
         }
 
         func textDidChange(_ notification: Notification) {
@@ -55,9 +60,11 @@ struct ConfigurationTextEditor: NSViewRepresentable {
             indexOfSelectedItem index: UnsafeMutablePointer<Int>?
         ) -> [String] {
             guard let completionScope else { return [] }
-            let found = LuaCompletion.bindingItems(
-                text: textView.string, location: textView.selectedRange().location, scope: completionScope()
-            )
+            let scope = completionScope()
+            let location = textView.selectedRange().location
+            let found = isExpression
+                ? LuaCompletion.items(text: textView.string, location: location, scope: scope, isExpression: true)
+                : LuaCompletion.bindingItems(text: textView.string, location: location, scope: scope)
             guard !found.items.isEmpty, charRange.location != NSNotFound,
                   found.range.location >= charRange.location else { return [] }
             let prefix = (textView.string as NSString).substring(with: NSRange(

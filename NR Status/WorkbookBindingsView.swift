@@ -15,7 +15,13 @@ struct WorkbookBindingGroup: Identifiable {
             let value = try JSONValue(luaValue: LuaRuntime.run("return config", config: connection).value)
             if case .object(var fields) = value {
                 if fields["api_key"] == nil { fields["api_key"] = .null }
-                config = fields.keys.sorted().map { BindingResult(name: $0, value: fields[$0], namespace: "config") }
+                config = fields.keys.sorted().map { name in
+                    let binding = connection.variables.first { $0.name == name }
+                    return BindingResult(
+                        name: name, expression: binding?.expression, value: fields[name],
+                        namespace: "config", literalValue: binding?.value
+                    )
+                }
             } else {
                 config = []
             }
@@ -35,7 +41,9 @@ struct WorkbookBindingGroup: Identifiable {
                 let declarations = NerdgraphCellSource(stored: cell.text)
                 do {
                     for binding in try declarations.resultBindings() where !bindings.contains(where: { $0.name == binding.name }) {
-                        bindings.append(BindingResult(name: binding.name, expression: binding.expression))
+                        bindings.append(BindingResult(
+                            name: binding.name, expression: binding.expression, literalValue: binding.value
+                        ))
                     }
                 } catch {
                     bindings.append(BindingResult(name: "Bindings", error: error.localizedDescription))

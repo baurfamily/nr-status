@@ -6,9 +6,14 @@ struct CellConfigurationView: View {
     let isPublished: Bool
     let onUpdatePublished: () -> Void
     var completionScope: () -> LuaCompletion.Scope = { .empty }
-    @State private var showsText = false
+    private enum EditorTab {
+        case settings, bindings, text
+    }
+
+    @State private var editorTab = EditorTab.settings
 
     private var isDocument: Bool { cell.kind == .config }
+    private var supportsBindings: Bool { isDocument || cell.kind == .nerdgraph }
     private var format: ChartFormat { ChartFormat.parseMetadata(cell.configurationText) }
     private var chart: String {
         NrqlCellSource.value("chart", in: cell.configurationText).lowercased()
@@ -47,22 +52,30 @@ struct CellConfigurationView: View {
                         .accessibilityIdentifier("update-published-widget")
                 }
             }
-            Picker("Editor", selection: $showsText) {
-                Text("Settings").tag(false)
-                Text("Text").tag(true)
+            Picker("Editor", selection: $editorTab) {
+                Text("Settings").tag(EditorTab.settings)
+                if supportsBindings {
+                    Text("Bindings").tag(EditorTab.bindings)
+                }
+                Text("Text").tag(EditorTab.text)
             }
             .pickerStyle(.segmented)
-            if showsText {
-                Text(isDocument ? "```config" : "```cell_config")
+            switch editorTab {
+            case .text:
+                Text(isDocument ? "---" : "```cell_config")
                     .font(.caption.monospaced()).foregroundStyle(.secondary)
                 ConfigurationTextEditor(
                     text: $cell.configurationText, identifier: "cell-configuration-text", completionScope: bindingScope
                 )
                     .frame(minHeight: 180)
-                    .help("Press Escape to complete Lua expressions after '='.")
-                Text("```").font(.caption.monospaced()).foregroundStyle(.secondary)
-            } else {
+                    .help("Press Escape to complete binding expressions.")
+                Text(isDocument ? "---" : "```").font(.caption.monospaced()).foregroundStyle(.secondary)
+            case .settings:
                 settings
+            case .bindings:
+                ScrollView {
+                    bindingSettings
+                }
             }
             if let error = configurationError {
                 Text(error).font(.caption).foregroundStyle(.red).textSelection(.enabled)
@@ -96,24 +109,11 @@ struct CellConfigurationView: View {
             } else {
                 labeledField("Title", text: value("title"), identifier: "cell-configuration-title")
             }
-            if isDocument || cell.kind == .nerdgraph {
-                Text(isDocument ? "Variables (name = Lua expression)" : "Bindings (name or name = Lua expression)")
-                    .font(.caption).foregroundStyle(.secondary)
-                ConfigurationTextEditor(text: Binding(
-                    get: { NrqlCellSource.values("var", in: cell.configurationText).joined(separator: "\n") },
-                    set: {
-                        cell.configurationText = NrqlCellSource.updating(
-                            "var", values: $0.components(separatedBy: "\n"),
-                            in: cell.configurationText, includeEmptyValues: true
-                        )
-                    }
-                ), identifier: "cell-configuration-bindings", completionScope: bindingScope)
-                .frame(height: 80)
-                .help("Press Escape to complete expressions using config, results, and the current GraphQL response.")
-                Text("Press Esc to complete expressions.")
-                    .font(.caption).foregroundStyle(.secondary)
-            } else {
-                labeledField("Variable binding", text: value("var"), placeholder: "Result variable")
+            if cell.kind == .nrql || cell.kind == .lua || cell.kind == .nerdgraph {
+                labeledField(
+                    cell.kind == .nerdgraph ? "Whole response variable" : "Variable binding",
+                    text: value("var"), placeholder: "Result variable", identifier: "cell-result-variable"
+                )
             }
             if isDocument {
                 labeledField("API Key name", text: value("api-key"), placeholder: "Default if empty")
@@ -129,10 +129,101 @@ struct CellConfigurationView: View {
                 .accessibilityIdentifier("cell-query-visibility")
                 .help("Sets the opening and export visibility without changing the current expand/collapse state.")
                 displaySelector
-                if cell.kind != .nerdgraph && chart != "json" && chart != "none" {
+                if cell.kind != .nerdgraph && !["json", "none", "console"].contains(chart) {
                     chartSettings
                 }
             }
+        }
+    }
+
+    private var bindings: [LuaRuntime.Variable] {
+        LuaRuntime.Variable.editableBindings(in: cell.configurationText)
+    }
+
+    private var bindingSettings: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Bindings").font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Button("Add Binding", systemImage: "plus") {
+                    setBindings(bindings + [isDocument ? .init(name: "", value: "") : .init(name: "", expression: "")])
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .accessibilityIdentifier("add-result-binding")
+            }
+            ForEach(Array(bindings.indices), id: \.self) { index in
+                let isExpression = bindings[index].value == nil
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        TextField("Name", text: bindingValue(index, name: true))
+                            .accessibilityIdentifier("binding-name-\(index)")
+                        Button("Remove Binding", systemImage: "minus.circle") {
+                            var bindings = self.bindings
+                            bindings.remove(at: index)
+                            setBindings(bindings)
+                        }
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.borderless)
+                        .accessibilityIdentifier("remove-binding-\(index)")
+                    }
+                    Picker("Source", selection: bindingIsExpression(index)) {
+                        Text("Value").tag(false)
+                        Text("Expression").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    .accessibilityIdentifier("binding-source-\(index)")
+                    ConfigurationTextEditor(
+                        text: bindingValue(index),
+                        identifier: isExpression ? "binding-expression-\(index)" : "binding-value-\(index)",
+                        completionScope: isExpression ? bindingScope : nil,
+                        isExpression: isExpression
+                    )
+                    .frame(height: 50)
+                    .help(!isExpression ? "Literal string; not evaluated as Lua."
+                          : isDocument ? "Lua expression; use config.name to read earlier bindings. Press Escape for completion."
+                          : "Lua expression, for example data.actor.account.name. Press Escape for completion.")
+                }
+            }
+        }
+    }
+
+    private func bindingValue(_ index: Int, name: Bool = false) -> Binding<String> {
+        Binding(get: {
+            guard bindings.indices.contains(index) else { return "" }
+            let binding = bindings[index]
+            return name ? binding.name : binding.value ?? binding.expression ?? ""
+        }, set: { value in
+            var bindings = self.bindings
+            guard bindings.indices.contains(index) else { return }
+            let previous = bindings[index]
+            bindings[index] = .init(
+                name: name ? value : previous.name,
+                expression: name || previous.value != nil ? previous.expression : value,
+                value: !name && previous.value != nil ? value : previous.value
+            )
+            setBindings(bindings)
+        })
+    }
+
+    private func bindingIsExpression(_ index: Int) -> Binding<Bool> {
+        Binding(get: {
+            bindings.indices.contains(index) && bindings[index].value == nil
+        }, set: { isExpression in
+            var bindings = self.bindings
+            guard bindings.indices.contains(index) else { return }
+            let previous = bindings[index]
+            let content = previous.value ?? previous.expression ?? ""
+            bindings[index] = .init(
+                name: previous.name, expression: isExpression ? content : nil, value: isExpression ? nil : content
+            )
+            setBindings(bindings)
+        })
+    }
+
+    private func setBindings(_ bindings: [LuaRuntime.Variable]) {
+        if let text = try? LuaRuntime.Variable.updatingBindings(bindings, in: cell.configurationText) {
+            cell.configurationText = text
         }
     }
 
@@ -155,6 +246,9 @@ struct CellConfigurationView: View {
                     }
                 }
                 displayOption("JSON", value: "json")
+                if cell.kind == .lua {
+                    displayOption("Console", value: "console")
+                }
                 if cell.kind == .nerdgraph {
                     displayOption("Bindings", value: "bindings")
                 }
@@ -287,6 +381,9 @@ struct CellConfigurationView: View {
                 _ = try NrqlConnection.parseDocumentConfig(cell.configurationText)
             } else {
                 _ = try NrqlConnection.parse(cell.configurationText)
+                if chart == "console" && cell.kind != .lua {
+                    return "Console display is only available for Lua cells."
+                }
                 if cell.kind == .nerdgraph { _ = try NerdgraphCellSource(stored: cell.text).resultBindings() }
                 let height = NrqlCellSource.value("height", in: cell.configurationText)
                 if !height.isEmpty && height.lowercased() != "auto" && format.heightInLines == nil {

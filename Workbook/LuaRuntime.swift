@@ -26,24 +26,52 @@ struct LuaRuntime {
     struct Variable: Equatable, Sendable {
         let name: String
         let expression: String?
+        let value: String?
+
+        init(name: String, expression: String? = nil, value: String? = nil) {
+            self.name = name
+            self.expression = expression
+            self.value = value
+        }
+
+        var isWholeResponse: Bool { expression == nil && value == nil }
 
         static func isIdentifier(_ name: String) -> Bool {
             name.range(of: #"^[A-Za-z_][A-Za-z0-9_]*\z"#, options: .regularExpression) != nil
                 && !keywords.contains(name)
         }
 
-        static func parse(_ text: String, requiresExpression: Bool = false) throws -> Variable {
-            let parts = text.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
-            let name = parts.first?.trimmingCharacters(in: .whitespaces) ?? ""
-            let isIdentifier = Self.isIdentifier(name)
-            guard !name.isEmpty, !requiresExpression || isIdentifier else {
-                throw NrqlConnection.ConfigurationError(message: "Invalid variable name '\(name)'.")
+        static func parse(_ record: [String: String]) throws -> Variable {
+            let label = record["name"].flatMap { $0.isEmpty ? nil : " '\($0)'" } ?? ""
+            guard Set(record.keys) == ["name", "expression"] || Set(record.keys) == ["name", "value"],
+                  let name = record["name"]?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  isIdentifier(name),
+                  record["value"] != nil || record["expression"]?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false else {
+                throw NrqlConnection.ConfigurationError(
+                    message: "Binding\(label) requires a valid 'name' and exactly one of 'value' (literal text) or 'expression' (nonempty Lua)."
+                )
             }
-            let expression = parts.count == 2 ? parts[1].trimmingCharacters(in: .whitespaces) : nil
-            guard expression != "", !requiresExpression || expression != nil else {
-                throw NrqlConnection.ConfigurationError(message: "Variable '\(name)' requires an expression after '='.")
+            return Variable(
+                name: name, expression: record["expression"]?.trimmingCharacters(in: .whitespacesAndNewlines),
+                value: record["value"]
+            )
+        }
+
+        static func editableBindings(in metadata: String) -> [Variable] {
+            ((try? ConfigurationYAML(metadata).mappings("bindings")) ?? []).map { record in
+                let hasSource = record["expression"] != nil || record["value"] != nil
+                return .init(name: record["name"] ?? "", expression: hasSource ? record["expression"] : "", value: record["value"])
             }
-            return Variable(name: name, expression: expression)
+        }
+
+        static func updatingBindings(_ bindings: [Variable], in metadata: String) throws -> String {
+            try ConfigurationYAML(metadata).updating("bindings", mappings: bindings.map {
+                var fields = [("name", $0.name)]
+                if let value = $0.value { fields.append(("value", value)) }
+                if let expression = $0.expression { fields.append(("expression", expression)) }
+                if fields.count == 1 { fields.append(("expression", "")) }
+                return fields
+            })
         }
     }
 
@@ -83,15 +111,16 @@ struct LuaRuntime {
 
     static func run(
         _ script: String, results: [PriorResult] = [], config: NrqlConnection = NrqlConnection(),
-        response: JSONValue? = nil
+        response: JSONValue? = nil, onOutput: (([String]) -> Void)? = nil
     ) throws -> Outcome {
         runLock.lock()
         defer { runLock.unlock() }
-        return try runLocked(script, results: results, config: config, response: response)
+        return try runLocked(script, results: results, config: config, response: response, onOutput: onOutput)
     }
 
     private static func runLocked(
-        _ script: String, results: [PriorResult], config: NrqlConnection, response: JSONValue?
+        _ script: String, results: [PriorResult], config: NrqlConnection, response: JSONValue?,
+        onOutput: (([String]) -> Void)?
     ) throws -> Outcome {
         let engine = try LuaEngine(
             configuration: LuaEngineConfiguration(sandboxed: true, vmMemoryLimit: memoryLimit)
@@ -104,6 +133,7 @@ struct LuaRuntime {
             var output: [String] = []
         }
         let collected = Collected()
+        defer { onOutput?(collected.output) }
 
         let resultsTable = LuaValue.table([
             "list": .array(results.map(\.value)),
@@ -122,11 +152,15 @@ struct LuaRuntime {
         try engine.run(configPrelude)
 
         for variable in config.variables {
-            guard let expression = variable.expression else {
-                throw NrqlConnection.ConfigurationError(message: "Variable '\(variable.name)' requires an expression.")
-            }
             do {
-                let value = try engine.evaluate("return (\(expression))")
+                let value: LuaValue
+                if let literal = variable.value {
+                    value = .string(literal)
+                } else if let expression = variable.expression {
+                    value = try engine.evaluate("return (\(expression))")
+                } else {
+                    throw NrqlConnection.ConfigurationError(message: "The binding requires a value or expression.")
+                }
                 if case .nil = value {
                     throw NrqlConnection.ConfigurationError(message: "The expression has no value.")
                 }

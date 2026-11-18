@@ -41,9 +41,11 @@ struct BindingResultsLayoutTests {
 
     @Test func workbookInspectorHasNoPerSectionScrollViews() {
         let document = NRQL_EditorDocument(text: """
-            ```config
-            var service = "Checkout"
-            ```
+            ---
+            bindings:
+              - name: service
+                expression: '"Checkout"'
+            ---
 
             ```cell_config
             var: traffic
@@ -202,7 +204,7 @@ struct EditorReturnKeyTests {
 
 struct ConfigurationTextEditorTests {
     @MainActor @Test func nativeCompletionReplacesOnlyTheBindingExpressionPrefix() throws {
-        let text = "var: user = data.act"
+        let text = "expression: data.act"
         let host = NSHostingView(rootView: ConfigurationTextEditor(
             text: .constant(text), identifier: "completion-test",
             completionScope: {
@@ -223,7 +225,7 @@ struct ConfigurationTextEditorTests {
             textView, completions: [], forPartialWordRange: range, indexOfSelectedItem: nil
         ))
         let completion = try #require(completions.first)
-        #expect((text as NSString).replacingCharacters(in: range, with: completion) == "var: user = data.actor")
+        #expect((text as NSString).replacingCharacters(in: range, with: completion) == "expression: data.actor")
     }
 
     @MainActor @Test func preservesLiteralConfigurationInput() throws {
@@ -246,7 +248,13 @@ struct ConfigurationTextEditorTests {
         #expect(!textView.isAutomaticTextReplacementEnabled)
         #expect(!textView.isAutomaticSpellingCorrectionEnabled)
         #expect(!textView.isRichText)
-        let configuration = "var: appName = \"checkout--service\"\nvar: owner = 'team'"
+        let configuration = """
+            bindings:
+              - name: appName
+                expression: '"checkout--service"'
+              - name: owner
+                expression: "'team'"
+            """
         textView.insertText(configuration, replacementRange: NSRange(location: 0, length: 0))
         #expect(text == configuration)
         #expect(textView.string == configuration)
@@ -376,41 +384,50 @@ struct NerdgraphClientTests {
         defer { session.invalidateAndCancel() }
         let document = NRQL_EditorDocument(text: """
             ```cell_config
-            var: response
-            var: entity = data.actor.entitySearch.results.entities[1]
-            var: tagCount = #data.actor.entitySearch.results.entities[1].tags
+            var: 'response'
+            bindings:
+              - name: 'entity'
+                expression: 'data.actor.entitySearch.results.entities[1]'
+              - name: 'tagCount'
+                expression: '#data.actor.entitySearch.results.entities[1].tags'
+              - name: label
+                value: results.missing .. config.accounts[1]
             ```
             ```graphql
             { actor { entitySearch(query: "name = 'Foo'") { results { entities { name tags { key } } } } } }
             ```
 
             ```lua
-            return { rows = { { name = results.entity.name, count = results.tagCount } } }
+            return { rows = { { name = results.entity.name, count = results.tagCount, label = results.label } } }
             ```
             """)
         let query = document.cells[0].query
         await query.getData(profiles: profiles, session: session)
         #expect(query.errorMessage == nil)
-        #expect(document.priorResults.map(\.name) == ["response", "entity", "tagCount"])
-        #expect(query.inspectedBindings.map(\.name) == ["response", "entity", "tagCount"])
-        #expect(query.inspectedBindings.last?.value == .number(2))
+        #expect(document.priorResults.map(\.name) == ["response", "entity", "tagCount", "label"])
+        #expect(query.inspectedBindings.map(\.name) == ["response", "entity", "tagCount", "label"])
+        #expect(query.inspectedBindings[2].value == .number(2))
+        #expect(query.inspectedBindings.last?.literalValue == "results.missing .. config.accounts[1]")
+        #expect(NrqlDependencies.references(in: query.expressionCode).names.isEmpty)
+        #expect(!query.readsDocumentConfig)
         #expect(try LuaRuntime.run(
             "return response == nil and entity == nil and tagCount == nil", results: document.priorResults
         ).value.boolValue == true)
         await document.cells[1].query.getData(results: document.priorResults, profiles: profiles)
         #expect(document.cells[1].query.resultContainer?.data.first?.numberFields["count"] == 2)
         #expect(document.cells[1].query.resultContainer?.data.first?.stringFields["name"] == "Foo")
+        #expect(document.cells[1].query.resultContainer?.data.first?.stringFields["label"] == "results.missing .. config.accounts[1]")
         let original = query.text
-        query.text = query.text.replacingOccurrences(of: "tagCount = #data.actor.entitySearch.results.entities[1].tags",
-                                                     with: "tagCount = 7")
+        query.text = query.text.replacingOccurrences(of: "#data.actor.entitySearch.results.entities[1].tags",
+                                                     with: "7")
         #expect(document.staleCellIds(profiles: try profiles.load()) == Set(document.cells.map(\.id)))
         query.text = original
-        query.text = query.text.replacingOccurrences(of: "tagCount =", with: "renamedCount =")
+        query.text = query.text.replacingOccurrences(of: "name: 'tagCount'", with: "name: renamedCount")
         #expect(NrqlDependencies.dependencies(of: document.cells[1], in: document.cells).map(\.id) == [document.cells[0].id])
         #expect(document.staleCellIds(profiles: try profiles.load()) == Set(document.cells.map(\.id)))
         query.text = original
-        query.text = query.text.replacingOccurrences(of: "entity = data.actor.entitySearch.results.entities[1]",
-                                                     with: "entity = data.actor.entitySearch.results.entities[9]")
+        query.text = query.text.replacingOccurrences(of: "'data.actor.entitySearch.results.entities[1]'",
+                                                     with: "'data.actor.entitySearch.results.entities[9]'")
         await query.getData(profiles: profiles, session: session)
         #expect(query.errorMessage?.contains("Nerdgraph variable 'entity'") == true)
         #expect(query.namedResults.isEmpty)
@@ -423,11 +440,11 @@ struct NerdgraphClientTests {
         #expect(NrqlDependencies.plan(
             for: [document.cells[1]], in: document.cells, includeFinished: false
         ).first?.id == document.cells[0].id)
-        query.text = query.text.replacingOccurrences(of: "var: response", with: "chart: none\nvar: response")
+        query.text = query.text.replacingOccurrences(of: "var: 'response'", with: "chart: none\nvar: response")
         #expect(query.showsResultPane)
         #expect(query.displayedJSON != nil)
-        query.text = query.text.replacingOccurrences(of: "tagCount = #data.actor.entitySearch.results.entities[1].tags",
-                                                     with: "tagCount =")
+        query.text = query.text.replacingOccurrences(of: "'#data.actor.entitySearch.results.entities[1].tags'",
+                                                     with: "''")
         StubURLProtocol.handler = { _ in (200, Data(#"{"data":{"marker":"new response"}}"#.utf8)) }
         await query.getData(profiles: profiles, session: session)
         #expect(query.errorMessage?.contains("tagCount") == true)
@@ -439,7 +456,7 @@ struct NerdgraphClientTests {
         await query.getData(profiles: profiles, session: session)
         #expect(query.errorMessage == nil && query.hasResult)
         #expect(query.failedBindingResponse == nil)
-        #expect(query.namedResults.map(\.name) == ["response", "entity", "tagCount"])
+        #expect(query.namedResults.map(\.name) == ["response", "entity", "tagCount", "label"])
         query.clearResults()
         #expect(query.loadedBindings == nil)
         #expect(query.bindingResults.isEmpty && query.jsonResult == nil)

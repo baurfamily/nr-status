@@ -27,61 +27,52 @@ struct NrqlConnection: Equatable, Sendable {
 
     func documentConfigText(preserving text: String = "") throws -> String {
         _ = try Self.parseDocumentConfig(text)
-        var lines = text.components(separatedBy: .newlines).filter { line in
-            guard let colon = line.firstIndex(of: ":") else { return true }
-            let key = line[..<colon].trimmingCharacters(in: .whitespaces).lowercased()
-            return key != "api-key" && key != "api_key" && key != "accounts"
-        }
-        while lines.first?.trimmingCharacters(in: .whitespaces).isEmpty == true { lines.removeFirst() }
-        while lines.last?.trimmingCharacters(in: .whitespaces).isEmpty == true { lines.removeLast() }
-        if let apiKeyName { lines.append("  api-key: \(apiKeyName)") }
-        if let accountIds { lines.append("  accounts: \(accountIds.map(String.init).joined(separator: ", "))") }
-        guard !lines.isEmpty else { return "" }
-        let body = lines.joined(separator: "\n")
-        _ = try Self.parse(body, strict: true)
+        var body = try ConfigurationYAML(text).updating("api-key", values: apiKeyName.map { [$0] } ?? [])
+        body = try ConfigurationYAML(body).updating("accounts", values: accountIds?.map(String.init) ?? [])
+        _ = try Self.parseDocumentConfig(body)
         return body
     }
 
     static func parse(_ body: String, strict: Bool = false) throws -> NrqlConnection {
         var connection = NrqlConnection()
-        var seen = Set<String>()
-        for line in body.components(separatedBy: .newlines) {
-            let line = line.trimmingCharacters(in: .whitespaces)
-            if line.isEmpty || line.hasPrefix("//") { continue }
-            if strict, line.hasPrefix("var ") || line.hasPrefix("var:") {
-                let declaration = line.dropFirst(4).trimmingCharacters(in: .whitespaces)
-                let variable = try LuaRuntime.Variable.parse(declaration, requiresExpression: true)
-                guard !LuaRuntime.reservedConfigFields.contains(variable.name), seen.insert("var." + variable.name).inserted else {
+        let yaml: ConfigurationYAML
+        do {
+            yaml = try ConfigurationYAML(body)
+        } catch {
+            throw ConfigurationError(message: error.localizedDescription)
+        }
+        if strict {
+            guard !yaml.fields.contains(where: { $0.key == "var" }) else {
+                throw ConfigurationError(message: "Use 'bindings' with name/value or name/expression entries in document configuration, not 'var'.")
+            }
+            var seen = Set<String>()
+            for record in try yaml.mappings("bindings") {
+                let variable = try LuaRuntime.Variable.parse(record)
+                guard !LuaRuntime.reservedConfigFields.contains(variable.name), seen.insert(variable.name).inserted else {
                     throw ConfigurationError(message: "Duplicate or reserved config variable '\(variable.name)'.")
                 }
                 connection.variables.append(variable)
-                continue
             }
-            guard let colon = line.firstIndex(of: ":") else {
-                if strict || line == "api-key" || line == "api_key" || line == "accounts" {
-                    throw ConfigurationError(message: "Expected 'key: value' in connection configuration.")
-                }
-                continue
+        } else {
+            _ = try NrqlCellSource.resultName(in: body)
+            _ = try yaml.mappings("bindings")
+        }
+        if yaml.fields.contains(where: { $0.key == "api-key" }) {
+            let values = try yaml.values("api-key")
+            guard values.count == 1, let value = values.first, !value.isEmpty,
+                  !value.uppercased().hasPrefix("NRAK-") else {
+                throw ConfigurationError(message: "api-key must be a saved key name, not a secret API key.")
             }
-            let rawKey = line[..<colon].trimmingCharacters(in: .whitespaces).lowercased()
-            let key = rawKey == "api_key" ? "api-key" : rawKey
-            let value = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
-            guard ["api-key", "accounts"].contains(key) else { continue }
-            guard seen.insert(key).inserted else {
-                throw ConfigurationError(message: "Duplicate configuration field '\(key)'.")
-            }
-            switch key {
-            case "api-key":
-                guard !value.isEmpty, !value.uppercased().hasPrefix("NRAK-") else {
-                    throw ConfigurationError(message: "api-key must be a saved key name, not a secret API key.")
-                }
-                connection.apiKeyName = value
-            case "accounts":
-                let ids = try NerdgraphProfiles.parseAccountIds(value)
-                guard !ids.isEmpty else { throw NerdgraphProfiles.ProfileError.missingAccounts }
-                connection.accountIds = ids
-            default: break
-            }
+            connection.apiKeyName = value
+        }
+        if yaml.fields.contains(where: { $0.key == "accounts" }) {
+            let ids = try NerdgraphProfiles.parseAccountIds(yaml.value("accounts"))
+            guard !ids.isEmpty else { throw NerdgraphProfiles.ProfileError.missingAccounts }
+            connection.accountIds = ids
+        }
+        // Validate the shared scalar/list settings even when a cell does not execute them.
+        for key in ["title", "chart", "attributes", "height", "query", "timeout", "widget-id"] {
+            _ = try yaml.values(key)
         }
         return connection
     }
@@ -122,6 +113,7 @@ struct NrqlConnection: Equatable, Sendable {
 
     /// Also works while an account list is incomplete, so key-specific suggestions stay available.
     static func keyName(in body: String) -> String? {
+        if let name = try? ConfigurationYAML(body).value("api-key"), !name.isEmpty { return name }
         for line in body.components(separatedBy: .newlines) {
             guard let colon = line.firstIndex(of: ":"),
                   ["api-key", "api_key"].contains(line[..<colon].trimmingCharacters(in: .whitespaces).lowercased()) else { continue }

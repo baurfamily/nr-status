@@ -1,11 +1,11 @@
-```config
+---
 description: Deterministic Lua examples of every chart type. No API key, accounts, or network access required. Run each cell or publish them all from Document Config.
-```
+---
 
 ```cell_config
 title: Billboard - service health
 chart: billboard
-attributes: gauge, max(140), style(linear)
+attributes: [gauge, max(140), style(linear)]
 widget-id: 437C775A-2780-463D-A935-BFA45C130129
 height: 20
 ```
@@ -17,7 +17,7 @@ return { rows = { { Healthy = 98 } } }
 title: Line - requests over time
 chart: line
 height: 14
-attributes: lines, points
+attributes: [lines, points]
 widget-id: 435FBB18-3B85-4A78-A58C-A11E94D68762
 ```
 ```lua
@@ -59,7 +59,7 @@ return {
 title: Pie - traffic share
 chart: pie
 height: 14
-attributes: donut, separated
+attributes: [donut, separated]
 widget-id: BE1A6B9F-94B9-4DA9-A83A-843987F65996
 ```
 ```lua
@@ -77,7 +77,7 @@ return {
 title: Plot - latency versus throughput
 chart: plot
 height: 14
-attributes: color-facets, x(Latency), y(Requests)
+attributes: [color-facets, x(Latency), y(Requests)]
 widget-id: 7559F604-AD74-4AAD-B5E2-13F8592D3A92
 ```
 ```lua

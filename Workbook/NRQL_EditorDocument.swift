@@ -79,14 +79,25 @@ struct NrqlCell: Identifiable {
         guard LuaRuntime.Variable.isIdentifier(name) else {
             throw NrqlConnection.ConfigurationError(message: "Use a Lua identifier for the binding name: letters, digits, or underscores, starting with a letter or underscore, and not a keyword.")
         }
-        let bindings = try NerdgraphCellSource(stored: text).resultBindings()
+        let source = NerdgraphCellSource(stored: text)
+        let bindings = try source.resultBindings()
         guard !bindings.contains(where: { $0.name == name }) else {
             throw NrqlConnection.ConfigurationError(message: "A binding named '\(name)' already exists.")
         }
-        let declaration = name + (expression.map { " = \($0)" } ?? "")
-        configurationText = NrqlCellSource.updating(
-            "var", values: NrqlCellSource.values("var", in: configurationText) + [declaration],
-            in: configurationText
+        guard let expression else {
+            guard !bindings.contains(where: \.isWholeResponse) else {
+                throw NrqlConnection.ConfigurationError(
+                    message: "This cell already has a whole-response variable. Change its name in Settings."
+                )
+            }
+            configurationText = NrqlCellSource.updating("var", values: [name], in: configurationText)
+            return
+        }
+        guard !expression.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw NrqlConnection.ConfigurationError(message: "A result extraction requires a Lua expression.")
+        }
+        configurationText = try NerdgraphCellSource.updatingExtractions(
+            source.extractionBindings + [.init(name: name, expression: expression)], in: configurationText
         )
     }
 
@@ -150,7 +161,10 @@ struct NRQL_EditorDocument: FileDocument {
     }
 
     private static func cells(from text: String) -> [NrqlCell] {
-        NrqlDocumentParser.blocks(text).map { NrqlCell(text: $0) }
+        NrqlDocumentParser.blocks(text).enumerated().map { index, block in
+            let isProseRule = index > 0 && block.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("---")
+            return NrqlCell(text: block, kind: isProseRule ? .markdown : nil)
+        }
     }
 
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
@@ -180,12 +194,12 @@ struct NRQL_EditorDocument: FileDocument {
         Result {
             let configs = cells.enumerated().filter { $0.element.kind == .config }
             guard configs.count <= 1, configs.first.map({ $0.offset == 0 }) ?? true else {
-                throw NrqlConnection.ConfigurationError(message: "Place a single config fence at the top of the document.")
+                throw NrqlConnection.ConfigurationError(message: "Place a single YAML frontmatter block at the top of the document.")
             }
             guard let cell = configs.first?.element else { return NrqlConnection() }
             let text = cell.query.text
-            guard text.components(separatedBy: "\n").last.map(NrqlCellKind.isClosingFence) == true else {
-                throw NrqlConnection.ConfigurationError(message: "Close the document config with ```.")
+            guard NrqlCellKind.isClosedConfiguration(text) else {
+                throw NrqlConnection.ConfigurationError(message: "Close the document configuration with its matching delimiter (--- for YAML frontmatter).")
             }
             return try NrqlConnection.parseDocumentConfig(cell.kind.unwrap(text))
         }
@@ -285,12 +299,8 @@ struct NRQL_EditorDocument: FileDocument {
                     "title", values: [original.query.title + " (copy)"], in: copy.configurationText
                 )
                 var usedNames = Set(cells.flatMap(\.query.resultNames))
-                let bindings = NrqlCellSource.values("var", in: configuration).map { declaration in
-                    let binding = copy.kind == .nerdgraph
-                        ? try? LuaRuntime.Variable.parse(declaration)
-                        : LuaRuntime.Variable(name: declaration, expression: nil)
-                    guard let binding, !binding.name.isEmpty else { return declaration }
-                    let base = binding.name + "_copy"
+                func copyName(_ original: String) -> String {
+                    let base = original + "_copy"
                     var name = base
                     var suffix = 2
                     while usedNames.contains(name) {
@@ -298,10 +308,17 @@ struct NRQL_EditorDocument: FileDocument {
                         suffix += 1
                     }
                     usedNames.insert(name)
-                    return name + (binding.expression.map { " = \($0)" } ?? "")
+                    return name
                 }
-                if !bindings.isEmpty {
-                    configuration = NrqlCellSource.updating("var", values: bindings, in: configuration, includeEmptyValues: true)
+                if let name = try? NrqlCellSource.resultName(in: configuration) {
+                    configuration = NrqlCellSource.updating("var", values: [copyName(name)], in: configuration)
+                }
+                if copy.kind == .nerdgraph {
+                    let extractions = NerdgraphCellSource(stored: original.query.text).extractionBindings.map {
+                        LuaRuntime.Variable(name: copyName($0.name), expression: $0.expression, value: $0.value)
+                    }
+                    configuration = (try? NerdgraphCellSource.updatingExtractions(extractions, in: configuration))
+                        ?? configuration
                 }
                 copy.configurationText = configuration
             }

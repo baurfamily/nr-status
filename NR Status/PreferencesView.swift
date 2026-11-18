@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct PreferencesView: View {
+    @AppStorage("preferencesTab") private var selectedTab = "accounts"
     @AppStorage(CompletionKeyRouter.returnAcceptsAutocompleteKey) private var returnAcceptsAutocomplete = true
     @AppStorage(CompletionKeyRouter.returnRunsQueryKey) private var returnRunsQuery = true
 
@@ -37,9 +38,10 @@ struct PreferencesView: View {
     }
 
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             accountPreferences
                 .tabItem { Label("API Keys", systemImage: "key") }
+                .tag("accounts")
             Form {
                 Toggle("Return accepts autocomplete", isOn: $returnAcceptsAutocomplete)
                 Toggle("Return runs query", isOn: $returnRunsQuery)
@@ -50,6 +52,10 @@ struct PreferencesView: View {
             }
             .padding()
             .tabItem { Label("Editor", systemImage: "text.cursor") }
+            .tag("editor")
+            AIAssistPreferencesView()
+                .tabItem { Label("AI Assist", systemImage: "sparkles") }
+                .tag("ai")
         }
         .frame(minWidth: 740, minHeight: 520)
         .onAppear { load() }

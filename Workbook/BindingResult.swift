@@ -7,8 +7,13 @@ struct BindingResult: Identifiable, Equatable, Sendable {
     var error: String?
     var preview: String?
     var namespace = "results"
+    var literalValue: String?
 
     var id: String { name }
+
+    var sourceDescription: String {
+        expression ?? literalValue.map { "value: \($0)" } ?? (namespace == "config" ? "(document setting)" : "(whole response)")
+    }
 
     var summary: String {
         if let error { return error }

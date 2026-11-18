@@ -55,38 +55,43 @@ struct NerdgraphCellSource {
         configuration ?? ""
     }
 
-    private var variableDeclarations: [String] {
-        metadata.components(separatedBy: "\n").compactMap { line in
-            guard let colon = line.firstIndex(of: ":"),
-                  line[..<colon].trimmingCharacters(in: .whitespaces).lowercased() == "var" else { return nil }
-            let value = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
-            return value.isEmpty ? nil : value
-        }
+    var extractionBindings: [LuaRuntime.Variable] {
+        LuaRuntime.Variable.editableBindings(in: metadata)
+    }
+
+    static func updatingExtractions(_ bindings: [LuaRuntime.Variable], in metadata: String) throws -> String {
+        try LuaRuntime.Variable.updatingBindings(bindings, in: metadata)
     }
 
     func resultBindings() throws -> [LuaRuntime.Variable] {
-        var names = Set<String>()
-        return try variableDeclarations.map { declaration in
-            let variable = try LuaRuntime.Variable.parse(declaration)
-            guard names.insert(variable.name).inserted else {
-                throw NrqlConnection.ConfigurationError(message: "Duplicate Nerdgraph variable '\(variable.name)'.")
-            }
-            return variable
+        let yaml = try ConfigurationYAML(metadata)
+        var bindings: [LuaRuntime.Variable] = []
+        if let name = try NrqlCellSource.resultName(in: metadata) {
+            bindings.append(.init(name: name, expression: nil))
         }
+        bindings += try yaml.mappings("bindings").map(LuaRuntime.Variable.parse)
+        var names = Set<String>()
+        for binding in bindings {
+            guard names.insert(binding.name).inserted else {
+                throw NrqlConnection.ConfigurationError(message: "Duplicate Nerdgraph variable '\(binding.name)'.")
+            }
+        }
+        return bindings
     }
 
     var bindingNames: [String] {
-        variableDeclarations.compactMap { try? LuaRuntime.Variable.parse($0).name }
+        [try? NrqlCellSource.resultName(in: metadata)].compactMap { $0 }
+            + extractionBindings.map(\.name).filter { !$0.isEmpty }
     }
 
     var bindingExpressions: [String] {
-        variableDeclarations.compactMap { try? LuaRuntime.Variable.parse($0).expression }
+        extractionBindings.compactMap(\.expression)
     }
 
     var format: ChartFormat? {
         guard configuration != nil else { return nil }
         var format = ChartFormat.parseMetadata(metadata)
-        format.name = bindingNames.first
+        format.name = try? NrqlCellSource.resultName(in: metadata)
         return format
     }
     var operation: String { query }

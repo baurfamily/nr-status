@@ -65,9 +65,11 @@ enum LuaCompletion {
         let cursor = min(max(location, 0), source.length)
         let line = source.lineRange(for: NSRange(location: cursor, length: 0))
         let before = source.substring(with: NSRange(location: line.location, length: cursor - line.location)) as NSString
-        let equals = before.range(of: "=")
-        guard equals.location != NSNotFound else { return ([], NSRange(location: cursor, length: 0)) }
-        let start = line.location + NSMaxRange(equals)
+        let yamlExpression = before.range(of: #"^\s*(?:-\s*)?expression:\s*['"]?"#, options: .regularExpression)
+        guard yamlExpression.location != NSNotFound else {
+            return ([], NSRange(location: cursor, length: 0))
+        }
+        let start = line.location + NSMaxRange(yamlExpression)
         let found = items(
             text: source.substring(from: start), location: cursor - start, scope: scope, isExpression: true
         )

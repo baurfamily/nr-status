@@ -8,6 +8,85 @@
 import XCTest
 
 final class NR_StatusUITests: XCTestCase {
+    @MainActor
+    func testAIAssistOffersOneShotCellAndDocumentPrompts() throws {
+        let app = XCUIApplication()
+        guard app.state == .notRunning else {
+            throw XCTSkip("Leave the already-running NR Status session and its workbooks untouched.")
+        }
+        app.launchArguments = [
+            "-ApplePersistenceIgnoreState", "YES",
+            "-aiAssistCommand", "/bin/cat"
+        ]
+        app.launch()
+        defer { app.terminate() }
+        let keychainAlert = app.sheets.staticTexts.containing(NSPredicate(format: "value CONTAINS %@", "Keychain")).firstMatch
+        if keychainAlert.waitForExistence(timeout: 2) {
+            app.sheets.buttons["OK"].firstMatch.click()
+        }
+        let cellAssist = app.buttons["cell-ai-assist"].firstMatch
+        XCTAssertTrue(cellAssist.waitForExistence(timeout: 5))
+        let originalText = try XCTUnwrap(app.textViews.firstMatch.value as? String)
+        cellAssist.click()
+        XCTAssertTrue(app.staticTexts["Write or Improve Cell"].waitForExistence(timeout: 5))
+        let request = app.textViews["ai-assist-request"]
+        XCTAssertTrue(request.exists)
+        XCTAssertFalse(app.buttons["Generate"].isEnabled)
+        request.click()
+        request.typeText("Improve the query and add a Lua cell")
+        XCTAssertTrue(app.buttons["Generate"].isEnabled)
+        app.buttons["Generate"].click()
+        let applied = request.waitForNonExistence(timeout: 10)
+        let commandError = app.staticTexts["ai-assist-error"].firstMatch
+        XCTAssertTrue(applied, commandError.exists ? commandError.value as? String ?? "AI command failed" : app.debugDescription)
+        let generatedCellCount = app.buttons.matching(identifier: "cell-ai-assist").count
+        XCTAssertGreaterThan(generatedCellCount, 1)
+        app.typeKey("z", modifierFlags: .command)
+        XCTAssertEqual(app.buttons.matching(identifier: "cell-ai-assist").count, 1)
+        XCTAssertEqual(app.textViews.firstMatch.value as? String, originalText)
+        app.typeKey("z", modifierFlags: [.command, .shift])
+        XCTAssertEqual(app.buttons.matching(identifier: "cell-ai-assist").count, generatedCellCount)
+        app.typeKey("z", modifierFlags: .command)
+        XCTAssertEqual(app.buttons.matching(identifier: "cell-ai-assist").count, 1)
+
+        cellAssist.click()
+        XCTAssertTrue(request.waitForExistence(timeout: 5))
+        request.click()
+        request.typeText("Show alternatives\n\n```nrql\nSELECT 4\n```\n\n```nrql\nSELECT 5\n```")
+        app.buttons["Generate"].click()
+        let draft = app.textViews["ai-assist-response"]
+        XCTAssertTrue(draft.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["ai-assist-error"].firstMatch.exists)
+        XCTAssertEqual(app.buttons.matching(identifier: "cell-ai-assist").count, 1)
+        draft.click()
+        draft.typeKey("a", modifierFlags: .command)
+        draft.typeText("```nrql\nSELECT 4\n```")
+        app.buttons["Apply Draft"].click()
+        XCTAssertTrue(draft.waitForNonExistence(timeout: 5), app.debugDescription)
+        XCTAssertTrue(app.textViews.matching(NSPredicate(format: "value CONTAINS %@", "SELECT 4")).firstMatch.exists)
+        app.typeKey("z", modifierFlags: .command)
+        XCTAssertEqual(app.textViews.firstMatch.value as? String, originalText)
+
+        app.buttons["ai-assist"].click()
+        XCTAssertTrue(app.staticTexts["Help Write a Document"].waitForExistence(timeout: 5))
+        request.click()
+        request.typeText("Draft workbook cells")
+        app.buttons["Generate"].click()
+        XCTAssertTrue(request.waitForNonExistence(timeout: 10), app.debugDescription)
+        XCTAssertGreaterThan(app.buttons.matching(identifier: "cell-ai-assist").count, 1)
+        app.typeKey("z", modifierFlags: .command)
+        XCTAssertEqual(app.buttons.matching(identifier: "cell-ai-assist").count, 1)
+        XCTAssertEqual(app.textViews.firstMatch.value as? String, originalText)
+
+        app.buttons["ai-assist"].click()
+        XCTAssertTrue(app.buttons["AI Settings…"].waitForExistence(timeout: 5))
+        app.buttons["AI Settings…"].click()
+        XCTAssertTrue(app.textFields["ai-assist-command"].waitForExistence(timeout: 5)
+                      || app.textViews["ai-assist-command"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["Copy Setup Command"].exists)
+        XCTAssertFalse(app.buttons["Open Scripts Folder"].exists)
+    }
+
     private func openInApp(_ url: URL) throws {
         var runner = Bundle(for: Self.self).bundleURL
         while runner.pathExtension != "app" && runner.path != "/" {
@@ -128,9 +207,16 @@ final class NR_StatusUITests: XCTestCase {
         title.click()
         title.typeKey("a", modifierFlags: .command)
         title.typeText("ConfiguredTitle")
-        for label in ["Title", "Variable binding", "Account IDs"] {
+        for label in ["Title", "Account IDs"] {
             XCTAssertTrue(app.staticTexts[label].exists)
         }
+        XCTAssertFalse(app.radioButtons["Bindings"].exists)
+        let variable = app.textFields["cell-result-variable"]
+        XCTAssertTrue(variable.waitForExistence(timeout: 5))
+        variable.click()
+        variable.typeText("configuredResult")
+        XCTAssertFalse(app.buttons["add-result-binding"].exists)
+        XCTAssertTrue(title.exists)
         XCTAssertFalse(app.staticTexts["API Key name"].exists)
         XCTAssertFalse(app.textFields["API Key name"].exists)
         XCTAssertTrue(app.buttons["Remove Cell Configuration"].exists)
@@ -139,6 +225,7 @@ final class NR_StatusUITests: XCTestCase {
         let text = app.textViews["cell-configuration-text"]
         XCTAssertTrue(text.waitForExistence(timeout: 5))
         XCTAssertTrue((text.value as? String)?.contains("title: ConfiguredTitle") == true)
+        XCTAssertTrue((text.value as? String)?.contains("var: configuredResult") == true)
         text.click()
         text.typeKey("a", modifierFlags: .command)
         text.typeText("title: From text\napi-key: Staging\nchart: billboard\nattributes: gauge, max(250)")
@@ -165,6 +252,264 @@ final class NR_StatusUITests: XCTestCase {
         documentKey.typeText("Production")
         app.radioButtons["Text"].firstMatch.click()
         XCTAssertTrue((text.value as? String)?.contains("api-key: Production") == true)
+    }
+
+    @MainActor
+    func testFrontmatterSummaryCanBeExpandedEditedAndCollapsed() throws {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("config-summary-\(UUID().uuidString).nrmd")
+        try """
+            ---
+            author: Example team
+            description: "Example: summary"
+            ---
+
+            # Workbook notes
+            """.write(to: file, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: file) }
+        let app = XCUIApplication()
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES"]
+        app.launch()
+        app.typeKey("o", modifierFlags: .command)
+        app.typeKey("g", modifierFlags: [.command, .shift])
+        app.typeText(file.path)
+        app.typeKey(.return, modifierFlags: [])
+        app.typeKey(.return, modifierFlags: [])
+        let window = app.windows[file.lastPathComponent]
+        XCTAssertTrue(window.waitForExistence(timeout: 5), app.debugDescription)
+        let summary = window.descendants(matching: .any)["document-configuration-summary"].firstMatch
+        XCTAssertFalse(summary.exists)
+        window.buttons["Show config"].firstMatch.click()
+        XCTAssertTrue(summary.waitForExistence(timeout: 5))
+        XCTAssertTrue(window.staticTexts["Example team"].exists)
+        XCTAssertTrue(window.staticTexts["Example: summary"].exists)
+
+        window.buttons["Configure Cell"].firstMatch.click()
+        window.radioButtons["Text"].firstMatch.click()
+        let text = window.textViews["cell-configuration-text"]
+        XCTAssertTrue(text.waitForExistence(timeout: 5))
+        text.click()
+        text.typeKey("a", modifierFlags: .command)
+        text.typeText("author: Updated team\ndescription: A new summary")
+        window.buttons["Close"].firstMatch.click()
+        XCTAssertTrue(window.staticTexts["Updated team"].waitForExistence(timeout: 5))
+        window.buttons["Hide config"].firstMatch.click()
+        XCTAssertFalse(summary.exists)
+        app.typeKey("s", modifierFlags: .command)
+        let saved = NSPredicate { _, _ in
+            guard let source = try? String(contentsOf: file, encoding: .utf8) else { return false }
+            return source.hasPrefix("---\n") && source.contains("Updated team") && source.contains("# Workbook notes")
+        }
+        expectation(for: saved, evaluatedWith: nil)
+        waitForExpectations(timeout: 5)
+    }
+
+    @MainActor
+    func testGraphQLWholeResponseAndExtractionEditorsStaySeparate() throws {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("binding-split-\(UUID().uuidString).nrmd")
+        try """
+            ```cell_config
+            var: response
+            bindings:
+              - name: account
+                expression: data.actor.account
+            ```
+            ```graphql
+            { actor { user { name } } }
+            ```
+            """.write(to: file, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: file) }
+        let app = XCUIApplication()
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES"]
+        app.launch()
+        app.typeKey("o", modifierFlags: .command)
+        app.typeKey("g", modifierFlags: [.command, .shift])
+        app.typeText(file.path)
+        app.typeKey(.return, modifierFlags: [])
+        app.typeKey(.return, modifierFlags: [])
+        let window = app.windows[file.lastPathComponent]
+        XCTAssertTrue(window.waitForExistence(timeout: 5))
+        window.buttons["Configure Cell"].firstMatch.click()
+        let whole = window.textFields["cell-result-variable"]
+        XCTAssertTrue(whole.waitForExistence(timeout: 5))
+        XCTAssertEqual(whole.value as? String, "response")
+        XCTAssertFalse(window.textFields["binding-name-0"].exists)
+        window.radioButtons["Bindings"].firstMatch.click()
+        XCTAssertFalse(whole.exists)
+        let name = window.textFields["binding-name-0"]
+        XCTAssertEqual(name.value as? String, "account")
+        name.click()
+        name.typeKey("a", modifierFlags: .command)
+        name.typeText("accountName")
+        let expression = window.textViews["binding-expression-0"]
+        expression.click()
+        expression.typeKey("a", modifierFlags: .command)
+        expression.typeText("data.actor.account.name")
+        window.radioButtons["Text"].firstMatch.click()
+        let text = window.textViews["cell-configuration-text"]
+        XCTAssertTrue(text.waitForExistence(timeout: 5))
+        XCTAssertTrue((text.value as? String)?.contains("var: response") == true)
+        XCTAssertTrue((text.value as? String)?.contains("name: accountName") == true)
+        XCTAssertTrue((text.value as? String)?.contains("expression: data.actor.account.name") == true)
+        text.click()
+        text.typeKey("a", modifierFlags: .command)
+        text.typeText("var: fullResponse\nbindings:\n  - name: actor\n    expression: data.actor")
+        window.radioButtons["Settings"].firstMatch.click()
+        XCTAssertEqual(whole.value as? String, "fullResponse")
+        XCTAssertFalse(name.exists)
+        window.radioButtons["Bindings"].firstMatch.click()
+        XCTAssertFalse(whole.exists)
+        XCTAssertEqual(name.value as? String, "actor")
+        XCTAssertEqual(expression.value as? String, "data.actor")
+        window.buttons["remove-binding-0"].click()
+        XCTAssertFalse(name.exists)
+        XCTAssertFalse(whole.exists)
+        window.buttons["add-result-binding"].click()
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.click()
+        name.typeText("currentUser")
+        expression.click()
+        expression.typeText("data.actor.user")
+        window.radioButtons["Text"].firstMatch.click()
+        XCTAssertTrue((text.value as? String)?.contains("var: fullResponse") == true)
+        XCTAssertTrue((text.value as? String)?.contains("name: currentUser") == true)
+        XCTAssertTrue((text.value as? String)?.contains("expression: data.actor.user") == true)
+    }
+
+    @MainActor
+    func testDocumentBindingsUseStructuredSettingsAndRoundTripThroughText() throws {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("document-bindings-\(UUID().uuidString).nrmd")
+        try """
+            ---
+            author: Binding example
+            bindings:
+              - name: service
+                value: Checkout
+            ---
+
+            # Notes
+            """.write(to: file, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: file) }
+        let app = XCUIApplication()
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES"]
+        app.launch()
+        app.typeKey("o", modifierFlags: .command)
+        app.typeKey("g", modifierFlags: [.command, .shift])
+        app.typeText(file.path)
+        app.typeKey(.return, modifierFlags: [])
+        app.typeKey(.return, modifierFlags: [])
+        let window = app.windows[file.lastPathComponent]
+        XCTAssertTrue(window.waitForExistence(timeout: 5))
+        window.buttons["Configure Cell"].firstMatch.click()
+        let name = window.textFields["binding-name-0"]
+        XCTAssertFalse(name.exists)
+        window.radioButtons["Bindings"].firstMatch.click()
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        XCTAssertEqual(name.value as? String, "service")
+        XCTAssertFalse(window.textFields["cell-result-variable"].exists)
+        let literal = window.textViews["binding-value-0"]
+        XCTAssertEqual(literal.value as? String, "Checkout")
+        name.click()
+        name.typeKey("a", modifierFlags: .command)
+        name.typeText("serviceName")
+        literal.click()
+        literal.typeKey("a", modifierFlags: .command)
+        literal.typeText("Payments")
+        window.radioButtons["Expression"].firstMatch.click()
+        let expression = window.textViews["binding-expression-0"]
+        XCTAssertTrue(expression.waitForExistence(timeout: 5))
+        XCTAssertEqual(expression.value as? String, "Payments")
+        expression.click()
+        expression.typeKey("a", modifierFlags: .command)
+        expression.typeText("\"Payments\"")
+        window.radioButtons["Text"].firstMatch.click()
+        let text = window.textViews["cell-configuration-text"]
+        XCTAssertTrue(text.waitForExistence(timeout: 5))
+        XCTAssertTrue((text.value as? String)?.contains("bindings:") == true)
+        XCTAssertTrue((text.value as? String)?.contains("name: serviceName") == true)
+        XCTAssertTrue((text.value as? String)?.contains("Payments") == true)
+        XCTAssertFalse((text.value as? String)?.contains("value:") == true)
+        XCTAssertFalse((text.value as? String)?.contains("var:") == true)
+        text.click()
+        text.typeKey("a", modifierFlags: .command)
+        text.typeText("author: Binding example\nbindings:\n  - name: appName\n    value: Inventory")
+        window.radioButtons["Settings"].firstMatch.click()
+        XCTAssertFalse(name.exists)
+        window.radioButtons["Bindings"].firstMatch.click()
+        XCTAssertEqual(name.value as? String, "appName")
+        XCTAssertEqual(literal.value as? String, "Inventory")
+        XCTAssertFalse(expression.exists)
+        window.radioButtons["Expression"].firstMatch.click()
+        XCTAssertEqual(expression.value as? String, "Inventory")
+        window.radioButtons["Value"].firstMatch.click()
+        XCTAssertEqual(literal.value as? String, "Inventory")
+        window.buttons["remove-binding-0"].click()
+        XCTAssertFalse(name.exists)
+        window.buttons["add-result-binding"].click()
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.click()
+        name.typeText("threshold")
+        literal.click()
+        literal.typeText("12")
+        window.buttons["Close"].firstMatch.click()
+        app.typeKey("s", modifierFlags: .command)
+        let saved = NSPredicate { _, _ in
+            guard let source = try? String(contentsOf: file, encoding: .utf8) else { return false }
+            return source.hasPrefix("---\n") && source.contains("name: threshold")
+                && source.contains("author: Binding example") && source.contains("# Notes")
+                && source.contains("value:") && !source.contains("expression:")
+                && !source.contains("var:")
+        }
+        expectation(for: saved, evaluatedWith: nil)
+        waitForExpectations(timeout: 5)
+    }
+
+    @MainActor
+    func testLuaConsoleDisplaysPrintOutputAndCanBeSelectedInSettings() throws {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("lua-console-\(UUID().uuidString).nrmd")
+        try """
+            ```cell_config
+            title: Console report
+            chart: console
+            ```
+            ```lua
+            print("Service", "Checkout")
+            print("Count: 42")
+            ```
+            """.write(to: file, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: file) }
+        let app = XCUIApplication()
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES"]
+        app.launch()
+        app.typeKey("o", modifierFlags: .command)
+        app.typeKey("g", modifierFlags: [.command, .shift])
+        app.typeText(file.path)
+        app.typeKey(.return, modifierFlags: [])
+        app.typeKey(.return, modifierFlags: [])
+        let window = app.windows[file.lastPathComponent]
+        XCTAssertTrue(window.waitForExistence(timeout: 5))
+        window.buttons["Run"].firstMatch.click()
+        let console = window.descendants(matching: .any)["lua-console-output"].firstMatch
+        XCTAssertTrue(console.waitForExistence(timeout: 5))
+        XCTAssertEqual(console.value as? String, "Service\tCheckout\nCount: 42", console.debugDescription)
+        window.buttons["Configure Cell"].firstMatch.click()
+        XCTAssertFalse(window.textFields["cell-chart-height"].exists)
+        XCTAssertTrue(window.textFields["cell-result-variable"].waitForExistence(timeout: 5))
+        XCTAssertFalse(window.radioButtons["Bindings"].exists)
+        XCTAssertFalse(window.buttons["add-result-binding"].exists)
+        let display = window.descendants(matching: .any)["cell-display-selector"].firstMatch
+        display.click()
+        app.menuItems["JSON"].click()
+        XCTAssertFalse(console.exists)
+        display.click()
+        app.menuItems["Console"].click()
+        XCTAssertTrue(console.waitForExistence(timeout: 5))
+        XCTAssertEqual(console.value as? String, "Service\tCheckout\nCount: 42", console.debugDescription)
+        window.buttons["Close"].firstMatch.click()
+        window.buttons["Clear Results"].click()
+        XCTAssertFalse(console.exists)
+        window.buttons["Run"].firstMatch.click()
+        XCTAssertTrue(console.waitForExistence(timeout: 5))
+        XCTAssertEqual(console.value as? String, "Service\tCheckout\nCount: 42", console.debugDescription)
     }
 
     @MainActor

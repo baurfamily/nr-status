@@ -1,0 +1,165 @@
+---
+description: A connected walkthrough of literal, expression, and whole-response bindings.
+bindings:
+  - name: reportName
+    value: Transaction health
+  - name: heading
+    expression: config.reportName .. " - bindings walkthrough"
+  - name: accountIndex
+    expression: "1"
+  - name: requestQuery
+    value: |
+      FROM Transaction
+      SELECT count(*) AS requests,
+             filter(count(*), WHERE error IS true) AS errors
+      SINCE 1 hour ago
+---
+
+# {{ config.heading }}
+
+Open this workbook with your New Relic access already configured and choose
+**Run All**. It uses your default saved API key; no credentials or account IDs
+are embedded in the file. The queries are read-only.
+
+The first query lists accessible accounts and selects the first one. Change
+`accountIndex` in document Settings or frontmatter to select another account
+from that returned list. An account with no `Transaction` events still works:
+the report shows zero counts.
+
+## 1. Document bindings: literal text and Lua expressions
+
+The frontmatter stores `reportName` and the multiline NRQL `requestQuery` as
+literal strings with `value`. No extra Lua quoting is needed.
+`heading` uses `expression` to read an earlier `config` binding.
+`accountIndex` also uses `expression` because it should be a number, not a string.
+Each binding has exactly one source: `value` or `expression`.
+
+## 2. Discover accounts and export several bindings
+
+`var: accountResponse` keeps the complete NerdGraph response.
+The `bindings` array extracts the account list and the selected account.
+Extraction expressions read response globals such as `data`; they do not
+read sibling bindings. Lua arrays start at **1**.
+
+```cell_config
+title: Accessible accounts
+var: accountResponse
+bindings:
+  - name: accessibleAccounts
+    expression: data.actor.accounts
+  - name: selectedAccount
+    expression: 'assert(data.actor.accounts[config.accountIndex], "Choose an accountIndex from the accessible accounts list")'
+chart: bindings
+```
+```graphql
+query AccessibleAccounts {
+  actor {
+    accounts {
+      id
+      name
+    }
+  }
+}
+```
+
+## 3. Use those bindings as inputs to a real query
+
+This query runs the NRQL from `config.requestQuery` in the selected account.
+The adjacent JSON variables insert the account ID as a number and encode the
+query as a JSON string, including its newlines. GraphQL operation text itself
+is not interpolated.
+
+`trafficRows` extracts the raw NRQL rows from the response. `reportLabel` is a
+literal result binding: its text is not evaluated as Lua. All three bindings
+become available after this cell runs successfully.
+
+```cell_config
+title: Transaction counts from NerdGraph
+var: trafficResponse
+bindings:
+  - name: trafficRows
+    expression: data.actor.account.nrql.results
+  - name: reportLabel
+    value: Requests and errors in the last hour
+chart: bindings
+```
+```graphql
+query TransactionCounts($accountId: Int!, $query: Nrql!) {
+  actor {
+    account(id: $accountId) {
+      id
+      name
+      nrql(query: $query) {
+        results
+      }
+    }
+  }
+}
+```
+```variables
+{
+  "accountId": {{ results.selectedAccount.id }},
+  "query": {{ config.requestQuery }}
+}
+```
+
+## 4. Turn extracted JSON into a bound table
+
+GraphQL bindings retain their JSON shape: `trafficRows` is already an array,
+not an NRQL cell's result envelope. This Lua cell builds a new result with
+`rows` and binds that envelope as `summary`.
+
+```cell_config
+title: Transaction summary
+var: summary
+chart: table
+```
+```lua
+local metric = results.trafficRows[1] or {}
+return {
+  rows = {
+    {
+      account = results.selectedAccount.name,
+      requests = metric.requests or 0,
+      errors = metric.errors or 0,
+    },
+  },
+}
+```
+
+## 5. Reuse whole responses, literals, and derived results
+
+This Console cell reads the complete account response, an extracted list,
+a literal result binding, and the derived Lua result. Compare the long
+whole-response path with the shorter extracted binding.
+
+```cell_config
+title: Printed report
+chart: console
+```
+```lua
+local accountsFromResponse = results.accountResponse.data.actor.accounts
+local row = results.summary.rows[1]
+
+print(config.reportName)
+print(results.reportLabel)
+print("Accessible accounts:", #accountsFromResponse)
+print("Same list through an extraction:", #results.accessibleAccounts)
+print("Account:", row.account, results.selectedAccount.id)
+print("Requests:", row.requests)
+print("Errors:", row.errors)
+```
+
+## 6. Reuse results in Markdown
+
+After running the queries, these values update without changing the saved text:
+
+**{{ results.selectedAccount.name }}** had
+**{{ results.summary.rows[1].requests }}** requests and
+**{{ results.summary.rows[1].errors }}** errors in the last hour.
+
+Open the toolbar's **Bindings** inspector to compare `config` values and
+exported `results`. Named references also establish execution dependencies:
+running the final Console cell runs missing or stale prerequisite cells first.
+No events means zero counts, not a failed query; access or query errors should
+be investigated in the source GraphQL cell rather than interpreted as zeros.

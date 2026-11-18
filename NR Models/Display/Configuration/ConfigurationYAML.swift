@@ -122,6 +122,14 @@ struct ConfigurationYAML {
         return try updating(key, replacement: nodes.isEmpty ? nil : Node(nodes))
     }
 
+    func overlaying(_ overrides: ConfigurationYAML) throws -> String {
+        var text = source
+        for field in overrides.fields {
+            text = try ConfigurationYAML(text).updating(field.key, replacement: field.value)
+        }
+        return text
+    }
+
     private func updating(_ key: String, replacement: Node?) throws -> String {
         var pairs = fields.map { (Node($0.key), $0.value) }
         let insertion = pairs.firstIndex { $0.0.scalar?.string == key } ?? pairs.count

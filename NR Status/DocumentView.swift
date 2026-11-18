@@ -13,6 +13,7 @@ import WidgetKit
 /// A notebook-style document: each query is a cell with its results below it.
 struct DocumentView: View {
     @Binding var document: NRQL_EditorDocument
+    @Environment(\.undoManager) private var undoManager
     var sourceName: String = "Untitled.nrmd"
     var sourceURL: URL? = nil
     @AppStorage("nerdgraphProfiles", store: NerdgraphConfig.sharedDefaults) private var profileSettingsData = Data()
@@ -20,6 +21,8 @@ struct DocumentView: View {
     @State private var configurationError: String?
     @State private var cellRevealRequest = UUID()
     @State private var publishing: PublicationSheet?
+    @State private var aiTarget: AIAssist.Target?
+    @State private var aiInsertedCellID: NrqlCell.ID?
     @State private var publishedIDs: Set<UUID> = []
     @State private var isUnpublishingAll = false
     @State private var showsBindingsInspector = false
@@ -44,6 +47,11 @@ struct DocumentView: View {
                         withAnimation { proxy.scrollTo(id, anchor: .top) }
                     }
                 }
+                .onChange(of: aiInsertedCellID) {
+                    if let id = aiInsertedCellID {
+                        withAnimation { proxy.scrollTo(id, anchor: .top) }
+                    }
+                }
         }
         .background(InspectorWindowExpansion(
             isPresented: showsBindingsInspector, inspectorWidth: bindingsInspectorWidth + 1
@@ -65,6 +73,11 @@ struct DocumentView: View {
                 PublishWidgetSheet(document: $document, cellID: id, sourceName: sourceName, sourceURL: sourceURL)
             case .all:
                 PublishWidgetSheet(document: $document, cellID: nil, sourceName: sourceName, sourceURL: sourceURL)
+            }
+        }
+        .sheet(item: $aiTarget) { target in
+            AIAssistSheet(document: $document, target: target) { response in
+                aiInsertedCellID = try AIAssist.apply(response, to: $document, target: target, undoManager: undoManager)
             }
         }
         .onAppear { loadPublishedIDs() }
@@ -144,6 +157,7 @@ struct DocumentView: View {
                         },
                         connectionSource: { document.connection },
                         onRun: { document.runCell(cell.id) },
+                        onAssist: { aiTarget = AIAssist.Target(cellID: cell.id, originalText: cell.query.text) },
                         pendingTitles: document.pendingDependencies(for: cell.id, stale: stale).map(\.query.title),
                         canPerform: { document.canPerform($0, on: cell.id) },
                         onAction: { document.perform($0, on: cell.id) },
@@ -248,6 +262,11 @@ struct DocumentView: View {
             ToolbarSpacer(.flexible)
         }
         ToolbarItemGroup {
+            Button("AI Assist", systemImage: "sparkles") {
+                aiTarget = AIAssist.Target(isDocument: true)
+            }
+            .help("Help write a document with your configured AI command")
+            .accessibilityIdentifier("ai-assist")
             Button("Bindings", systemImage: "curlybraces.square") { showsBindingsInspector.toggle() }
                 .help("Inspect variable bindings throughout this workbook")
                 .accessibilityIdentifier("show-workbook-bindings")
@@ -369,6 +388,7 @@ struct CellView: View {
     let completionScope: () -> LuaCompletion.Scope
     let connectionSource: () -> Result<NrqlConnection, Error>
     let onRun: () -> Void
+    let onAssist: () -> Void
     let pendingTitles: [String]
     let canPerform: (NRQL_EditorDocument.CellAction) -> Bool
     let onAction: (NRQL_EditorDocument.CellAction) -> Void
@@ -736,6 +756,7 @@ struct CellView: View {
                 collapseButton
                 Text("Document Config").font(.headline)
                 Spacer()
+                aiAssistButton
                 configurationButton
                 actionsMenu
             } else if cell.kind == .markdown {
@@ -744,6 +765,7 @@ struct CellView: View {
                 }
                 publicationBadge
                 Spacer()
+                aiAssistButton
                 actionsMenu
             } else {
                 codeHeader
@@ -799,6 +821,7 @@ struct CellView: View {
                 }
             }
 
+            aiAssistButton
             configurationButton
             if cell.kind == .nerdgraph {
                 Button("Nerdgraph Documentation", systemImage: "questionmark.circle") {
@@ -839,6 +862,20 @@ struct CellView: View {
 
             actionsMenu
         }
+    }
+
+    private var aiAssistButton: some View {
+        Button("Help Write or Improve Cell", systemImage: "sparkles") {
+            if let draft {
+                cell.editorText = draft
+                self.draft = nil
+            }
+            onAssist()
+        }
+        .labelStyle(.iconOnly)
+        .buttonStyle(.borderless)
+        .help("Write or improve this cell with AI")
+        .accessibilityIdentifier("cell-ai-assist")
     }
 
     private var configurationButton: some View {

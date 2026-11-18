@@ -31,6 +31,7 @@ and open a workbook. For a no-setup tour of the charts, open
 | I want to… | Read |
 |---|---|
 | Learn the editor, connections, and exports | [Using the app](docs/UsingTheApp.md) |
+| Draft cells with my own AI CLI | [AI Assist](docs/AIAssist.md) |
 | Configure cells and charts in the UI | [Configuration controls](docs/ConfiguringCells.md) |
 | Put a workbook cell on my desktop | [Publishing widgets](docs/PublishingWidgets.md) |
 | Write or edit a workbook as text | [File format](docs/FileFormat.md) |

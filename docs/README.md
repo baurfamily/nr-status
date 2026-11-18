@@ -3,6 +3,7 @@
 ## App guides
 
 - [Using the app](UsingTheApp.md): API keys, editor shortcuts, discovery, bindings inspector, and exports.
+- [AI Assist](AIAssist.md): draft cells with your own CLI, with source review and no chat interface.
 - [Configuration controls](ConfiguringCells.md): document and cell sidebars, display modes, and chart resizing.
 - [Publishing widgets](PublishingWidgets.md): publish, update, recover, and remove desktop widgets.
 

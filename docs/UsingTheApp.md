@@ -28,6 +28,15 @@ Named prerequisites run first when needed. **Clear Results** cancels pending
 runs and clears results/errors without deleting source.
 **Collapse All / Expand All** controls code visibility.
 
+Use **AI Assist** in the document toolbar to draft a workbook with your own
+AI CLI, or the small sparkles button in a cell header to write or improve that
+cell. Configure the command in **Settings > AI Assist**, describe what you want,
+and choose **Generate**. Valid cell drafts replace the targeted cell; document
+drafts append new cells. One **Undo** reverts the entire AI edit, including
+commentary and additional cells. Ambiguous or malformed drafts remain open for
+correction. Generated code is never run automatically.
+See [AI Assist](AIAssist.md) for command setup and what source is shared.
+
 | Shortcut | Action |
 |---|---|
 | Command-Return | Run focused query/script |

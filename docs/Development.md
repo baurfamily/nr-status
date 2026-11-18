@@ -5,6 +5,19 @@
 These are developer notes, not prerequisites for using an installed app.
 Open `NR Status.xcodeproj` in Xcode. The current deployment target is macOS 15.
 
+## Direct distribution and AI commands
+
+The main app disables App Sandbox in both Debug and Release for direct
+distribution. AI Assist launches a user-configured CLI directly with
+Foundation `Process`; no user-script helper is needed. The widget extension
+remains sandboxed, and App Group and Keychain entitlements remain in place.
+
+A future Mac App Store release would need to restore the main app's sandbox
+and redesign arbitrary external CLI execution, for example around a
+user-installed `NSUserUnixTask` script or a supported service integration.
+Do not simply enable the sandbox and expect installed AI tools to retain
+access to their configuration and credentials.
+
 ## Widget signing and registration
 
 The Workbook extension has its own bundle ID and development provisioning
@@ -15,7 +28,8 @@ App ID prefixes; workbook storage remains in the original macOS App Group.
 
 The configuration intent belongs only to the widget extension; do not compile
 it into the app target too. Verify widget configuration with a normal signed
-app build: test-host builds have additional sandbox permissions.
+app build: test-host and unsigned builds do not reproduce normal App Group
+and Keychain authorization.
 
 Keep only the current app build registered with macOS. Old copies with the
 same bundle ID can prevent WidgetKit from resolving the new configuration

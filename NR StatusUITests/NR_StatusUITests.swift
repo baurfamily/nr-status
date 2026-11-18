@@ -8,6 +8,85 @@
 import XCTest
 
 final class NR_StatusUITests: XCTestCase {
+    @MainActor
+    func testAIAssistOffersOneShotCellAndDocumentPrompts() throws {
+        let app = XCUIApplication()
+        guard app.state == .notRunning else {
+            throw XCTSkip("Leave the already-running NR Status session and its workbooks untouched.")
+        }
+        app.launchArguments = [
+            "-ApplePersistenceIgnoreState", "YES",
+            "-aiAssistCommand", "/bin/cat"
+        ]
+        app.launch()
+        defer { app.terminate() }
+        let keychainAlert = app.sheets.staticTexts.containing(NSPredicate(format: "value CONTAINS %@", "Keychain")).firstMatch
+        if keychainAlert.waitForExistence(timeout: 2) {
+            app.sheets.buttons["OK"].firstMatch.click()
+        }
+        let cellAssist = app.buttons["cell-ai-assist"].firstMatch
+        XCTAssertTrue(cellAssist.waitForExistence(timeout: 5))
+        let originalText = try XCTUnwrap(app.textViews.firstMatch.value as? String)
+        cellAssist.click()
+        XCTAssertTrue(app.staticTexts["Write or Improve Cell"].waitForExistence(timeout: 5))
+        let request = app.textViews["ai-assist-request"]
+        XCTAssertTrue(request.exists)
+        XCTAssertFalse(app.buttons["Generate"].isEnabled)
+        request.click()
+        request.typeText("Improve the query and add a Lua cell")
+        XCTAssertTrue(app.buttons["Generate"].isEnabled)
+        app.buttons["Generate"].click()
+        let applied = request.waitForNonExistence(timeout: 10)
+        let commandError = app.staticTexts["ai-assist-error"].firstMatch
+        XCTAssertTrue(applied, commandError.exists ? commandError.value as? String ?? "AI command failed" : app.debugDescription)
+        let generatedCellCount = app.buttons.matching(identifier: "cell-ai-assist").count
+        XCTAssertGreaterThan(generatedCellCount, 1)
+        app.typeKey("z", modifierFlags: .command)
+        XCTAssertEqual(app.buttons.matching(identifier: "cell-ai-assist").count, 1)
+        XCTAssertEqual(app.textViews.firstMatch.value as? String, originalText)
+        app.typeKey("z", modifierFlags: [.command, .shift])
+        XCTAssertEqual(app.buttons.matching(identifier: "cell-ai-assist").count, generatedCellCount)
+        app.typeKey("z", modifierFlags: .command)
+        XCTAssertEqual(app.buttons.matching(identifier: "cell-ai-assist").count, 1)
+
+        cellAssist.click()
+        XCTAssertTrue(request.waitForExistence(timeout: 5))
+        request.click()
+        request.typeText("Show alternatives\n\n```nrql\nSELECT 4\n```\n\n```nrql\nSELECT 5\n```")
+        app.buttons["Generate"].click()
+        let draft = app.textViews["ai-assist-response"]
+        XCTAssertTrue(draft.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["ai-assist-error"].firstMatch.exists)
+        XCTAssertEqual(app.buttons.matching(identifier: "cell-ai-assist").count, 1)
+        draft.click()
+        draft.typeKey("a", modifierFlags: .command)
+        draft.typeText("```nrql\nSELECT 4\n```")
+        app.buttons["Apply Draft"].click()
+        XCTAssertTrue(draft.waitForNonExistence(timeout: 5), app.debugDescription)
+        XCTAssertTrue(app.textViews.matching(NSPredicate(format: "value CONTAINS %@", "SELECT 4")).firstMatch.exists)
+        app.typeKey("z", modifierFlags: .command)
+        XCTAssertEqual(app.textViews.firstMatch.value as? String, originalText)
+
+        app.buttons["ai-assist"].click()
+        XCTAssertTrue(app.staticTexts["Help Write a Document"].waitForExistence(timeout: 5))
+        request.click()
+        request.typeText("Draft workbook cells")
+        app.buttons["Generate"].click()
+        XCTAssertTrue(request.waitForNonExistence(timeout: 10), app.debugDescription)
+        XCTAssertGreaterThan(app.buttons.matching(identifier: "cell-ai-assist").count, 1)
+        app.typeKey("z", modifierFlags: .command)
+        XCTAssertEqual(app.buttons.matching(identifier: "cell-ai-assist").count, 1)
+        XCTAssertEqual(app.textViews.firstMatch.value as? String, originalText)
+
+        app.buttons["ai-assist"].click()
+        XCTAssertTrue(app.buttons["AI Settings…"].waitForExistence(timeout: 5))
+        app.buttons["AI Settings…"].click()
+        XCTAssertTrue(app.textFields["ai-assist-command"].waitForExistence(timeout: 5)
+                      || app.textViews["ai-assist-command"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["Copy Setup Command"].exists)
+        XCTAssertFalse(app.buttons["Open Scripts Folder"].exists)
+    }
+
     private func openInApp(_ url: URL) throws {
         var runner = Bundle(for: Self.self).bundleURL
         while runner.pathExtension != "app" && runner.path != "/" {

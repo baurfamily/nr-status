@@ -6,9 +6,14 @@ struct CellConfigurationView: View {
     let isPublished: Bool
     let onUpdatePublished: () -> Void
     var completionScope: () -> LuaCompletion.Scope = { .empty }
-    @State private var showsText = false
+    private enum EditorTab {
+        case settings, bindings, text
+    }
+
+    @State private var editorTab = EditorTab.settings
 
     private var isDocument: Bool { cell.kind == .config }
+    private var supportsBindings: Bool { isDocument || cell.kind == .nerdgraph }
     private var format: ChartFormat { ChartFormat.parseMetadata(cell.configurationText) }
     private var chart: String {
         NrqlCellSource.value("chart", in: cell.configurationText).lowercased()
@@ -47,12 +52,16 @@ struct CellConfigurationView: View {
                         .accessibilityIdentifier("update-published-widget")
                 }
             }
-            Picker("Editor", selection: $showsText) {
-                Text("Settings").tag(false)
-                Text("Text").tag(true)
+            Picker("Editor", selection: $editorTab) {
+                Text("Settings").tag(EditorTab.settings)
+                if supportsBindings {
+                    Text("Bindings").tag(EditorTab.bindings)
+                }
+                Text("Text").tag(EditorTab.text)
             }
             .pickerStyle(.segmented)
-            if showsText {
+            switch editorTab {
+            case .text:
                 Text(isDocument ? "---" : "```cell_config")
                     .font(.caption.monospaced()).foregroundStyle(.secondary)
                 ConfigurationTextEditor(
@@ -61,8 +70,12 @@ struct CellConfigurationView: View {
                     .frame(minHeight: 180)
                     .help("Press Escape to complete binding expressions.")
                 Text(isDocument ? "---" : "```").font(.caption.monospaced()).foregroundStyle(.secondary)
-            } else {
+            case .settings:
                 settings
+            case .bindings:
+                ScrollView {
+                    bindingSettings
+                }
             }
             if let error = configurationError {
                 Text(error).font(.caption).foregroundStyle(.red).textSelection(.enabled)
@@ -96,14 +109,11 @@ struct CellConfigurationView: View {
             } else {
                 labeledField("Title", text: value("title"), identifier: "cell-configuration-title")
             }
-            if isDocument {
-                bindingSettings
-            } else {
+            if cell.kind == .nrql || cell.kind == .lua || cell.kind == .nerdgraph {
                 labeledField(
                     cell.kind == .nerdgraph ? "Whole response variable" : "Variable binding",
                     text: value("var"), placeholder: "Result variable", identifier: "cell-result-variable"
                 )
-                if cell.kind == .nerdgraph { bindingSettings }
             }
             if isDocument {
                 labeledField("API Key name", text: value("api-key"), placeholder: "Default if empty")

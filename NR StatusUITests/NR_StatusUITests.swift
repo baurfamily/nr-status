@@ -128,9 +128,16 @@ final class NR_StatusUITests: XCTestCase {
         title.click()
         title.typeKey("a", modifierFlags: .command)
         title.typeText("ConfiguredTitle")
-        for label in ["Title", "Variable binding", "Account IDs"] {
+        for label in ["Title", "Account IDs"] {
             XCTAssertTrue(app.staticTexts[label].exists)
         }
+        XCTAssertFalse(app.radioButtons["Bindings"].exists)
+        let variable = app.textFields["cell-result-variable"]
+        XCTAssertTrue(variable.waitForExistence(timeout: 5))
+        variable.click()
+        variable.typeText("configuredResult")
+        XCTAssertFalse(app.buttons["add-result-binding"].exists)
+        XCTAssertTrue(title.exists)
         XCTAssertFalse(app.staticTexts["API Key name"].exists)
         XCTAssertFalse(app.textFields["API Key name"].exists)
         XCTAssertTrue(app.buttons["Remove Cell Configuration"].exists)
@@ -139,6 +146,7 @@ final class NR_StatusUITests: XCTestCase {
         let text = app.textViews["cell-configuration-text"]
         XCTAssertTrue(text.waitForExistence(timeout: 5))
         XCTAssertTrue((text.value as? String)?.contains("title: ConfiguredTitle") == true)
+        XCTAssertTrue((text.value as? String)?.contains("var: configuredResult") == true)
         text.click()
         text.typeKey("a", modifierFlags: .command)
         text.typeText("title: From text\napi-key: Staging\nchart: billboard\nattributes: gauge, max(250)")
@@ -245,6 +253,9 @@ final class NR_StatusUITests: XCTestCase {
         let whole = window.textFields["cell-result-variable"]
         XCTAssertTrue(whole.waitForExistence(timeout: 5))
         XCTAssertEqual(whole.value as? String, "response")
+        XCTAssertFalse(window.textFields["binding-name-0"].exists)
+        window.radioButtons["Bindings"].firstMatch.click()
+        XCTAssertFalse(whole.exists)
         let name = window.textFields["binding-name-0"]
         XCTAssertEqual(name.value as? String, "account")
         name.click()
@@ -265,11 +276,14 @@ final class NR_StatusUITests: XCTestCase {
         text.typeText("var: fullResponse\nbindings:\n  - name: actor\n    expression: data.actor")
         window.radioButtons["Settings"].firstMatch.click()
         XCTAssertEqual(whole.value as? String, "fullResponse")
+        XCTAssertFalse(name.exists)
+        window.radioButtons["Bindings"].firstMatch.click()
+        XCTAssertFalse(whole.exists)
         XCTAssertEqual(name.value as? String, "actor")
         XCTAssertEqual(expression.value as? String, "data.actor")
         window.buttons["remove-binding-0"].click()
         XCTAssertFalse(name.exists)
-        XCTAssertEqual(whole.value as? String, "fullResponse")
+        XCTAssertFalse(whole.exists)
         window.buttons["add-result-binding"].click()
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         name.click()
@@ -308,6 +322,8 @@ final class NR_StatusUITests: XCTestCase {
         XCTAssertTrue(window.waitForExistence(timeout: 5))
         window.buttons["Configure Cell"].firstMatch.click()
         let name = window.textFields["binding-name-0"]
+        XCTAssertFalse(name.exists)
+        window.radioButtons["Bindings"].firstMatch.click()
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         XCTAssertEqual(name.value as? String, "service")
         XCTAssertFalse(window.textFields["cell-result-variable"].exists)
@@ -338,6 +354,8 @@ final class NR_StatusUITests: XCTestCase {
         text.typeKey("a", modifierFlags: .command)
         text.typeText("author: Binding example\nbindings:\n  - name: appName\n    value: Inventory")
         window.radioButtons["Settings"].firstMatch.click()
+        XCTAssertFalse(name.exists)
+        window.radioButtons["Bindings"].firstMatch.click()
         XCTAssertEqual(name.value as? String, "appName")
         XCTAssertEqual(literal.value as? String, "Inventory")
         XCTAssertFalse(expression.exists)
@@ -396,6 +414,9 @@ final class NR_StatusUITests: XCTestCase {
         XCTAssertEqual(console.value as? String, "Service\tCheckout\nCount: 42", console.debugDescription)
         window.buttons["Configure Cell"].firstMatch.click()
         XCTAssertFalse(window.textFields["cell-chart-height"].exists)
+        XCTAssertTrue(window.textFields["cell-result-variable"].waitForExistence(timeout: 5))
+        XCTAssertFalse(window.radioButtons["Bindings"].exists)
+        XCTAssertFalse(window.buttons["add-result-binding"].exists)
         let display = window.descendants(matching: .any)["cell-display-selector"].firstMatch
         display.click()
         app.menuItems["JSON"].click()

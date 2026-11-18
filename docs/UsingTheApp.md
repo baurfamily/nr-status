@@ -65,8 +65,8 @@ The editor shows the operation and its JSON variables with results beside it.
 - Right-click a JSON field/value and choose **Add Binding to This Value…**,
   enter a name, then rerun the cell to populate the new `bindings` extraction.
   Selecting the JSON root sets `var` instead, if it is not already set.
-- Settings separates **Whole response variable** from the editable extraction
-  rows under **Bindings**. Change an existing whole-response name there.
+- In the configuration sidebar, **Settings** names the **Whole response variable**;
+  the **Bindings** tab edits the expression/value binding rows.
 - In the cell's configuration, choose **Display > Bindings** to inspect
   extraction expressions and values; choose **JSON** for the complete response.
 - Use the **Nerdgraph Documentation** question-mark button for the live schema

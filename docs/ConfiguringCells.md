@@ -10,13 +10,14 @@ values. Explicit overrides create/update YAML frontmatter at the top.
 
 Choose the **Document Config** gear to open its sidebar. It includes author,
 description, API key name, accounts, and document variables.
-**Settings** presents fields; **Text** edits the same saved configuration.
+**Settings** presents general fields, **Bindings** edits document variables,
+and **Text** edits the same saved configuration as YAML.
 
 Expand **Document Config** with its disclosure button to see a rendered summary
 of the saved values. Collapsing it hides the summary; the gear opens the editing
 sidebar independently.
 
-Under **Bindings**, add a **Name**, then choose **Value** for a literal string
+In the **Bindings** tab, add a **Name**, then choose **Value** for a literal string
 or **Expression** for Lua, just like GraphQL bindings.
 New document bindings default to Value; new GraphQL bindings default to Expression.
 These edit the frontmatter `bindings` array;
@@ -30,21 +31,25 @@ configure a cell before running it.
 | Control | Use |
 |---|---|
 | Title | Set the heading independently of any binding |
-| Variable binding / Whole response variable | Name the complete NRQL/Lua result or GraphQL response |
-| Bindings (GraphQL) | Add/remove named values; choose literal Value or Lua Expression |
+| Variable binding / Whole response variable | Name the complete NRQL/Lua result or GraphQL response (`var`) |
 | Account IDs | Override NRQL routing for this cell |
 | Hide query on open and export | Start code collapsed; exclude code from HTML/PDF |
 | Display | Automatic chart, explicit chart type, JSON, Hidden, Lua Console, or GraphQL Bindings |
 | Chart height (lines) | Positive whole display lines; leave blank for Auto |
 
-**Settings** and **Text** edit the same YAML `cell_config`; changes are saved in
+The **Bindings** tab, between **Settings** and **Text**, edits the `bindings`
+array of named literal values or Lua expressions. It is available only for
+document configuration and GraphQL cells. The single result variable (`var`)
+stays in **Settings**; NRQL, Lua, and Markdown do not have a Bindings tab.
+
+All three tabs edit the same YAML `cell_config`; changes are saved in
 the workbook. Text mode shows the body—you do not need to type fence markers.
 YAML quoting, comments, lists, and multiline strings work there. Settings writes
 properly quoted YAML and preserves unrelated fields.
-In GraphQL Settings, **Add Binding** creates a binding row; its minus button
+In the GraphQL **Bindings** tab, **Add Binding** creates a binding row; its minus button
 removes it. These rows edit the `bindings` array without changing the whole
 response variable.
-Use it for advanced options such as a cell's `api-key: SavedName` override or an
+Use **Text** for advanced options such as a cell's `api-key: SavedName` override or an
 NRQL `timeout: 120`. These do not have individual Settings controls.
 
 Press **Esc** in configuration expressions for completion of `config`,
